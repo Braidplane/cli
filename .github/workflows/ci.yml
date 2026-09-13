@@ -29,6 +29,6 @@ jobs:
           go tool oapi-codegen -config api/oapi-client.yml api/schema.json
           go generate ./pkg/...
           git diff --exit-code
-          test -z "$(git ls-files --others)"
+          test -z "$(git ls-files --others --exclude-standard)"
       - name: Build
         run: go build -trimpath -buildvcs=false ./cmd/braidplane

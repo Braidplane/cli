@@ -3267,7 +3267,8 @@
           "expire",
           "auto_accept",
           "acknowledge",
-          "resolve"
+          "resolve",
+          "read"
         ],
         "type": "string"
       },
@@ -20201,7 +20202,18 @@
                 }
               }
             },
-            "description": ""
+            "description": "",
+            "headers": {
+              "Cache-Control": {
+                "description": "",
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "403": {
             "content": {

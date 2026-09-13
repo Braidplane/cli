@@ -733,6 +733,7 @@ const (
 	EventActionExpire         EventAction = "expire"
 	EventActionPublish        EventAction = "publish"
 	EventActionPurge          EventAction = "purge"
+	EventActionRead           EventAction = "read"
 	EventActionReconcile      EventAction = "reconcile"
 	EventActionRefresh        EventAction = "refresh"
 	EventActionResolve        EventAction = "resolve"
@@ -772,6 +773,8 @@ func (e EventAction) Valid() bool {
 	case EventActionPublish:
 		return true
 	case EventActionPurge:
+		return true
+	case EventActionRead:
 		return true
 	case EventActionReconcile:
 		return true

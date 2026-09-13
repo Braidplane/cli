@@ -30,7 +30,7 @@ jobs:
           go tool oapi-codegen -config api/oapi-client.yml api/schema.json
           go generate ./pkg/...
           git diff --exit-code
-          test -z "$(git ls-files --others)"
+          test -z "$(git ls-files --others --exclude-standard)"
       - name: Build release archives
         run: python3 scripts/release.py --tag "$GITHUB_REF_NAME" --dist dist
       - name: Attest archive checksums
