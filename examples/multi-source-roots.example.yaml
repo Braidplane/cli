@@ -1,0 +1,145 @@
+metadata:
+  slug: multi-source-order-account-export
+  name: Multi-source Order and Account Export
+steps:
+  - kind: query
+    slug: fetch-orders
+    name: Fetch recent orders
+    query:
+      data_source_ref: orders-postgres
+      operation_type: sql
+      operation_ref: list-recent-orders
+      parameters:
+        since: "2026-01-01"
+        limit: 500
+      output_contract:
+        name: raw-orders
+        representation: rows
+        fields:
+          - name: order_id
+            type: integer
+            required: true
+          - name: account_id
+            type: string
+            required: true
+          - name: customer_email
+            type: string
+            required: true
+          - name: total
+            type: number
+            required: true
+          - name: created_at
+            type: datetime
+            required: true
+
+  - kind: query
+    slug: fetch-accounts
+    name: Fetch active accounts
+    query:
+      data_source_ref: crm-mysql
+      operation_type: sql
+      operation_ref: list-active-accounts
+      output_contract:
+        name: raw-accounts
+        representation: rows
+        fields:
+          - name: account_id
+            type: string
+            required: true
+          - name: account_name
+            type: string
+            required: true
+          - name: owner_email
+            type: string
+            required: false
+
+  - kind: transform
+    slug: enrich-orders
+    name: Join orders to account ownership
+    transform:
+      inputs:
+        orders: fetch-orders
+        accounts: fetch-accounts
+      input_contract:
+        name: order-account-inputs
+        representation: rows
+        fields:
+          - name: orders.order_id
+            type: integer
+            required: true
+          - name: orders.account_id
+            type: string
+            required: true
+          - name: orders.customer_email
+            type: string
+            required: true
+          - name: orders.total
+            type: number
+            required: true
+          - name: accounts.account_id
+            type: string
+            required: true
+          - name: accounts.account_name
+            type: string
+            required: true
+          - name: accounts.owner_email
+            type: string
+            required: false
+      sql: |
+        SELECT
+          orders.order_id,
+          orders.customer_email,
+          orders.total,
+          accounts.account_name,
+          accounts.owner_email
+        FROM orders
+        JOIN accounts ON accounts.account_id = orders.account_id
+      output_kind: rows
+      output_contract:
+        name: enriched-order-rows
+        representation: rows
+        fields:
+          - name: order_id
+            type: integer
+            required: true
+          - name: customer_email
+            type: string
+            required: true
+          - name: total
+            type: number
+            required: true
+          - name: account_name
+            type: string
+            required: true
+          - name: owner_email
+            type: string
+            required: false
+
+  - kind: sink
+    slug: write-enriched-orders
+    name: Write enriched orders
+    sink:
+      idempotency_class: deduplicated_by_ledger
+      input: enrich-orders
+      input_contract:
+        name: enriched-order-rows
+        representation: rows
+        fields:
+          - name: order_id
+            type: integer
+            required: true
+          - name: customer_email
+            type: string
+            required: true
+          - name: total
+            type: number
+            required: true
+          - name: account_name
+            type: string
+            required: true
+          - name: owner_email
+            type: string
+            required: false
+      data_source_ref: analytics-warehouse
+      operation_type: sql
+      operation_ref: upsert-enriched-orders

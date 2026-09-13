@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "slug": "cue-valid",
+    "name": "CUE Valid"
+  },
+  "steps": [
+    {
+      "kind": "query",
+      "slug": "fetch-users",
+      "query": {
+        "data_source_ref": "acme-postgres",
+        "operation_type": "sql",
+        "operation_ref": "list-users",
+        "output_contract": {
+          "representation": "rows",
+          "fields": [
+            {
+              "name": "id",
+              "type": "integer",
+              "required": true,
+              "validations": {
+                "min": 1,
+                "unique": true
+              }
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "validations": {
+                "format": "email"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

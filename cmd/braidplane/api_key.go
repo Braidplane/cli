@@ -1,0 +1,256 @@
+package main
+
+import (
+	"context"
+	"strings"
+
+	api "github.com/Braidplane/cli/internal/apiclient"
+	"github.com/Braidplane/cli/pkg/xerror"
+)
+
+type apiKeyCommand struct {
+	List   listAPIKeysCommand  `cmd:"" help:"List same-role API key metadata (management-enabled API key required)."`
+	Get    getAPIKeyCommand    `cmd:"" help:"Get same-role API key metadata (management-enabled API key required)."`
+	Create createAPIKeyCommand `cmd:"" help:"Create a same-role, non-delegating API key and print its secret once."`
+	Update updateAPIKeyCommand `cmd:"" help:"Update same-role API key metadata without changing management authority."`
+	Rotate rotateAPIKeyCommand `cmd:"" help:"Rotate a same-role API key and print its new secret once."`
+	Revoke revokeAPIKeyCommand `cmd:"" help:"Revoke a same-role API key."`
+}
+
+type apiKeyManagementAuthFlags struct {
+	ServerURL    string `help:"Braidplane server URL." name:"server-url" env:"BRAIDPLANE_SERVER_URL"`
+	Organization string `help:"Organization slug." name:"org" env:"BRAIDPLANE_ORG"`
+	APIKey       string `help:"Management-enabled organization API key token." name:"api-key" env:"BRAIDPLANE_API_KEY"`
+}
+
+func (f apiKeyManagementAuthFlags) resolveAuthConfig(runtime *cliRuntime) (cliAuthConfig, error) {
+	env := envAuthConfig()
+	env.PAT = ""
+
+	configPath, err := runtime.resolveConfigPath()
+	if err != nil {
+		return cliAuthConfig{}, err
+	}
+	saved, err := loadLogin(configPath)
+	if err != nil {
+		return cliAuthConfig{}, err
+	}
+	saved.PAT = ""
+
+	cfg := mergeCLIAuthConfig(cliAuthSources{
+		Flags: cliAuthConfig{ServerURL: f.ServerURL, Organization: f.Organization, APIKey: f.APIKey},
+		Env:   env,
+		Saved: saved,
+	})
+	if cfg.APIKey == "" && cfg.ServerURL != "" && cfg.Organization != "" {
+		credentialServerURL, normalizeErr := normalizeAPIServerURL(cfg.ServerURL)
+		if normalizeErr != nil {
+			return cliAuthConfig{}, normalizeErr
+		}
+		apiKey, loadErr := runtime.resolveCredentialStore().Get(
+			credentialTypeAPIKey,
+			cfg.Organization,
+			credentialServerURL,
+		)
+		if loadErr != nil {
+			return cliAuthConfig{}, xerror.Wrapf("load stored CLI API key: %w", loadErr)
+		}
+		cfg.APIKey = apiKey
+	}
+
+	missing := make([]string, 0, 3)
+	if strings.TrimSpace(cfg.ServerURL) == "" {
+		missing = append(missing, "server URL")
+	}
+	if strings.TrimSpace(cfg.Organization) == "" {
+		missing = append(missing, "organization")
+	}
+	if strings.TrimSpace(cfg.APIKey) == "" {
+		missing = append(missing, "management-enabled API key")
+	}
+	if len(missing) > 0 {
+		return cliAuthConfig{}, xerror.Unexpected().Detail(
+			"missing CLI API key management configuration: " + strings.Join(missing, ", "),
+		)
+	}
+	cfg.PAT = ""
+	return cfg, nil
+}
+
+func newAPIKeyManagementClient(
+	flags apiKeyManagementAuthFlags,
+	runtime *cliRuntime,
+) (*cliAPIClient, error) {
+	cfg, err := flags.resolveAuthConfig(runtime)
+	if err != nil {
+		return nil, err
+	}
+	return newCLIAPIClient(cfg)
+}
+
+type listAPIKeysCommand struct {
+	apiKeyManagementAuthFlags
+	iamPaginationFlags
+}
+
+func (c *listAPIKeysCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	if err := c.validate(func(value string) bool {
+		return api.ListAPIKeysParamsSortBy(value).Valid()
+	}); err != nil {
+		return err
+	}
+	client, err := newAPIKeyManagementClient(c.apiKeyManagementAuthFlags, runtime)
+	if err != nil {
+		return err
+	}
+	params := api.ListAPIKeysParams{}
+	setAPIKeyPagination(&params, c.iamPaginationFlags)
+	keys, err := client.listAPIKeys(context.Background(), &params)
+	if err != nil {
+		return err
+	}
+	return writeCLIJSON(output.stdout, keys)
+}
+
+func setAPIKeyPagination(params *api.ListAPIKeysParams, flags iamPaginationFlags) {
+	if flags.Limit != 0 {
+		value := flags.Limit
+		params.Limit = &value
+	}
+	if flags.Cursor != "" {
+		value := flags.Cursor
+		params.Cursor = &value
+	}
+	if flags.SortBy != "" {
+		value := api.ListAPIKeysParamsSortBy(flags.SortBy)
+		params.SortBy = &value
+	}
+	if flags.Order != "" {
+		value := api.ListAPIKeysParamsOrder(flags.Order)
+		params.Order = &value
+	}
+	if flags.Direction != "" {
+		value := api.ListAPIKeysParamsDirection(flags.Direction)
+		params.Direction = &value
+	}
+}
+
+type getAPIKeyCommand struct {
+	apiKeyManagementAuthFlags
+	APIKeySlug string `arg:"" name:"api-key-slug" help:"API key slug." required:""`
+}
+
+func (c *getAPIKeyCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	client, err := newAPIKeyManagementClient(c.apiKeyManagementAuthFlags, runtime)
+	if err != nil {
+		return err
+	}
+	key, err := client.getAPIKey(context.Background(), c.APIKeySlug)
+	if err != nil {
+		return err
+	}
+	return writeCLIJSON(output.stdout, key)
+}
+
+type createAPIKeyCommand struct {
+	apiKeyManagementAuthFlags
+	Name        string  `help:"API key display name." name:"name" required:""`
+	Role        string  `help:"Role slug; management-enabled API keys may create only their own role." name:"role" required:""`
+	Slug        string  `help:"API key slug. Generated by the API when omitted." name:"slug"`
+	Description *string `help:"API key description." name:"description"`
+	ExpiresAt   string  `help:"Optional RFC3339 expiration timestamp." name:"expires-at"`
+}
+
+func (c *createAPIKeyCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	expiresAt, hasExpiration, err := parseCredentialExpiration(c.ExpiresAt)
+	if err != nil {
+		return err
+	}
+	var expiresAtParam *api.NullableTimestamp
+	if hasExpiration {
+		expiresAtParam = &expiresAt
+	}
+	client, err := newAPIKeyManagementClient(c.apiKeyManagementAuthFlags, runtime)
+	if err != nil {
+		return err
+	}
+	key, err := client.createAPIKey(context.Background(), api.NewAPIKey{
+		Name:        c.Name,
+		Role:        c.Role,
+		Slug:        optionalAPISlug(c.Slug),
+		Description: c.Description,
+		ExpiresAt:   expiresAtParam,
+	})
+	if err != nil {
+		return err
+	}
+	return writeCLIJSON(output.stdout, key)
+}
+
+type updateAPIKeyCommand struct {
+	apiKeyManagementAuthFlags
+	APIKeySlug       string  `arg:"" name:"api-key-slug" help:"API key slug." required:""`
+	Name             string  `help:"Replacement display name." name:"name" required:""`
+	Description      *string `help:"Replacement description." name:"description"`
+	ClearDescription bool    `help:"Clear the description." name:"clear-description"`
+	ExpiresAt        string  `help:"Replacement RFC3339 expiration timestamp." name:"expires-at"`
+	ClearExpiration  bool    `help:"Remove the expiration timestamp." name:"clear-expiration"`
+}
+
+func (c *updateAPIKeyCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	client, err := newAPIKeyManagementClient(c.apiKeyManagementAuthFlags, runtime)
+	if err != nil {
+		return err
+	}
+	current, err := client.getAPIKey(context.Background(), c.APIKeySlug)
+	if err != nil {
+		return err
+	}
+	body, err := credentialUpdateBody(
+		c.Name,
+		c.Description,
+		c.ClearDescription,
+		c.ExpiresAt,
+		c.ClearExpiration,
+		current.Description,
+		current.ExpiresAt,
+	)
+	if err != nil {
+		return err
+	}
+	key, err := client.updateAPIKey(context.Background(), c.APIKeySlug, body)
+	if err != nil {
+		return err
+	}
+	return writeCLIJSON(output.stdout, key)
+}
+
+type rotateAPIKeyCommand struct {
+	apiKeyManagementAuthFlags
+	APIKeySlug string `arg:"" name:"api-key-slug" help:"API key slug." required:""`
+}
+
+func (c *rotateAPIKeyCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	client, err := newAPIKeyManagementClient(c.apiKeyManagementAuthFlags, runtime)
+	if err != nil {
+		return err
+	}
+	key, err := client.rotateAPIKey(context.Background(), c.APIKeySlug)
+	if err != nil {
+		return err
+	}
+	return writeCLIJSON(output.stdout, key)
+}
+
+type revokeAPIKeyCommand struct {
+	apiKeyManagementAuthFlags
+	APIKeySlug string `arg:"" name:"api-key-slug" help:"API key slug." required:""`
+}
+
+func (c *revokeAPIKeyCommand) Run(_ *cliOutput, runtime *cliRuntime) error {
+	client, err := newAPIKeyManagementClient(c.apiKeyManagementAuthFlags, runtime)
+	if err != nil {
+		return err
+	}
+	return client.revokeAPIKey(context.Background(), c.APIKeySlug)
+}
