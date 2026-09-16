@@ -22,6 +22,8 @@ go build -trimpath -o braidplane ./cmd/braidplane
 
 Live API commands require a Braidplane account and API endpoint. Local pipeline
 validation does not require a server or credentials.
+Configure the API endpoint directly: authenticated requests do not follow HTTP
+redirects, so credentials and request bodies stay with the configured endpoint.
 
 ```sh
 braidplane login --help

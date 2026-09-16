@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,6 +42,57 @@ func TestNewCLIAPIClientInjectsBearerTokenIntoGeneratedClient(t *testing.T) {
 	require.Equal(t, "/organizations", gotPath)
 	require.Equal(t, "Bearer xto_test_secret", gotAuth)
 	require.Equal(t, "acme", client.organization)
+}
+
+func TestNewCLIAPIClientDoesNotFollowRedirects(t *testing.T) {
+	t.Parallel()
+
+	for _, status := range []int{301, 302, 303, 307, 308} {
+		for _, target := range []string{
+			"https://other.example.test/receive",
+			"https://api.example.test:8443/receive",
+			"http://api.example.test/receive",
+			"/redirected",
+		} {
+			t.Run(strconv.Itoa(status)+"/"+target, func(t *testing.T) {
+				t.Parallel()
+
+				client, err := newCLIAPIClient(cliAuthConfig{
+					ServerURL:    "https://api.example.test",
+					Organization: "acme",
+					PAT:          "synthetic-redirect-token",
+				})
+				require.NoError(t, err)
+				generated, ok := client.openapi.ClientInterface.(*api.Client)
+				require.True(t, ok)
+				httpClient, ok := generated.Client.(*http.Client)
+				require.True(t, ok)
+				transport, ok := httpClient.Transport.(bearerTransport)
+				require.True(t, ok)
+
+				requests := 0
+				transport.next = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+					requests++
+					require.Equal(t, "Bearer synthetic-redirect-token", req.Header.Get("Authorization"))
+					if requests > 1 {
+						return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody, Request: req}, nil
+					}
+					return &http.Response{
+						StatusCode: status,
+						Header:     http.Header{"Location": []string{target}},
+						Body:       http.NoBody,
+						Request:    req,
+					}, nil
+				})
+				httpClient.Transport = transport
+
+				err = client.verifyOrganizationAccess(context.Background())
+
+				require.Equal(t, 1, requests, "redirect destination must never be contacted")
+				require.ErrorContains(t, err, "unexpected API response: status "+strconv.Itoa(status))
+			})
+		}
+	}
 }
 
 func TestNewCLIAPIClientConfiguresRequestTimeout(t *testing.T) {

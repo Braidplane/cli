@@ -50,6 +50,10 @@ func newCLIAPIClient(cfg cliAuthConfig) (*cliAPIClient, error) {
 		api.WithHTTPClient(&http.Client{
 			Timeout:   cliAPIClientTimeout,
 			Transport: bearerTransport{token: cfg.authToken()},
+			// The transport attaches credentials to every request, including redirects.
+			CheckRedirect: func(*http.Request, []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		}),
 	)
 	if err != nil {
