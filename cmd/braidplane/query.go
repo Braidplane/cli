@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	api "github.com/Braidplane/cli/internal/apiclient"
+	workspace "github.com/Braidplane/cli/pkg/connector/googleworkspace"
 	"github.com/Braidplane/cli/pkg/xerror"
 )
 
@@ -41,6 +42,7 @@ type queryPayloadFlags struct {
 	StatementJSON  string `help:"Connector-specific query_statement JSON object." name:"statement-json"`
 	StatementFile  string `help:"Path to a connector-specific query_statement JSON file." name:"statement-file" type:"path"`
 	ParametersJSON string `help:"Query parameter definition JSON array." name:"parameters-json"`
+	ContractsFile  string `help:"Path to a JSON object containing saved-operation input/output contract attachments. Update replaces all attachments; omission clears them." name:"contracts-file" type:"path"`
 	ParametersFile string `help:"Path to a query parameter definition JSON array file." name:"parameters-file" type:"path"`
 	RowLimit       int    `help:"Maximum number of rows to return." name:"row-limit"`
 	TimeoutSeconds int    `help:"Query execution timeout in seconds." name:"timeout-seconds"`
@@ -300,14 +302,22 @@ func (c *createQueryCommand) newQuery() (api.NewQuery, error) {
 		return api.NewQuery{}, err
 	}
 
+	contracts, err := c.contracts()
+	if err != nil {
+		return api.NewQuery{}, err
+	}
 	return api.NewQuery{
-		Name:           c.Name,
-		Slug:           optionalAPISlug(c.Slug),
-		Description:    optionalString(c.Description),
-		QueryStatement: statement,
-		Parameters:     parameters,
-		RowLimit:       rowLimit,
-		TimeoutSeconds: timeoutSeconds,
+		Name:                     c.Name,
+		ExpectedInputContract:    contracts.ExpectedInputContract,
+		ExpectedInputContractRef: contracts.ExpectedInputContractRef,
+		OutputContract:           contracts.OutputContract,
+		OutputContractRef:        contracts.OutputContractRef,
+		Slug:                     optionalAPISlug(c.Slug),
+		Description:              optionalString(c.Description),
+		QueryStatement:           statement,
+		Parameters:               parameters,
+		RowLimit:                 rowLimit,
+		TimeoutSeconds:           timeoutSeconds,
 	}, nil
 }
 
@@ -322,13 +332,21 @@ func (c *updateQueryCommand) updateQuery() (api.UpdateQuery, error) {
 		return api.UpdateQuery{}, err
 	}
 
+	contracts, err := c.contracts()
+	if err != nil {
+		return api.UpdateQuery{}, err
+	}
 	return api.UpdateQuery{
-		Name:           c.Name,
-		Description:    optionalString(c.Description),
-		QueryStatement: statement,
-		Parameters:     parameters,
-		RowLimit:       rowLimit,
-		TimeoutSeconds: timeoutSeconds,
+		Name:                     c.Name,
+		ExpectedInputContract:    contracts.ExpectedInputContract,
+		ExpectedInputContractRef: contracts.ExpectedInputContractRef,
+		OutputContract:           contracts.OutputContract,
+		OutputContractRef:        contracts.OutputContractRef,
+		Description:              optionalString(c.Description),
+		QueryStatement:           statement,
+		Parameters:               parameters,
+		RowLimit:                 rowLimit,
+		TimeoutSeconds:           timeoutSeconds,
 	}, nil
 }
 
@@ -351,6 +369,18 @@ func queryStatement(inlineJSON, filePath string) (api.QueryStatement, error) {
 	data, err := requiredJSONSource(inlineJSON, filePath, "statement")
 	if err != nil {
 		return api.QueryStatement{}, err
+	}
+
+	var discriminator struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &discriminator); err != nil {
+		return api.QueryStatement{}, xerror.InvalidInput(xerror.JSON).Detailf("statement JSON is invalid: %v", err)
+	}
+	if discriminator.Type == "google_workspace" {
+		if _, err := workspace.DecodeStatement(data); err != nil {
+			return api.QueryStatement{}, xerror.Wrapf("validate Google Workspace statement: %w", err)
+		}
 	}
 
 	var statement api.QueryStatement
@@ -536,4 +566,29 @@ func listQueryExecutionsParams(
 	}
 
 	return params, nil
+}
+
+type queryContractAttachments struct {
+	ExpectedInputContract    *api.PipelineSchemaContract  `json:"expected_input_contract,omitempty"`
+	ExpectedInputContractRef *api.PipelineODCSContractRef `json:"expected_input_contract_ref,omitempty"`
+	OutputContract           *api.PipelineSchemaContract  `json:"output_contract,omitempty"`
+	OutputContractRef        *api.PipelineODCSContractRef `json:"output_contract_ref,omitempty"`
+}
+
+func (f queryPayloadFlags) contracts() (queryContractAttachments, error) {
+	var contracts queryContractAttachments
+	data, err := optionalJSONSource("", f.ContractsFile, "contracts")
+	if err != nil || data == nil {
+		return contracts, err
+	}
+	if strings.TrimSpace(string(data)) == "null" {
+		return contracts, xerror.InvalidInput(xerror.Query).Detail("contracts file must contain an object")
+	}
+	if err := decodeStrictJSON(data, &contracts, "query contracts"); err != nil {
+		return contracts, err
+	}
+	if contracts.ExpectedInputContract != nil && contracts.ExpectedInputContractRef != nil || contracts.OutputContract != nil && contracts.OutputContractRef != nil {
+		return contracts, xerror.InvalidInput(xerror.Query).Detail("inline contract and contract reference are mutually exclusive for each direction")
+	}
+	return contracts, nil
 }

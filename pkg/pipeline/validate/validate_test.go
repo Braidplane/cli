@@ -4482,3 +4482,61 @@ func TestEvaluateEdgeDiagnostics(t *testing.T) {
 		require.Equal(t, "array", diagnostic.Actual["root_shape"])
 	})
 }
+
+func TestDecimalFanOutDeclarations(t *testing.T) {
+	field := func(p, s int) payload.ContractField {
+		return payload.ContractField{Name: "price", Type: model.ContractFieldTypeValueDecimal, Precision: &p, Scale: &s, Required: true}
+	}
+	for _, test := range []struct {
+		name             string
+		left, right      payload.ContractField
+		wantError        bool
+		precision, scale int
+	}{
+		{"intersection", field(8, 2), field(9, 3), false, 8, 2},
+		{"zero capacity", field(1, 1), field(1, 0), true, 0, 0},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			merged := &payload.Contract{Name: "prices-output", Fields: []payload.ContractField{test.left}}
+			err := mergeInferredContract(merged, map[string]slug.Slug{"price": "left"}, map[string][]inferredFieldRequirement{"price": {{toStep: "left", field: test.left}}}, inferredOutputRequirement{toStep: "right", contract: &payload.Contract{Fields: []payload.ContractField{test.right}}})
+			if test.wantError {
+				require.ErrorIs(t, err, ErrContractMismatch)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, test.precision, *merged.Fields[0].Precision)
+			require.Equal(t, test.scale, *merged.Fields[0].Scale)
+		})
+	}
+	merged := mergeInferredField(field(8, 2), payload.ContractField{Name: "price", Type: model.ContractFieldTypeValueInteger})
+	require.Equal(t, model.ContractFieldTypeValueInteger, merged.Type)
+	require.Nil(t, merged.Precision)
+	require.Nil(t, merged.Scale)
+}
+
+func TestDecimalMetadataSurvivesSchemaInference(t *testing.T) {
+	precision, scale := 38, 3
+	original := &payload.Contract{Fields: []payload.ContractField{{Name: "price", Type: model.ContractFieldTypeValueDecimal, Precision: &precision, Scale: &scale, Required: true}}}
+	inferred := outputContractToSchemaContract("prices-output", model.ContractRepresentationRows, model.ContractRootShapeUnknown, original)
+	require.NoError(t, payload.ValidateContractFieldDeclarations(inferred))
+	require.Equal(t, 38, *inferred.Fields[0].Precision)
+	require.Equal(t, 3, *inferred.Fields[0].Scale)
+	result := EvaluateEdgeCompatibility(EdgeLink{FromStep: "prices", ToStep: "calculate"}, inferred, inferred)
+	require.True(t, result.Compatible)
+}
+
+func TestSinkEmptyInputPolicyValidation(t *testing.T) {
+	t.Parallel()
+	for _, policy := range []string{"", "skip", "reject", "ignore"} {
+		t.Run(policy, func(t *testing.T) {
+			sink := testSinkSpec("source", &payload.Contract{Name: "rows", Representation: model.ContractRepresentationRows, Fields: []payload.ContractField{{Name: "id", Type: model.ContractFieldTypeValueInteger, Required: true}}})
+			sink.EmptyInputPolicy = policy
+			err := validateSteps([]pipelinespec.Step{{Kind: "sink", Slug: "write", Sink: sink}})
+			if policy == "ignore" {
+				require.ErrorContains(t, err, "EmptyInputPolicy")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

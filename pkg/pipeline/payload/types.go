@@ -3,6 +3,7 @@ package payload
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -48,6 +49,8 @@ type ContractField struct {
 	Type        model.ContractFieldType   `json:"type"                  yaml:"type"                  validate:"required,contractfieldtype"`
 	Required    bool                      `json:"required"              yaml:"required"`
 	Nullable    bool                      `json:"nullable,omitempty"    yaml:"nullable,omitempty"`
+	Precision   *int                      `json:"precision,omitempty"   yaml:"precision,omitempty"`
+	Scale       *int                      `json:"scale,omitempty"       yaml:"scale,omitempty"`
 	Description string                    `json:"description,omitempty" yaml:"description,omitempty"`
 	Validations *ContractFieldValidations `json:"validations,omitempty" yaml:"validations,omitempty"`
 }
@@ -97,8 +100,29 @@ func (v *ContractFieldValidations) UnmarshalYAML(value *yaml.Node) error {
 		return err
 	}
 
+	for i := 0; i+1 < len(value.Content); i += 2 {
+		key, node := value.Content[i].Value, value.Content[i+1]
+		if key == "min" {
+			decoded.Min = exactYAMLValidationLiteral(node, decoded.Min)
+		}
+		if key == "max" {
+			decoded.Max = exactYAMLValidationLiteral(node, decoded.Max)
+		}
+		if key == "enum" && node.Kind == yaml.SequenceNode {
+			for j, item := range node.Content {
+				decoded.Enum[j] = exactYAMLValidationLiteral(item, decoded.Enum[j])
+			}
+		}
+	}
 	*v = ContractFieldValidations(decoded)
 	return nil
+}
+
+func exactYAMLValidationLiteral(node *yaml.Node, fallback any) any {
+	if (node.Tag == "!!float" || node.Tag == "!!int") && json.Valid([]byte(node.Value)) {
+		return json.Number(node.Value)
+	}
+	return fallback
 }
 
 func rejectNullJSONValidationRules(data []byte) error {
@@ -215,7 +239,16 @@ func CloneContract(contract *Contract) *Contract {
 }
 
 func cloneContractField(field ContractField) ContractField {
-	field.Validations = CloneContractFieldValidations(field.Validations)
+	field.Precision = cloneIntPtr(field.Precision)
+	field.Scale = cloneIntPtr(field.Scale)
+	source := field.Validations
+	field.Validations = CloneContractFieldValidations(source)
+	if field.Type == model.ContractFieldTypeValueDecimal && source != nil {
+		field.Validations.Min, field.Validations.Max = source.Min, source.Max
+		if source.Enum != nil {
+			field.Validations.Enum = append([]any(nil), source.Enum...)
+		}
+	}
 	return field
 }
 
@@ -250,18 +283,15 @@ func cloneValidationLiteral(value any) any {
 	case json.Number:
 		raw := typed.String()
 		if strings.ContainsAny(raw, ".eE") {
-			if parsed, err := typed.Float64(); err == nil {
+			if parsed, err := typed.Float64(); err == nil && math.Abs(parsed) < 0x1p53 {
 				return parsed
 			}
-			return raw
+			return typed
 		}
 		if parsed, err := typed.Int64(); err == nil {
 			return parsed
 		}
-		if parsed, err := typed.Float64(); err == nil {
-			return parsed
-		}
-		return raw
+		return typed
 	case []any:
 		cloned := make([]any, len(typed))
 		for i := range typed {

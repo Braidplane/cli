@@ -400,26 +400,6 @@ func loadLogin(path string) (cliAuthConfig, error) {
 	return cfg, nil
 }
 
-func loadLoginWithCredentialStore(path string, store cliCredentialStore) (cliAuthConfig, error) {
-	cfg, err := loadLogin(path)
-	if err != nil {
-		return cliAuthConfig{}, err
-	}
-	if cfg.ServerURL == "" && cfg.Organization == "" {
-		return cfg, nil
-	}
-	if cfg.APIKey != "" || cfg.PAT != "" {
-		return cfg, nil
-	}
-
-	cfg.APIKey, cfg.PAT, err = loadStoredCLITokens(store, cfg.Organization, cfg.ServerURL)
-	if err != nil {
-		return cliAuthConfig{}, err
-	}
-
-	return cfg, nil
-}
-
 func deleteLoginWithCredentialStore(path string, store cliCredentialStore) error {
 	cfg, err := loadLogin(path)
 	if err != nil {

@@ -539,3 +539,23 @@ func (s failingDeleteCredentialStore) Set(_, _, _, _ string) error {
 func (s failingDeleteCredentialStore) Delete(_, _, _ string) error {
 	return s.err
 }
+
+func loadLoginWithCredentialStore(path string, store cliCredentialStore) (cliAuthConfig, error) {
+	cfg, err := loadLogin(path)
+	if err != nil {
+		return cliAuthConfig{}, err
+	}
+	if cfg.ServerURL == "" && cfg.Organization == "" {
+		return cfg, nil
+	}
+	if cfg.APIKey != "" || cfg.PAT != "" {
+		return cfg, nil
+	}
+
+	cfg.APIKey, cfg.PAT, err = loadStoredCLITokens(store, cfg.Organization, cfg.ServerURL)
+	if err != nil {
+		return cliAuthConfig{}, err
+	}
+
+	return cfg, nil
+}

@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _ContractFieldTypeName = "unknownstringintegernumberbooleanobjectarraydatetime"
+const _ContractFieldTypeName = "unknownstringintegernumberbooleanobjectarraydatetimedecimal"
 
-var _ContractFieldTypeIndex = [...]uint8{0, 7, 13, 20, 26, 33, 39, 44, 52}
+var _ContractFieldTypeIndex = [...]uint8{0, 7, 13, 20, 26, 33, 39, 44, 52, 59}
 
-const _ContractFieldTypeLowerName = "unknownstringintegernumberbooleanobjectarraydatetime"
+const _ContractFieldTypeLowerName = "unknownstringintegernumberbooleanobjectarraydatetimedecimal"
 
 func (i ContractFieldType) String() string {
 	if i < 0 || i >= ContractFieldType(len(_ContractFieldTypeIndex)-1) {
@@ -33,9 +33,10 @@ func _ContractFieldTypeNoOp() {
 	_ = x[ContractFieldTypeValueObject-(5)]
 	_ = x[ContractFieldTypeValueArray-(6)]
 	_ = x[ContractFieldTypeValueDatetime-(7)]
+	_ = x[ContractFieldTypeValueDecimal-(8)]
 }
 
-var _ContractFieldTypeValues = []ContractFieldType{ContractFieldTypeUnknown, ContractFieldTypeValueString, ContractFieldTypeValueInteger, ContractFieldTypeValueNumber, ContractFieldTypeValueBoolean, ContractFieldTypeValueObject, ContractFieldTypeValueArray, ContractFieldTypeValueDatetime}
+var _ContractFieldTypeValues = []ContractFieldType{ContractFieldTypeUnknown, ContractFieldTypeValueString, ContractFieldTypeValueInteger, ContractFieldTypeValueNumber, ContractFieldTypeValueBoolean, ContractFieldTypeValueObject, ContractFieldTypeValueArray, ContractFieldTypeValueDatetime, ContractFieldTypeValueDecimal}
 
 var _ContractFieldTypeNameToValueMap = map[string]ContractFieldType{
 	_ContractFieldTypeName[0:7]:        ContractFieldTypeUnknown,
@@ -54,6 +55,8 @@ var _ContractFieldTypeNameToValueMap = map[string]ContractFieldType{
 	_ContractFieldTypeLowerName[39:44]: ContractFieldTypeValueArray,
 	_ContractFieldTypeName[44:52]:      ContractFieldTypeValueDatetime,
 	_ContractFieldTypeLowerName[44:52]: ContractFieldTypeValueDatetime,
+	_ContractFieldTypeName[52:59]:      ContractFieldTypeValueDecimal,
+	_ContractFieldTypeLowerName[52:59]: ContractFieldTypeValueDecimal,
 }
 
 var _ContractFieldTypeNames = []string{
@@ -65,6 +68,7 @@ var _ContractFieldTypeNames = []string{
 	_ContractFieldTypeName[33:39],
 	_ContractFieldTypeName[39:44],
 	_ContractFieldTypeName[44:52],
+	_ContractFieldTypeName[52:59],
 }
 
 // ContractFieldTypeString retrieves an enum value from the enum constants string name.

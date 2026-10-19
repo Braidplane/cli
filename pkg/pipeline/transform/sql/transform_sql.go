@@ -8,23 +8,27 @@ import (
 
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/parser/opcode"
+	"github.com/pingcap/tidb/pkg/parser/test_driver"
 
+	"github.com/Braidplane/cli/pkg/decimal"
 	"github.com/Braidplane/cli/pkg/model"
 	pipepayload "github.com/Braidplane/cli/pkg/pipeline/payload"
 	"github.com/Braidplane/cli/pkg/xerror"
 )
 
 var (
-	jsonIndexShorthandPattern         = regexp.MustCompile(`->\s*\[\s*(\d+)\s*\]`)
-	transformInputRelationNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+	jsonIndexShorthandPattern          = regexp.MustCompile(`->\s*\[\s*(\d+)\s*\]`)
+	transformInputRelationNamePattern  = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+	normalizedTransformSQLTokenPattern = regexp.MustCompile("`(?:``|[^`])*`|[^\\s`]+")
 )
 
 // ValidateTransformSQL enforces the sql_v1 MVP contract for transform DSL.
 // Returns (warnings, error): warnings are informational hints to surface to the user;
 // they do not block the statement from being accepted.
 //
-// Validation checks SQL syntax and structure (no CTEs, joins, subqueries, etc.) but does not
+// Validation checks the supported SQL syntax and structure but does not
 // infer or validate field types. Type enforcement is handled separately in
 // ValidateOutputContractTypes once datasource context is available.
 func ValidateTransformSQL(sql string) ([]string, error) {
@@ -97,7 +101,7 @@ func ValidateOutputContractTypesWithInputSchemaForOutputKind(
 	if contract == nil {
 		return nil
 	}
-	if dataSourceType == model.DataSourceTypeUnknown {
+	if dataSourceType == model.DataSourceTypeUnknown && len(inputFieldTypes) == 0 {
 		return ErrTypeInput.Detail("unknown datasource type")
 	}
 
@@ -185,6 +189,12 @@ func ValidateOutputContractTypesWithInputSchemaForOutputKind(
 				field.Name,
 			)
 		}
+		if projectedType == model.ContractFieldTypeValueDecimal && field.Type == model.ContractFieldTypeValueDecimal && projected.precision != nil {
+			producer := pipepayload.ContractField{Type: projectedType, Precision: projected.precision, Scale: projected.scale}
+			if !pipepayload.DecimalFieldCompatible(producer, field) {
+				return ErrContractType.Detailf("decimal output field %q has incompatible precision or scale", field.Name)
+			}
+		}
 		if !isCompatibleContractFieldType(projectedType, field.Type) {
 			return ErrContractType.Detailf(
 				"output contract field %q expects %s but projection resolves to %s",
@@ -206,7 +216,7 @@ func InferOutputContractWithInputSchema(
 	dataSourceType model.DataSourceType,
 	inputFieldTypes map[string]model.ContractFieldType,
 ) (*pipepayload.Contract, error) {
-	if dataSourceType == model.DataSourceTypeUnknown {
+	if dataSourceType == model.DataSourceTypeUnknown && len(inputFieldTypes) == 0 {
 		return nil, ErrTypeInput.Detail("unknown datasource type")
 	}
 
@@ -252,10 +262,19 @@ func InferOutputContractWithInputSchema(
 	fields := make([]pipepayload.ContractField, 0, len(fieldNames))
 	for _, fieldName := range fieldNames {
 		fieldType := projectionWithTypes[fieldName].typeForOutputKind(outputKind)
+		if fieldType == model.ContractFieldTypeUnknown {
+			return nil, ErrContractType.Detailf("output contract field %q has uncertain projection type", fieldName)
+		}
+		detail := projectionWithTypes[fieldName]
+		if fieldType == model.ContractFieldTypeValueDecimal && detail.precision == nil {
+			return nil, ErrContractType.Detailf("decimal output field %q requires an explicit output contract or final DECIMAL(p,s) cast", fieldName)
+		}
 		fields = append(fields, pipepayload.ContractField{
-			Name:     fieldName,
-			Type:     fieldType,
-			Nullable: true,
+			Name:      fieldName,
+			Type:      fieldType,
+			Nullable:  true,
+			Precision: detail.precision,
+			Scale:     detail.scale,
 		})
 	}
 
@@ -309,6 +328,9 @@ func validateOutputContractPresence(
 		return err
 	}
 
+	if err := pipepayload.ValidateContractFieldDeclarations(contract); err != nil {
+		return err
+	}
 	seen := make(map[string]struct{}, len(contract.Fields))
 	for _, field := range contract.Fields {
 		if _, exists := seen[field.Name]; exists {
@@ -337,6 +359,8 @@ func validateOutputContractPresence(
 type transformProjectionTypeDetail struct {
 	fieldType       model.ContractFieldType
 	constructedJSON bool
+	precision       *int
+	scale           *int
 }
 
 // typeForOutputKind returns the contract-visible field type after transform
@@ -344,7 +368,7 @@ type transformProjectionTypeDetail struct {
 func (d transformProjectionTypeDetail) typeForOutputKind(
 	outputKind model.TransformOutputKind,
 ) model.ContractFieldType {
-	if outputKind == model.TransformOutputKindCSV {
+	if outputKind == model.TransformOutputKindCSV && d.fieldType != model.ContractFieldTypeValueDecimal {
 		return model.ContractFieldTypeValueString
 	}
 	if d.constructedJSON &&
@@ -410,7 +434,12 @@ func extractTransformProjectionWithTypeDetails(
 			inputFieldTypes,
 			inputAliases,
 		)
+		var precision, scale *int
+		if fieldType == model.ContractFieldTypeValueDecimal {
+			precision, scale = decimalProjectionDeclaration(field.Expr)
+		}
 		result[fieldName] = transformProjectionTypeDetail{
+			precision: precision, scale: scale,
 			fieldType:       fieldType,
 			constructedJSON: isJSONConstructionProjectionExpr(field.Expr),
 		}
@@ -706,6 +735,25 @@ func parseTransformSelect(sql string) (*ast.SelectStmt, []string, error) {
 		return nil, hints, ErrNotSelect
 	}
 
+	// TiDB parses FULL JOIN as an implicit alias followed by an inner join.
+	// Explicit AS full and quoted aliases remain ordinary supported aliases.
+	// Normalize unescapes doubled backticks; mask those escapes for this check
+	// so quoted identifiers remain single tokens without changing the parsed AST.
+	joinCheckSQL := strings.ReplaceAll(normalized, "``", "_")
+	tokens := normalizedTransformSQLTokenPattern.FindAllString(parser.Normalize(joinCheckSQL, "ON"), -1)
+	for i := 1; i+1 < len(tokens); i++ {
+		if tokens[i] != "full" || tokens[i+1] != "join" {
+			continue
+		}
+		switch tokens[i-1] {
+		case "as", "from", "join", "straight_join", ",", "(", ".":
+			// Here full is an explicit alias or the relation name itself.
+			continue
+		default:
+			return nil, hints, ErrFeatureNotAllowed.Detail("FULL JOIN is not allowed")
+		}
+	}
+
 	if err := validateSelectSubset(selectStmt); err != nil {
 		return nil, hints, err
 	}
@@ -787,6 +835,9 @@ func validateSelectBodySubset(selectStmt *ast.SelectStmt, allowTopLevelWith bool
 	if selectStmt.With != nil && !allowTopLevelWith {
 		return ErrFeatureNotAllowed.Detail("nested with clauses are not allowed")
 	}
+	if selectStmt.Distinct {
+		return ErrFeatureNotAllowed.Detail("SELECT DISTINCT is not supported")
+	}
 
 	if selectStmt.Having != nil {
 		return ErrFeatureNotAllowed.Detail("having is not allowed")
@@ -822,6 +873,36 @@ func validateSelectBodySubset(selectStmt *ast.SelectStmt, allowTopLevelWith bool
 	}
 	if visitor.err != nil {
 		return visitor.err
+	}
+	if selectStmt.Fields != nil {
+		projectionVisitor := &disallowedNodeVisitor{projection: true}
+		selectStmt.Fields.Accept(projectionVisitor)
+		if projectionVisitor.err != nil {
+			return projectionVisitor.err
+		}
+	}
+	if selectStmt.OrderBy != nil {
+		projectionVisitor := &disallowedNodeVisitor{projection: true}
+		selectStmt.OrderBy.Accept(projectionVisitor)
+		if projectionVisitor.err != nil {
+			return projectionVisitor.err
+		}
+		projectionFields, err := extractProjectionFieldNames(selectStmt)
+		if err != nil {
+			return err
+		}
+		projectedTypes := make(transformInputFieldTypes, len(projectionFields))
+		for name := range projectionFields {
+			projectedTypes[name] = model.ContractFieldTypeUnknown
+		}
+		for _, item := range selectStmt.OrderBy.Items {
+			if item == nil {
+				continue
+			}
+			if err := validateTransformInputExpressionReferences(item.Expr, projectedTypes, nil); err != nil {
+				return xerror.Wrapf("ORDER BY can reference only unqualified projected fields: %w", err)
+			}
+		}
 	}
 
 	if err := validateGroupBySubset(selectStmt); err != nil {
@@ -1059,8 +1140,8 @@ func validateTransformFromSource(node ast.ResultSetNode) error {
 			return err
 		}
 		if n.Right != nil {
-			if n.Tp != ast.CrossJoin || n.Using != nil || n.NaturalJoin {
-				return ErrFeatureNotAllowed.Detail("only inner joins with ON conditions are allowed")
+			if (n.Tp != ast.CrossJoin && n.Tp != ast.LeftJoin) || n.Using != nil || n.NaturalJoin || (n.Tp == ast.LeftJoin && (n.On == nil || n.On.Expr == nil)) {
+				return ErrFeatureNotAllowed.Detail("only inner/cross joins and LEFT JOIN with ON conditions are allowed")
 			}
 			if err := validateTransformFromSource(n.Right); err != nil {
 				return err
@@ -1075,7 +1156,9 @@ func validateTransformFromSource(node ast.ResultSetNode) error {
 // disallowedNodeVisitor walks the SQL AST to detect features outside the sql_v1 MVP surface
 // (subqueries, window functions, set operations, etc.). It implements tidb's ast.Visitor interface.
 type disallowedNodeVisitor struct {
-	err error
+	err         error
+	projection  bool
+	scalarDepth int
 }
 
 // Enter short-circuits on the first disallowed node so callers get one clear failure reason.
@@ -1085,6 +1168,40 @@ func (v *disallowedNodeVisitor) Enter(n ast.Node) (ast.Node, bool) {
 	}
 
 	switch node := n.(type) {
+	case ast.ValueExpr:
+		if literal, ok := node.GetValue().(*test_driver.MyDecimal); ok {
+			if _, err := decimal.Parse(literal.String()); err != nil {
+				v.err = err
+				return n, true
+			}
+		}
+	case *ast.FuncCastExpr:
+		if node.Tp != nil && node.Tp.GetType() == mysql.TypeNewDecimal {
+			if err := decimal.ValidateDeclaration(node.Tp.GetFlen(), node.Tp.GetDecimal()); err != nil {
+				v.err = err
+				return n, true
+			}
+		}
+	case *ast.BinaryOperationExpr:
+		if v.projection {
+			switch node.Op {
+			case opcode.Plus, opcode.Minus, opcode.Mul, opcode.Div:
+			default:
+				v.err = ErrFeatureNotAllowed.Detailf("projection operator %s is not supported", node.Op)
+				return n, true
+			}
+		}
+	case *ast.CaseExpr:
+		v.err = validateCaseExpression(node)
+		return n, true
+	case *ast.FuncCallExpr:
+		if err := validateNormalizationFunction(node); err != nil {
+			v.err = err
+			return n, true
+		}
+		if isNormalizationFunction(node.FnName.L) {
+			v.scalarDepth++
+		}
 	case *ast.SubqueryExpr:
 		v.err = ErrFeatureNotAllowed.Detail("subqueries are not allowed")
 		return n, true
@@ -1103,6 +1220,10 @@ func (v *disallowedNodeVisitor) Enter(n ast.Node) (ast.Node, bool) {
 		v.err = ErrFeatureNotAllowed.Detail("set operations are not allowed")
 		return n, true
 	case *ast.AggregateFuncExpr:
+		if v.scalarDepth > 0 {
+			v.err = ErrFeatureNotAllowed.Detail("aggregates are not supported inside normalization expressions")
+			return n, true
+		}
 		if err := validateAggregateArgumentSubset(node); err != nil {
 			v.err = err
 			return n, true
@@ -1114,6 +1235,9 @@ func (v *disallowedNodeVisitor) Enter(n ast.Node) (ast.Node, bool) {
 
 // Leave continues traversal unless a disallowed node has already been found.
 func (v *disallowedNodeVisitor) Leave(n ast.Node) (ast.Node, bool) {
+	if fn, ok := n.(*ast.FuncCallExpr); ok && isNormalizationFunction(fn.FnName.L) {
+		v.scalarDepth--
+	}
 	return n, v.err == nil
 }
 
@@ -1123,6 +1247,9 @@ func validateAggregateArgumentSubset(agg *ast.AggregateFuncExpr) error {
 	}
 
 	fn := strings.ToLower(agg.F)
+	if agg.Distinct && fn != ast.AggFuncCount {
+		return ErrFeatureNotAllowed.Detailf("DISTINCT is supported only for COUNT, not %s", fn)
+	}
 	switch fn {
 	case ast.AggFuncCount, ast.AggFuncApproxCountDistinct:
 		if len(agg.Args) == 0 {
@@ -1135,6 +1262,9 @@ func validateAggregateArgumentSubset(agg *ast.AggregateFuncExpr) error {
 		}
 
 		arg := agg.Args[0]
+		if agg.Distinct && !isAggregateColumnArg(arg) {
+			return ErrFeatureNotAllowed.Detail("count aggregate supports only column references at runtime")
+		}
 		if isAggregateColumnArg(arg) || isCountStarLikeArg(arg) {
 			return nil
 		}
@@ -1228,4 +1358,58 @@ func isNumericCastColumnArg(expr ast.ExprNode) bool {
 		strings.Contains(target, "float") ||
 		strings.Contains(target, "double") ||
 		strings.Contains(target, "real")
+}
+
+// Decimal scale proof is available for literals and explicit casts; schema-only
+// field maps and repeating division require a declared contract or final cast.
+func decimalProjectionDeclaration(expr ast.ExprNode) (*int, *int) {
+	if unary, ok := expr.(*ast.UnaryOperationExpr); ok && (unary.Op == opcode.Plus || unary.Op == opcode.Minus) {
+		return decimalProjectionDeclaration(unary.V)
+	}
+	if cast, ok := expr.(*ast.FuncCastExpr); ok && cast.Tp != nil && cast.Tp.GetType() == mysql.TypeNewDecimal {
+		p, s := cast.Tp.GetFlen(), cast.Tp.GetDecimal()
+		return &p, &s
+	}
+	if literal, ok := expr.(ast.ValueExpr); ok {
+		if d, ok := literal.GetValue().(*test_driver.MyDecimal); ok {
+			text := d.String()
+			s := 0
+			if index := strings.IndexByte(text, '.'); index >= 0 {
+				s = len(text) - index - 1
+			}
+			if s > decimal.MaxPrecision {
+				return nil, nil
+			}
+			coefficient := strings.TrimLeft(strings.ReplaceAll(strings.TrimPrefix(text, "-"), ".", ""), "0")
+			p := max(1, s, len(coefficient))
+			return &p, &s
+		}
+		if inferLiteralType(literal.GetValue()) == model.ContractFieldTypeValueInteger {
+			p, s := len(strings.TrimPrefix(fmt.Sprint(literal.GetValue()), "-")), 0
+			return &p, &s
+		}
+	}
+	if binary, ok := expr.(*ast.BinaryOperationExpr); ok {
+		lp, l := decimalProjectionDeclaration(binary.L)
+		rp, r := decimalProjectionDeclaration(binary.R)
+		if lp == nil || rp == nil || l == nil || r == nil {
+			return nil, nil
+		}
+		s := max(*l, *r)
+		p := max(*lp-*l, *rp-*r) + s + 1
+		switch binary.Op {
+		case opcode.Plus, opcode.Minus:
+		case opcode.Mul:
+			s = *l + *r
+			p = *lp + *rp
+		default:
+			return nil, nil
+		}
+		if s > decimal.MaxPrecision {
+			return nil, nil
+		}
+		p = min(p, decimal.MaxPrecision)
+		return &p, &s
+	}
+	return nil, nil
 }

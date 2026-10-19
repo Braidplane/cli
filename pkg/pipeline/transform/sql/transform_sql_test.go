@@ -11,10 +11,6 @@ import (
 	"github.com/Braidplane/cli/pkg/xerror"
 )
 
-type testPayloadProvenance int
-
-const PayloadProvenanceExecutionResult testPayloadProvenance = 1
-
 func executeTransformStepFromPayload(
 	transform *Transform,
 	upstreamPayload *pipepayload.Payload,
@@ -28,7 +24,6 @@ func runtimeRowsPayload(
 	columnNames []string,
 	rowCount int,
 	rows []map[string]any,
-	_ testPayloadProvenance,
 ) *pipepayload.Payload {
 	return &pipepayload.Payload{
 		Representation: model.ContractRepresentationRows,
@@ -36,10 +31,6 @@ func runtimeRowsPayload(
 		RowCount:       rowCount,
 		Rows:           rows,
 	}
-}
-
-func detectJSONRootShape(_ []byte) model.ContractRootShape {
-	return model.ContractRootShapeUnknown
 }
 
 func TestValidateTransformSQL(t *testing.T) {
@@ -1461,7 +1452,6 @@ func TestTransformSQL_NewFeatureValidationRuntimeParity(t *testing.T) {
 			columnNames,
 			len(rows),
 			rows,
-			PayloadProvenanceExecutionResult,
 		)
 	}
 
@@ -1597,7 +1587,7 @@ func TestTransformSQL_NewFeatureValidationRuntimeParity(t *testing.T) {
 
 		require.Equal(
 			t,
-			[]map[string]any{{"amount_inc": float64(2)}, {"amount_inc": float64(3)}},
+			[]map[string]any{{"amount_inc": int64(2)}, {"amount_inc": int64(3)}},
 			transformOutput.Rows,
 		)
 	})
@@ -1869,18 +1859,17 @@ func TestTransformSQL_NewFeatureValidationRuntimeParity(t *testing.T) {
 		require.Equal(t, []map[string]any{{"id": 3}, {"id": 2}}, transformOutput.Rows)
 	})
 
-	t.Run("OrderByUnsupportedExpressionFailsClosedAtRuntime", func(t *testing.T) {
+	t.Run("OrderByUnsupportedExpressionRejectsBeforeRuntime", func(t *testing.T) {
 		t.Parallel()
 
 		sqlText := "SELECT id AS id FROM input ORDER BY ABS(id) DESC"
 		_, err := ValidateTransformSQL(sqlText)
-		require.NoError(t, err)
+		require.ErrorIs(t, err, ErrFeatureNotAllowed)
 
 		upstream := rowsPayload([]string{"id"}, []map[string]any{{"id": 1}, {"id": 3}, {"id": 2}})
 
 		_, err = executeTransformStepFromPayload(&Transform{SQL: sqlText}, upstream)
-		require.Error(t, err)
-		require.ErrorIs(t, err, ErrRuntimeProjectionExpressionUnsupported)
+		require.ErrorIs(t, err, ErrFeatureNotAllowed)
 	})
 
 	t.Run("LimitInvalidLiteralIsRejectedByValidation", func(t *testing.T) {
@@ -1918,14 +1907,13 @@ func TestExecuteTransformStepFromPayload_UpstreamPayloadKinds(t *testing.T) {
 			columnNames,
 			len(rows),
 			rows,
-			PayloadProvenanceExecutionResult,
 		)
 	}
 
 	jsonPayload := func(body string) *pipepayload.Payload {
 		return &pipepayload.Payload{
 			Representation: model.ContractRepresentationJSON,
-			RootShape:      detectJSONRootShape([]byte(body)),
+			RootShape:      model.ContractRootShapeUnknown,
 			Document:       []byte(body),
 		}
 	}
@@ -2041,6 +2029,20 @@ func TestExecuteTransformStepFromPayload_UpstreamPayloadKinds(t *testing.T) {
 		require.ErrorContains(t, err, "headless CSV/array value")
 		require.ErrorIs(t, err, ErrRuntimeHeadlessCSVNamedAccessUnsupported)
 	})
+
+	t.Run("RejectsJSONExtractNamedPathAfterArrayIndex", func(t *testing.T) {
+		t.Parallel()
+
+		upstream := rowsPayload([]string{"csv_row"}, []map[string]any{
+			{"csv_row": []any{map[string]any{"name": "alice"}}},
+		})
+
+		_, err := executeTransformStepFromPayload(&Transform{
+			SQL:        "SELECT json_extract(csv_row, '$[0].name') AS name FROM input",
+			OutputKind: model.TransformOutputKindRows,
+		}, upstream)
+		require.ErrorIs(t, err, ErrRuntimeHeadlessCSVNamedAccessUnsupported)
+	})
 }
 
 // TestPayloadToTransformInput covers payload normalization and input contract validation
@@ -2063,7 +2065,7 @@ func TestPayloadToTransformInput(t *testing.T) {
 	jsonPayload := func(body string) *pipepayload.Payload {
 		return &pipepayload.Payload{
 			Representation: model.ContractRepresentationJSON,
-			RootShape:      detectJSONRootShape([]byte(body)),
+			RootShape:      model.ContractRootShapeUnknown,
 			Document:       []byte(body),
 		}
 	}
@@ -2081,7 +2083,6 @@ func TestPayloadToTransformInput(t *testing.T) {
 			columnNames,
 			len(rows),
 			rows,
-			PayloadProvenanceExecutionResult,
 		)
 	}
 
@@ -2124,8 +2125,8 @@ func TestPayloadToTransformInput(t *testing.T) {
 			payload:  jsonPayload(`[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}]`),
 			contract: nil,
 			wantRows: []map[string]any{
-				{"id": float64(1), "name": "Alice"},
-				{"id": float64(2), "name": "Bob"},
+				{"id": json.Number("1"), "name": "Alice"},
+				{"id": json.Number("2"), "name": "Bob"},
 			},
 			wantCols: []string{"id", "name"},
 			wantErr:  func(t *testing.T, err error) { require.NoError(t, err) },
@@ -2134,7 +2135,7 @@ func TestPayloadToTransformInput(t *testing.T) {
 			name:     "JSON_ObjectSingleRow",
 			payload:  jsonPayload(`{"id":1,"name":"Alice"}`),
 			contract: nil,
-			wantRows: []map[string]any{{"id": float64(1), "name": "Alice"}},
+			wantRows: []map[string]any{{"id": json.Number("1"), "name": "Alice"}},
 			wantCols: []string{"id", "name"},
 			wantErr:  func(t *testing.T, err error) { require.NoError(t, err) },
 		},
@@ -2144,7 +2145,7 @@ func TestPayloadToTransformInput(t *testing.T) {
 				`[{"id":1,"profile":{"name":"Alice","locale":"en"}}]`,
 			),
 			wantRows: []map[string]any{
-				{"id": float64(1), "profile": map[string]any{"name": "Alice", "locale": "en"}},
+				{"id": json.Number("1"), "profile": map[string]any{"name": "Alice", "locale": "en"}},
 			},
 			wantCols: []string{"id", "profile"},
 			wantErr:  func(t *testing.T, err error) { require.NoError(t, err) },
@@ -2153,7 +2154,7 @@ func TestPayloadToTransformInput(t *testing.T) {
 			name:    "JSON_ArrayPreservesNestedArrayField",
 			payload: jsonPayload(`[{"id":1,"tags":["a","b"]}]`),
 			wantRows: []map[string]any{
-				{"id": float64(1), "tags": []any{"a", "b"}},
+				{"id": json.Number("1"), "tags": []any{"a", "b"}},
 			},
 			wantCols: []string{"id", "tags"},
 			wantErr:  func(t *testing.T, err error) { require.NoError(t, err) },
@@ -2211,7 +2212,7 @@ func TestPayloadToTransformInput(t *testing.T) {
 			name:     "JSON_RequiredFlatFieldPresent_Passes",
 			payload:  jsonPayload(`[{"id":1,"email":"alice@example.com"}]`),
 			contract: contract("id", true, "email", true),
-			wantRows: []map[string]any{{"id": float64(1), "email": "alice@example.com"}},
+			wantRows: []map[string]any{{"id": json.Number("1"), "email": "alice@example.com"}},
 			wantErr:  func(t *testing.T, err error) { require.NoError(t, err) },
 		},
 		{
@@ -2227,7 +2228,7 @@ func TestPayloadToTransformInput(t *testing.T) {
 			name:     "JSON_OptionalFieldMissing_Passes",
 			payload:  jsonPayload(`[{"id":1}]`),
 			contract: contract("id", true, "email", false),
-			wantRows: []map[string]any{{"id": float64(1)}},
+			wantRows: []map[string]any{{"id": json.Number("1")}},
 			wantErr:  func(t *testing.T, err error) { require.NoError(t, err) },
 		},
 		{
@@ -2235,7 +2236,7 @@ func TestPayloadToTransformInput(t *testing.T) {
 			payload:  jsonPayload(`[{"id":1,"profile":{"name":"Alice"}}]`),
 			contract: contract("profile.name", true),
 			wantRows: []map[string]any{
-				{"id": float64(1), "profile": map[string]any{"name": "Alice"}},
+				{"id": json.Number("1"), "profile": map[string]any{"name": "Alice"}},
 			},
 			wantErr: func(t *testing.T, err error) { require.NoError(t, err) },
 		},
@@ -2262,7 +2263,7 @@ func TestPayloadToTransformInput(t *testing.T) {
 					},
 				}},
 			},
-			wantRows: []map[string]any{{"id": float64(9007199254740992)}},
+			wantRows: []map[string]any{{"id": json.Number("9007199254740993")}},
 			wantErr:  func(t *testing.T, err error) { require.NoError(t, err) },
 		},
 

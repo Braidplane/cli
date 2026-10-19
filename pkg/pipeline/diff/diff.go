@@ -110,6 +110,7 @@ func diffStep(before, after pipelinespec.Step) []FieldChange {
 		)
 	}
 	if before.Input != nil && after.Input != nil {
+		changes = appendIfChanged(changes, prefix+".input.output_contract_ref", formatDynamicValue(before.Input.OutputContractRef), formatDynamicValue(after.Input.OutputContractRef))
 		changes = append(
 			changes,
 			diffOutputContractFields(
@@ -156,6 +157,31 @@ func diffStep(before, after pipelinespec.Step) []FieldChange {
 		)
 	}
 	if before.Transform != nil && after.Transform != nil {
+		names := make(map[string]bool)
+		for name := range before.Transform.InputContracts {
+			names[name] = true
+		}
+		for name := range after.Transform.InputContracts {
+			names[name] = true
+		}
+		ordered := make([]string, 0, len(names))
+		for name := range names {
+			ordered = append(ordered, name)
+		}
+		sort.Strings(ordered)
+		for _, name := range ordered {
+			var beforeContract, afterContract *payload.Contract
+			var beforeRef, afterRef *pipelinespec.ODCSContractRef
+			if attachment := before.Transform.InputContracts[name]; attachment != nil {
+				beforeContract, beforeRef = attachment.Contract, attachment.ContractRef
+			}
+			if attachment := after.Transform.InputContracts[name]; attachment != nil {
+				afterContract, afterRef = attachment.Contract, attachment.ContractRef
+			}
+			field := prefix + ".transform.input_contracts." + name
+			changes = append(changes, diffOutputContractFields(field+".contract", beforeContract, afterContract)...)
+			changes = appendIfChanged(changes, field+".contract_ref", formatDynamicValue(beforeRef), formatDynamicValue(afterRef))
+		}
 		changes = appendIfChanged(changes, prefix+".transform.sql",
 			before.Transform.SQL, after.Transform.SQL)
 		changes = appendIfChanged(changes, prefix+".transform.output_kind",
@@ -184,6 +210,7 @@ func diffStep(before, after pipelinespec.Step) []FieldChange {
 		)
 	}
 	if before.Sink != nil && after.Sink != nil {
+		changes = append(changes, diffOutputContractFields(prefix+".sink.input_contract", before.Sink.InputContract, after.Sink.InputContract)...)
 		changes = appendIfChanged(
 			changes,
 			prefix+".sink.data_source_ref",

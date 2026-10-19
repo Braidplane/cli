@@ -161,7 +161,7 @@ func (c *setProjectPipelineBackendCommand) Run(output *cliOutput, runtime *cliRu
 		return xerror.ValidationFailed().Detail("mode must be adopt_existing or create_from_template")
 	}
 	var owner, repositoryName *string
-	if mode == api.CreateFromTemplate {
+	if mode == api.SetProjectPipelineBackendRequestModeCreateFromTemplate {
 		if strings.TrimSpace(c.ProviderOwner) == "" || strings.TrimSpace(c.RepositoryName) == "" {
 			return xerror.ValidationFailed().Detail("provider-owner and repository-name are required for create_from_template")
 		}

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Braidplane/cli/pkg/decimal"
 	"github.com/Braidplane/cli/pkg/model"
 	formpayload "github.com/Braidplane/cli/pkg/payload/form"
 	"github.com/Braidplane/cli/pkg/xerror"
@@ -120,6 +121,8 @@ func InferFieldType(val any) model.ContractFieldType {
 		return model.ContractFieldTypeUnknown
 	}
 	switch v := val.(type) {
+	case decimal.Value:
+		return model.ContractFieldTypeValueDecimal
 	case string:
 		return model.ContractFieldTypeValueString
 	case bool:

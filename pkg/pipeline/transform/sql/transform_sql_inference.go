@@ -1,14 +1,45 @@
 package sql
 
 import (
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/opcode"
+	"github.com/pingcap/tidb/pkg/parser/test_driver"
 
+	"github.com/Braidplane/cli/pkg/decimal"
 	"github.com/Braidplane/cli/pkg/model"
 	"github.com/Braidplane/cli/pkg/nativetype"
+	pipepayload "github.com/Braidplane/cli/pkg/pipeline/payload"
 	"github.com/Braidplane/cli/pkg/xerror"
 )
+
+var nativeDecimalPattern = regexp.MustCompile(`^(?:numeric|bignumeric|decimal|number)\(([0-9]+),\s*([0-9]+)\)$`)
+
+// ContractFieldFromNative retains bounded precision/scale when the provider declares it.
+// Unqualified native types keep their existing compatibility mapping.
+func ContractFieldFromNative(dataSourceType model.DataSourceType, name, nativeType string) pipepayload.ContractField {
+	field := pipepayload.ContractField{Name: name, Type: ContractFieldTypeFromNative(dataSourceType, nativeType)}
+	if dataSourceType != model.DataSourceTypePostgres && dataSourceType != model.DataSourceTypeMySQL && dataSourceType != model.DataSourceTypeBigQuery {
+		return field
+	}
+	if len(nativeType) > 128 {
+		return field
+	}
+	match := nativeDecimalPattern.FindStringSubmatch(strings.ToLower(strings.TrimSpace(nativeType)))
+	if match == nil {
+		return field
+	}
+	precision, pe := strconv.Atoi(match[1])
+	scale, se := strconv.Atoi(match[2])
+	if pe != nil || se != nil || decimal.ValidateDeclaration(precision, scale) != nil {
+		return field
+	}
+	field.Type, field.Precision, field.Scale = model.ContractFieldTypeValueDecimal, &precision, &scale
+	return field
+}
 
 const (
 	aggFuncCount         = "count"
@@ -181,31 +212,6 @@ func validateTransformInputReferencesWithRelationScope(
 		for _, item := range selectStmt.GroupBy.Items {
 			if item == nil {
 				continue
-			}
-			if err := validateTransformInputExpressionReferences(item.Expr, inputFieldTypes, inputAliases); err != nil {
-				return err
-			}
-		}
-	}
-
-	if selectStmt.OrderBy != nil {
-		projectionFields, err := extractProjectionFieldNames(selectStmt)
-		if err != nil {
-			return err
-		}
-		for _, item := range selectStmt.OrderBy.Items {
-			if item == nil {
-				continue
-			}
-			if orderByColumn, ok := item.Expr.(*ast.ColumnNameExpr); ok &&
-				orderByColumn != nil &&
-				orderByColumn.Name != nil &&
-				orderByColumn.Name.Table.L == "" {
-				// ORDER BY may refer to a projection alias, which is not an
-				// input column and should not be checked against transform.inputs.
-				if _, ok := projectionFields[orderByColumn.Name.Name.L]; ok {
-					continue
-				}
 			}
 			if err := validateTransformInputExpressionReferences(item.Expr, inputFieldTypes, inputAliases); err != nil {
 				return err
@@ -386,7 +392,8 @@ func inferTransformFieldTypeForDataSource(
 // schema conversion, not the semantics of the transform expression itself.
 func supportsTransformRowInference(dataSourceType model.DataSourceType) bool {
 	switch dataSourceType {
-	case model.DataSourceTypePostgres,
+	case model.DataSourceTypeUnknown,
+		model.DataSourceTypePostgres,
 		model.DataSourceTypeMySQL,
 		model.DataSourceTypeBigQuery,
 		model.DataSourceTypeMongoDB,
@@ -396,6 +403,7 @@ func supportsTransformRowInference(dataSourceType model.DataSourceType) bool {
 		model.DataSourceTypeGit,
 		model.DataSourceTypeGithub,
 		model.DataSourceTypeGitlab,
+		model.DataSourceTypeGoogleWorkspace,
 		model.DataSourceTypeS3:
 		return true
 	default:
@@ -415,6 +423,14 @@ func inferTransformRowFieldType(
 		return model.ContractFieldTypeUnknown
 	}
 
+	if caseExpr, ok := expr.(*ast.CaseExpr); ok {
+		args := []ast.ExprNode{caseExpr.ElseClause}
+		for _, clause := range caseExpr.WhenClauses {
+			args = append(args, clause.Result)
+		}
+		return inferNormalizationType(args, inputFieldTypes, inputAliases)
+	}
+
 	if castExpr, ok := expr.(*ast.FuncCastExpr); ok && castExpr != nil {
 		if inferTransformRowFieldType(castExpr.Expr, inputFieldTypes, inputAliases) ==
 			model.ContractFieldTypeUnknown || castExpr.Tp == nil {
@@ -423,15 +439,38 @@ func inferTransformRowFieldType(
 		return contractFieldTypeFromTransformCast(castExpr.Tp.String())
 	}
 
+	if unary, ok := expr.(*ast.UnaryOperationExpr); ok && (unary.Op == opcode.Plus || unary.Op == opcode.Minus) {
+		if inferTransformRowFieldType(unary.V, inputFieldTypes, inputAliases) == model.ContractFieldTypeValueDecimal {
+			return model.ContractFieldTypeValueDecimal
+		}
+		return model.ContractFieldTypeUnknown
+	}
 	if valueExpr, ok := expr.(ast.ValueExpr); ok {
 		return inferLiteralType(valueExpr.GetValue())
 	}
 
 	if binaryExpr, ok := expr.(*ast.BinaryOperationExpr); ok && binaryExpr != nil {
-		if isNumericBinaryExpression(
-			inferTransformRowFieldType(binaryExpr.L, inputFieldTypes, inputAliases),
-			inferTransformRowFieldType(binaryExpr.R, inputFieldTypes, inputAliases),
-		) {
+		leftType := inferTransformRowFieldType(binaryExpr.L, inputFieldTypes, inputAliases)
+		rightType := inferTransformRowFieldType(binaryExpr.R, inputFieldTypes, inputAliases)
+		switch binaryExpr.Op {
+		case opcode.Plus, opcode.Minus, opcode.Mul, opcode.Div:
+			// NULL is a nullable numeric operand, not an unknown schema type.
+			if literal, ok := binaryExpr.L.(ast.ValueExpr); ok && literal.GetValue() == nil {
+				leftType = model.ContractFieldTypeValueNumber
+			}
+			if literal, ok := binaryExpr.R.(ast.ValueExpr); ok && literal.GetValue() == nil {
+				rightType = model.ContractFieldTypeValueNumber
+			}
+		default:
+			return model.ContractFieldTypeUnknown
+		}
+		if isNumericBinaryExpression(leftType, rightType) {
+			if leftType == model.ContractFieldTypeValueDecimal || rightType == model.ContractFieldTypeValueDecimal {
+				if (leftType == model.ContractFieldTypeValueNumber && !isNullLiteral(binaryExpr.L)) || (rightType == model.ContractFieldTypeValueNumber && !isNullLiteral(binaryExpr.R)) {
+					return model.ContractFieldTypeUnknown
+				}
+				return model.ContractFieldTypeValueDecimal
+			}
 			return model.ContractFieldTypeValueNumber
 		}
 		return model.ContractFieldTypeUnknown
@@ -450,6 +489,15 @@ func inferTransformRowFieldType(
 	if fn, ok := expr.(*ast.FuncCallExpr); ok && fn != nil && fn.FnName.L != "" {
 		fnName := strings.ToLower(fn.FnName.L)
 		switch fnName {
+		case "coalesce":
+			return inferNormalizationType(fn.Args, inputFieldTypes, inputAliases)
+		case "nullif":
+			return inferTransformRowFieldType(fn.Args[0], inputFieldTypes, inputAliases)
+		case "trim", "lower", "upper", "str_to_date", "date_format":
+			if inferTransformRowFieldType(fn.Args[0], inputFieldTypes, inputAliases) == model.ContractFieldTypeValueString || isNullLiteral(fn.Args[0]) {
+				return model.ContractFieldTypeValueString
+			}
+			return model.ContractFieldTypeUnknown
 		case aggFuncCount, aggFuncCountDistinct, aggFuncSum, aggFuncAvg, ast.AggFuncMax, ast.AggFuncMin:
 			return inferTransformAggregateFieldType(
 				fnName,
@@ -457,10 +505,6 @@ func inferTransformRowFieldType(
 				inputFieldTypes,
 				inputAliases,
 			)
-		case "coalesce", "nullif", "ifnull":
-			if len(fn.Args) > 0 {
-				return inferTransformRowFieldType(fn.Args[0], inputFieldTypes, inputAliases)
-			}
 		case jsonFuncObject:
 			return model.ContractFieldTypeValueObject
 		case jsonFuncArray:
@@ -502,6 +546,9 @@ func inferTransformAggregateFieldType(
 			) {
 			return model.ContractFieldTypeUnknown
 		}
+		if inferTransformRowFieldType(args[0], inputFieldTypes, inputAliases) == model.ContractFieldTypeValueDecimal {
+			return model.ContractFieldTypeValueDecimal
+		}
 		return model.ContractFieldTypeValueNumber
 	default:
 		return model.ContractFieldTypeUnknown
@@ -520,8 +567,9 @@ func contractFieldTypeFromTransformCast(target string) model.ContractFieldType {
 		return model.ContractFieldTypeValueString
 	case strings.Contains(target, "int"):
 		return model.ContractFieldTypeValueInteger
-	case strings.Contains(target, "numeric"),
-		strings.Contains(target, "decimal"),
+	case strings.Contains(target, "decimal"), strings.Contains(target, "numeric"):
+		return model.ContractFieldTypeValueDecimal
+	case
 		strings.Contains(target, "float"),
 		strings.Contains(target, "double"),
 		strings.Contains(target, "real"):
@@ -533,6 +581,8 @@ func contractFieldTypeFromTransformCast(target string) model.ContractFieldType {
 
 func inferLiteralType(value any) model.ContractFieldType {
 	switch value.(type) {
+	case *test_driver.MyDecimal:
+		return model.ContractFieldTypeValueDecimal
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return model.ContractFieldTypeValueInteger
 	case float32, float64:
@@ -555,7 +605,7 @@ func isNumericBinaryExpression(
 
 func isNumericTransformType(t model.ContractFieldType) bool {
 	return t == model.ContractFieldTypeValueInteger ||
-		t == model.ContractFieldTypeValueNumber
+		t == model.ContractFieldTypeValueNumber || t == model.ContractFieldTypeValueDecimal
 }
 
 // ContractFieldTypeFromNative maps datasource-native field type strings
@@ -565,6 +615,9 @@ func ContractFieldTypeFromNative(
 	nativeType string,
 ) model.ContractFieldType {
 	n := strings.ToLower(strings.TrimSpace(nativeType))
+	if dataSourceType == model.DataSourceTypeBigQuery && (strings.HasPrefix(n, "numeric(") || strings.HasPrefix(n, "bignumeric(")) {
+		return model.ContractFieldTypeValueString
+	}
 	if n == "" {
 		return model.ContractFieldTypeUnknown
 	}
@@ -800,4 +853,9 @@ func (inputFieldTypes transformInputFieldTypes) resolveColumnReference(
 	}
 
 	return model.ContractFieldTypeUnknown, false, false
+}
+
+func isNullLiteral(expr ast.ExprNode) bool {
+	literal, ok := expr.(ast.ValueExpr)
+	return ok && literal.GetValue() == nil
 }

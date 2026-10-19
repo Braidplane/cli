@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/Braidplane/cli/pkg/decimal"
 )
 
 func maxInt() int {
@@ -81,6 +83,8 @@ func estimateTransformValueBytes(
 	}
 
 	switch typed := value.(type) {
+	case decimal.Value:
+		return typed.EstimatedBytes(), nil
 	case nil:
 		return 4, nil
 	case string:
@@ -172,4 +176,22 @@ func checkOutputBytes(size int64, budget *executionBudget) error {
 	}
 	budget.outputBytes = size
 	return nil
+}
+
+func chargeDecimalValue(value any, budget *executionBudget) (any, error) {
+	if typed, ok := value.(decimal.Value); ok && budget != nil {
+		if typed.Rounded() {
+			budget.roundedDecimalValues++
+		}
+		if typed.Inexact() {
+			budget.inexactDecimalValues++
+		}
+		if err := budget.chargeWork(1); err != nil {
+			return nil, err
+		}
+		if err := budget.chargeIntermediate(0, typed.EstimatedBytes()); err != nil {
+			return nil, err
+		}
+	}
+	return value, nil
 }

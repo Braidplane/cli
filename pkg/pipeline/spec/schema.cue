@@ -28,10 +28,10 @@ import (
 #StepInput: #Slug
 
 // Source data source operation types. SQL covers PostgreSQL and MySQL sources.
-#QueryOperationType: "sql" | "bigquery" | "snowflake" | "http" | "hubspot" | "ftp" | "mongodb" | "git" | "s3"
+#QueryOperationType: "sql" | "bigquery" | "google_workspace" | "snowflake" | "http" | "hubspot" | "ftp" | "mongodb" | "git" | "s3"
 
 // Sink operation types. HubSpot is intentionally source-only in the current pipeline contract.
-#SinkOperationType: "sql" | "bigquery" | "snowflake" | "http" | "ftp" | "mongodb" | "git" | "s3"
+#SinkOperationType: "sql" | "bigquery" | "google_workspace" | "snowflake" | "http" | "ftp" | "mongodb" | "git" | "s3"
 
 #OperationRefTarget: {
 	operation_ref:     #Slug
@@ -47,7 +47,7 @@ import (
 
 #ContractRepresentation: "rows" | "json" | "csv" | "file" | "multipart_form"
 #ContractRootShape:      "object" | "array"
-#ContractFieldType:      "string" | "integer" | "number" | "boolean" | "object" | "array" | "datetime"
+#ContractFieldType:      "string" | "integer" | "number" | "decimal" | "boolean" | "object" | "array" | "datetime"
 #ContractFieldFormat:    "email" | "uuid" | "url"
 #RFC3339DateTime:        string & time.Format(time.RFC3339)
 
@@ -187,6 +187,11 @@ import (
 	type:         "number"
 	validations?: #NumberFieldValidations
 } | {
+	type: "decimal"
+	precision: int & >=1 & <=38
+	scale: int & >=0 & <=precision
+	validations?: #NumberFieldValidations
+} | {
 	type:         "boolean"
 	validations?: #BooleanFieldValidations
 } | {
@@ -208,6 +213,11 @@ import (
 	validations?: #IntegerFieldValueValidations
 } | {
 	type:         "number"
+	validations?: #NumberFieldValueValidations
+} | {
+	type: "decimal"
+	precision: int & >=1 & <=38
+	scale: int & >=0 & <=precision
 	validations?: #NumberFieldValueValidations
 } | {
 	type:         "boolean"
@@ -274,6 +284,14 @@ import (
 	fields: [...#SchemaContractFieldWithoutValidations] & [_, ...]
 })
 
+#ODCSContractRef: {
+	contract_slug:   #Slug
+	revision_slug:   #Slug & !="latest"
+	schema_object_id: string & !=""
+	representation?: #ContractRepresentation
+	root_shape?:     #ContractRootShape
+}
+
 #TransformSchemaContract: ({
 	name?:           string & !=""
 	representation?: "rows" | "csv"
@@ -315,11 +333,14 @@ import (
 	kind:  "input"
 	slug:  #Slug
 	name?: string
-	input: {
-		output_contract: #SchemaContract & {
+	input: ({
+		output_contract: #SchemaContract & {representation: "json"}
+	} | {
+		output_contract_ref: #ODCSContractRef & {
 			representation: "json"
+			root_shape: #ContractRootShape
 		}
-	}
+	})
 }
 
 #QueryStep: {
@@ -340,11 +361,17 @@ import (
 		if operation_type != "http" && operation_type != "mongodb" {
 			output_contract?: #SchemaContractWithoutMultipart
 		}
+		output_contract_ref?: #ODCSContractRef
+		if output_contract_ref != _|_ {
+			output_contract?: null
+		}
 	} & (#OperationRefTarget | #OperationInlineTarget)
 }
 
 #TransformOutputKind: "rows" | "json" | "csv"
 #TransformInputName:  string & =~"^[a-zA-Z_][a-zA-Z0-9_]*$"
+
+#InputContractAttachment: {contract: #TransformSchemaContract} | {contract_ref: #ODCSContractRef & {representation?: "rows" | "json" | "csv"}}
 
 #TransformStep: {
 	kind:  "transform"
@@ -356,6 +383,19 @@ import (
 		output_kind:      #TransformOutputKind
 		input_contract?:  #TransformSchemaContract
 		output_contract?: #TransformSchemaContract
+		input_contract_ref?: #ODCSContractRef
+		output_contract_ref?: #ODCSContractRef
+		input_contracts?: close({for name, _ in inputs { "\(name)"?: #InputContractAttachment }}) & struct.MinFields(1)
+		if input_contracts != _|_ {
+			input_contract?: null
+			input_contract_ref?: null
+		}
+		if input_contract_ref != _|_ {
+			input_contract?: null
+		}
+		if output_contract_ref != _|_ {
+			output_contract?: null
+		}
 	}
 }
 
@@ -366,10 +406,15 @@ import (
 	sink: {
 		input:            #StepInput
 		input_contract?:  #SchemaContract
+		input_contract_ref?: #ODCSContractRef
+		if input_contract_ref != _|_ {
+			input_contract?: null
+		}
 		backend?:         "noop" | "ftp" | "db" | "http" | "mongo" | "s3"
 		data_source_ref:  #Slug
 		operation_type:   #SinkOperationType
 		config?: [string]: _
+		empty_input_policy?: "skip" | "reject"
 		idempotency_class: "naturally_idempotent" | "idempotent_with_key" | "deduplicated_by_ledger" | "unsafe"
 		if operation_type != "http" {
 			input_contract?: #SchemaContractWithoutMultipart

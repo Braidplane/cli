@@ -48,6 +48,35 @@ func baselinePipeline() *pipelinespec.Pipeline {
 	}
 }
 
+func TestSinkInputContractAcceptanceChanges(t *testing.T) {
+	field := payload.ContractField{Name: "id", Type: model.ContractFieldTypeValueInteger}
+	required, nullable := field, field
+	required.Required = true
+	nullable.Nullable = true
+	for _, tc := range []struct {
+		name          string
+		before, after []payload.ContractField
+		severity      Severity
+	}{
+		{"required addition", nil, []payload.ContractField{required}, SeverityBreaking},
+		{"optional addition", nil, []payload.ContractField{field}, SeverityWarning},
+		{"removal", []payload.ContractField{required}, nil, SeverityWarning},
+		{"required tightening", []payload.ContractField{field}, []payload.ContractField{required}, SeverityBreaking},
+		{"required relaxation", []payload.ContractField{required}, []payload.ContractField{field}, SeverityWarning},
+		{"nullability tightening", []payload.ContractField{nullable}, []payload.ContractField{field}, SeverityBreaking},
+		{"nullability relaxation", []payload.ContractField{field}, []payload.ContractField{nullable}, SeverityWarning},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pipeline := func(fields []payload.ContractField) *pipelinespec.Pipeline {
+				return &pipelinespec.Pipeline{Steps: []pipelinespec.Step{{Slug: "store", Kind: "sink", Sink: &pipelinespec.SinkSpec{InputContract: &payload.Contract{Fields: fields}}}}}
+			}
+			result := Check(Diff(pipeline(tc.before), pipeline(tc.after)))
+			require.Equal(t, tc.severity, result.Severity)
+			require.Equal(t, tc.severity == SeverityBreaking, ShouldBlockDiff(pipeline(tc.after), result))
+		})
+	}
+}
+
 // --- Diff tests ---
 
 func TestDiff(t *testing.T) {
@@ -954,4 +983,31 @@ func TestShouldBlockDiff(t *testing.T) {
 			require.Equal(t, tc.wantBlock, blocked)
 		})
 	}
+}
+
+func TestCompositionReferenceChangesAreNotSafe(t *testing.T) {
+	ref := func(revision string) *pipelinespec.ODCSContractRef {
+		if revision == "" {
+			return nil
+		}
+		return &pipelinespec.ODCSContractRef{ContractSlug: "orders", RevisionSlug: must.Slug(revision), SchemaObjectID: "row"}
+	}
+	for _, port := range []string{"event", "named"} {
+		for _, revisions := range [][2]string{{"", "v1"}, {"v1", ""}, {"v1", "v2"}} {
+			t.Run(port+"/"+revisions[0]+"/"+revisions[1], func(t *testing.T) {
+				p := func(revision string) *pipelinespec.Pipeline {
+					step := pipelinespec.Step{Slug: "event", Kind: "input", Input: &pipelinespec.InputSpec{OutputContractRef: ref(revision)}}
+					if port == "named" {
+						step = pipelinespec.Step{Slug: "audit", Kind: "transform", Transform: &pipelinespec.TransformSpec{InputContracts: map[string]*pipelinespec.InputContractAttachment{"orders": {ContractRef: ref(revision)}}}}
+					}
+					return &pipelinespec.Pipeline{Steps: []pipelinespec.Step{step}}
+				}
+				check := Check(Diff(p(revisions[0]), p(revisions[1])))
+				require.Equal(t, SeverityBreaking, check.Severity)
+			})
+		}
+	}
+	before := &pipelinespec.Pipeline{Steps: []pipelinespec.Step{{Slug: "audit", Kind: "transform", Transform: &pipelinespec.TransformSpec{InputContracts: map[string]*pipelinespec.InputContractAttachment{"orders": {Contract: &payload.Contract{Name: "before", Fields: []payload.ContractField{{Name: "id", Type: model.ContractFieldTypeValueInteger}}}}}}}}}
+	after := &pipelinespec.Pipeline{Steps: []pipelinespec.Step{{Slug: "audit", Kind: "transform", Transform: &pipelinespec.TransformSpec{InputContracts: map[string]*pipelinespec.InputContractAttachment{"orders": {Contract: &payload.Contract{Name: "after", Fields: []payload.ContractField{{Name: "id", Type: model.ContractFieldTypeValueInteger}}}}}}}}}
+	require.Equal(t, SeverityWarning, Check(Diff(before, after)).Severity)
 }

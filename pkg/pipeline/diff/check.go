@@ -110,6 +110,9 @@ func (r *CheckResult) Format() string {
 // severityForStepChange classifies the impact of a single modified step field.
 func severityForStepChange(change FieldChange) Severity {
 	field := change.Field
+	if strings.HasSuffix(field, ".input.output_contract_ref") || strings.HasSuffix(field, ".contract_ref") {
+		return SeverityBreaking
+	}
 	if strings.Contains(field, ".kind") ||
 		strings.HasSuffix(field, ".input") ||
 		strings.HasSuffix(field, ".query") ||
@@ -118,12 +121,30 @@ func severityForStepChange(change FieldChange) Severity {
 		return SeverityBreaking
 	}
 	if strings.Contains(field, ".input.output_contract.") ||
+		strings.Contains(field, ".transform.input_contracts.") ||
 		strings.Contains(field, ".transform.output_contract.") ||
 		strings.Contains(field, ".transform.input_contract.") ||
-		strings.Contains(field, ".query.output_contract.") {
+		strings.Contains(field, ".query.output_contract.") ||
+		strings.Contains(field, ".sink.input_contract.") {
 		if strings.HasSuffix(field, ".representation") ||
 			strings.HasSuffix(field, ".root_shape") {
 			return SeverityBreaking
+		}
+		if strings.Contains(field, ".sink.input_contract.") {
+			switch {
+			case change.After == absentValue:
+				return SeverityWarning
+			case change.Before == absentValue:
+				if strings.Contains(change.After, "(required=true,") {
+					return SeverityBreaking
+				}
+				return SeverityWarning
+			case strings.HasSuffix(field, ".nullable"):
+				if change.Before == boolTextTrue && change.After == boolTextFalse {
+					return SeverityBreaking
+				}
+				return SeverityWarning
+			}
 		}
 		if change.After == absentValue {
 			return SeverityBreaking
@@ -156,9 +177,11 @@ func severityForStepChange(change FieldChange) Severity {
 			return SeverityWarning
 		}
 		if strings.Contains(field, ".input.output_contract.") ||
+			strings.Contains(field, ".transform.input_contracts.") ||
 			strings.Contains(field, ".transform.output_contract.") ||
 			strings.Contains(field, ".transform.input_contract.") ||
-			strings.Contains(field, ".query.output_contract.") {
+			strings.Contains(field, ".query.output_contract.") ||
+			strings.Contains(field, ".sink.input_contract.") {
 			return SeverityWarning
 		}
 	}

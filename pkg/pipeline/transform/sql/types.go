@@ -42,6 +42,7 @@ type Transform struct {
 	SQL            string
 	OutputKind     model.TransformOutputKind
 	InputContract  *pipepayload.Contract
+	InputContracts map[string]*pipepayload.Contract
 	OutputContract *pipepayload.Contract
 }
 
@@ -60,13 +61,15 @@ type Limits struct {
 
 // Usage contains only aggregate execution measurements safe for metrics.
 type Usage struct {
-	Work              int64
-	IntermediateRows  int64
-	IntermediateBytes int64
-	OutputRows        int
-	OutputBytes       int64
-	MaxDepth          int
-	Duration          time.Duration
+	Work                 int64
+	IntermediateRows     int64
+	IntermediateBytes    int64
+	OutputRows           int
+	OutputBytes          int64
+	MaxDepth             int
+	Duration             time.Duration
+	RoundedDecimalValues int64
+	InexactDecimalValues int64
 }
 
 // Observer receives aggregate usage and the final error without payload data.
@@ -166,14 +169,16 @@ func validateLimits(limits Limits) error {
 }
 
 type executionBudget struct {
-	ctx              context.Context
-	limits           Limits
-	work             int64
-	intermediateRows int64
-	intermediateSize int64
-	outputRows       int
-	outputBytes      int64
-	maxDepth         int
+	ctx                  context.Context
+	limits               Limits
+	work                 int64
+	intermediateRows     int64
+	intermediateSize     int64
+	outputRows           int
+	outputBytes          int64
+	maxDepth             int
+	roundedDecimalValues int64
+	inexactDecimalValues int64
 }
 
 func newExecutionBudget(ctx context.Context, limits Limits) *executionBudget {
@@ -210,12 +215,14 @@ func (b *executionBudget) usage() Usage {
 		return Usage{}
 	}
 	return Usage{
-		Work:              b.work,
-		IntermediateRows:  b.intermediateRows,
-		IntermediateBytes: b.intermediateSize,
-		OutputRows:        b.outputRows,
-		OutputBytes:       b.outputBytes,
-		MaxDepth:          b.maxDepth,
+		Work:                 b.work,
+		IntermediateRows:     b.intermediateRows,
+		IntermediateBytes:    b.intermediateSize,
+		OutputRows:           b.outputRows,
+		OutputBytes:          b.outputBytes,
+		MaxDepth:             b.maxDepth,
+		RoundedDecimalValues: b.roundedDecimalValues,
+		InexactDecimalValues: b.inexactDecimalValues,
 	}
 }
 
@@ -291,6 +298,6 @@ func isCompatibleContractFieldType(
 		return true
 	}
 
-	return consumer == model.ContractFieldTypeValueNumber &&
+	return (consumer == model.ContractFieldTypeValueNumber || consumer == model.ContractFieldTypeValueDecimal) &&
 		producer == model.ContractFieldTypeValueInteger
 }

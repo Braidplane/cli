@@ -15,6 +15,19 @@ import (
 // CUE vet subprocesses are intentionally serialized to avoid CI runner CPU contention.
 func TestPipelineSpecCUESchemaValidationBoundaries(t *testing.T) {
 	validSpecs := map[string]string{
+		"AcceptsImmutableODCSContractRefs": `{
+  "metadata": {"slug": "odcs-contract-refs", "name": "ODCS contract refs"},
+  "steps": [{
+    "kind": "query", "slug": "fetch-users",
+    "query": {"data_source_ref": "warehouse", "operation_type": "sql", "operation_ref": "list-users", "output_contract_ref": {"contract_slug": "users", "revision_slug": "v1", "schema_object_id": "users-row"}}
+  }, {
+    "kind": "transform", "slug": "shape-users",
+    "transform": {"inputs": {"input": "fetch-users"}, "sql": "SELECT id FROM input", "output_kind": "rows", "input_contract_ref": {"contract_slug": "users", "revision_slug": "v1", "schema_object_id": "users-row"}, "output_contract_ref": {"contract_slug": "users", "revision_slug": "v1", "schema_object_id": "shaped-users"}}
+  }, {
+    "kind": "sink", "slug": "write-users",
+    "sink": {"input": "shape-users", "data_source_ref": "warehouse", "operation_type": "sql", "operation_ref": "upsert-users", "idempotency_class": "idempotent_with_key", "input_contract_ref": {"contract_slug": "users", "revision_slug": "v1", "schema_object_id": "shaped-users"}}
+  }]
+}`,
 		"AcceptsRunScopedJSONInput": `{
   "metadata": {"slug": "event-pipeline", "name": "Event Pipeline"},
   "steps": [{
@@ -30,6 +43,14 @@ func TestPipelineSpecCUESchemaValidationBoundaries(t *testing.T) {
     }
   }]
 }`,
+		"AcceptsWorkspaceReadAndUpdate": `{
+ "metadata":{"slug":"workspace","name":"Workspace"},
+ "steps":[
+  {"kind":"query","slug":"read-sheet","query":{"data_source_ref":"sheet","operation_type":"google_workspace","operation_inline":{"type":"google_workspace","resource":"spreadsheet","spreadsheet_id":"book","operation":"read","worksheet_id":0,"range":"A1:B3"}}},
+  {"kind":"sink","slug":"update-sheet","sink":{"input":"read-sheet","data_source_ref":"sheet","operation_type":"google_workspace","operation_inline":{"type":"google_workspace","resource":"spreadsheet","spreadsheet_id":"book","operation":"update","worksheet_id":0,"range":"D2:E3","columns":["a","b"],"rows":"{{input}}"},"idempotency_class":"naturally_idempotent"}}
+ ]
+}`,
+
 		"AcceptsRowUniqueDatetimeAndInlineOperation": `{
   "metadata": {"slug": "valid-contract", "name": "Valid Contract"},
   "steps": [{
@@ -169,6 +190,13 @@ func TestPipelineSpecCUESchemaValidationBoundaries(t *testing.T) {
 	}
 
 	invalidSpecs := map[string]string{
+		"RejectsLatestOrInlineODCSContractReference": `{
+  "metadata": {"slug": "odcs-contract-refs", "name": "ODCS contract refs"},
+  "steps": [{
+    "kind": "query", "slug": "fetch-users",
+    "query": {"data_source_ref": "warehouse", "operation_type": "sql", "operation_ref": "list-users", "output_contract": {"representation": "rows", "fields": [{"name": "id", "type": "string"}]}, "output_contract_ref": {"contract_slug": "users", "revision_slug": "latest", "schema_object_id": "users-row"}}
+  }]
+}`,
 		"RejectsNonJSONRunInput": `{
   "metadata": {"slug": "event-pipeline", "name": "Event Pipeline"},
   "steps": [{
@@ -577,4 +605,25 @@ func runCUEVetForPipelineSpec(t *testing.T, spec string) (string, error) {
 
 	output, err := cmd.CombinedOutput()
 	return string(output), err
+}
+
+func TestPipelineSpecDecimalDeclaration(t *testing.T) {
+	for _, test := range []struct {
+		field string
+		valid bool
+	}{
+		{`{"name":"price","type":"decimal","precision":38,"scale":2}`, true},
+		{`{"name":"price","type":"decimal","precision":39,"scale":2}`, false},
+		{`{"name":"price","type":"decimal","precision":5,"scale":6}`, false},
+		{`{"name":"price","type":"decimal"}`, false},
+		{`{"name":"price","type":"number","precision":38,"scale":2}`, false},
+	} {
+		spec := `{"metadata":{"slug":"prices","name":"Prices"},"steps":[{"kind":"query","slug":"read-prices","query":{"data_source_ref":"prices-source","operation_type":"sql","operation_ref":"read-prices","output_contract":{"representation":"rows","fields":[` + test.field + `]}}}]}`
+		output, err := runCUEVetForPipelineSpec(t, spec)
+		if test.valid {
+			require.NoError(t, err, output)
+		} else {
+			require.Error(t, err)
+		}
+	}
 }

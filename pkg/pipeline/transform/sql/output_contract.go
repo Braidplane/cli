@@ -69,6 +69,12 @@ func validateRowsOutputContract(rows []map[string]any, contract *pipepayload.Con
 					}
 					continue
 				}
+				if field.Type == model.ContractFieldTypeValueDecimal {
+					if _, err := pipepayload.DecimalFieldValue(val, field); err != nil {
+						return xerror.Wrapf("decimal output field %q: %w", field.Name, xerror.Join(ErrOutputContractViolation, err))
+					}
+					continue
+				}
 				if err := checkFieldType(field.Name, val, field.Type); err != nil {
 					return xerror.Wrapf("row %d: %w", rowIdx, err)
 				}
@@ -146,6 +152,10 @@ func validateCSVOutputContract(columnNames []string, csvBody string, contract *p
 	rows, _, err := pipepayload.ParseCSVBodyToRows([]byte(csvBody))
 	if err != nil {
 		return xerror.Wrapf("csv: %w", xerror.Join(ErrOutputContractViolation, err))
+	}
+	rows, err = pipepayload.CoerceDecimalRows(contract, rows)
+	if err != nil {
+		return xerror.Wrapf("decimal CSV output: %w", xerror.Join(ErrOutputContractViolation, err))
 	}
 	rows = pipepayload.CoerceContractFieldValidationRows(contract, rows)
 	if failure := pipepayload.ValidateContractFieldValues(contract, rows); failure != nil {

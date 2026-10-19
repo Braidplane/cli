@@ -48,6 +48,7 @@ type braidplaneCLI struct {
 	DataSource         dataSourceCommand         `cmd:"" name:"data-source" help:"Manage concrete organization data sources."`
 	DataSourceRef      dataSourceRefCommand      `cmd:"" name:"data-source-ref" help:"Manage pipeline logical data-source references."`
 	DataSourceBinding  dataSourceBindingCommand  `cmd:"" name:"data-source-binding" help:"Manage project environment data-source bindings."`
+	Contract           contractCommand           `cmd:"" help:"Manage project-owned immutable ODCS contract catalog entries."`
 	Query              queryCommand              `cmd:"" help:"Manage saved data-source queries."`
 	Pipeline           pipelineCommand           `cmd:"" help:"Manage pipelines."`
 	Proof              proofCommand              `cmd:"" help:"Inspect Braidplane Proof receipts."`

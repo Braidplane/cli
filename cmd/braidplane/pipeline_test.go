@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	api "github.com/Braidplane/cli/internal/apiclient"
@@ -353,6 +354,86 @@ steps:
 	require.NoError(t, err)
 	require.Equal(t, "/api/organizations/acme/projects/data-pipelines/environments/prod/pipeline-validation", gotPath)
 	require.Contains(t, stdout.String(), "pipeline validation succeeded")
+	require.Empty(t, stderr.String())
+}
+
+func TestRunWithArgsPipelineValidateSendsODCSContractRefs(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "braidplane.toml")
+	specPath := filepath.Join(t.TempDir(), "contracts.pipeline.yaml")
+	require.NoError(t, os.WriteFile(specPath, []byte(`
+metadata:
+  slug: contract-refs
+  name: Contract refs
+steps:
+  - kind: query
+    slug: fetch-users
+    query:
+      data_source_ref: warehouse
+      operation_type: sql
+      operation_ref: list-users
+      output_contract_ref: {contract_slug: users, revision_slug: v1, schema_object_id: users-row}
+  - kind: transform
+    slug: shape-users
+    transform:
+      inputs: {input: fetch-users}
+      sql: SELECT id FROM input
+      output_kind: rows
+      input_contract_ref: {contract_slug: users, revision_slug: v1, schema_object_id: users-row}
+      output_contract_ref: {contract_slug: users, revision_slug: v1, schema_object_id: shaped-users}
+  - kind: sink
+    slug: write-users
+    sink:
+      input: shape-users
+      data_source_ref: warehouse
+      operation_type: sql
+      operation_ref: upsert-users
+      idempotency_class: idempotent_with_key
+      input_contract_ref: {contract_slug: users, revision_slug: v1, schema_object_id: shaped-users}
+`), 0o600))
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body api.PipelineValidationRequest
+		if !assert.NoError(t, json.NewDecoder(r.Body).Decode(&body)) {
+			return
+		}
+		query, err := body.Spec.Steps[0].AsPipelineQueryStep()
+		if !assert.NoError(t, err) {
+			return
+		}
+		transform, err := body.Spec.Steps[1].AsPipelineTransformStep()
+		if !assert.NoError(t, err) {
+			return
+		}
+		sink, err := body.Spec.Steps[2].AsPipelineSinkStep()
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, "users", query.Query.OutputContractRef.ContractSlug)
+		assert.Equal(t, "users-row", transform.Transform.InputContractRef.SchemaObjectId)
+		assert.Equal(t, "shaped-users", transform.Transform.OutputContractRef.SchemaObjectId)
+		assert.Equal(t, "shaped-users", sink.Sink.InputContractRef.SchemaObjectId)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"valid":true,"diagnostics":[]}`))
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("BRAIDPLANE_SERVER_URL", server.URL+"/api")
+	t.Setenv("BRAIDPLANE_ORG", "acme")
+	t.Setenv("BRAIDPLANE_API_KEY", "xto_env_token")
+	t.Setenv("BRAIDPLANE_PROJECT", "data-pipelines")
+	t.Setenv("BRAIDPLANE_ENVIRONMENT", "prod")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := runWithRuntime(
+		[]string{"braidplane", "pipeline", "validate", "--file", specPath},
+		&stdout,
+		&stderr,
+		cliRuntime{configPath: configPath},
+	)
+
+	require.NoError(t, err)
+	require.Contains(t, stdout.String(), "via Braidplane API")
 	require.Empty(t, stderr.String())
 }
 
@@ -897,17 +978,13 @@ func TestRunWithArgsPipelineApplyPostsRequestAndPrintsReport(t *testing.T) {
 	require.Contains(t, stdout.String(), "pipeline metadata.slug is required")
 }
 
-func TestRunWithArgsPipelineApplyDeploysSyncedPipelinesToEnvironment(t *testing.T) {
+func TestRunWithArgsPipelineApplyImportsWithoutDeploying(t *testing.T) {
 	t.Parallel()
 
 	configPath := filepath.Join(t.TempDir(), "braidplane.toml")
 	var gotReconcile bool
 	var gotReconcileMethod string
 	var gotDeploy bool
-	var gotDeployMethod string
-	var gotDeployAuth string
-	var gotDeployBody api.PipelineDeploymentRequest
-	var deployDecodeErr error
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
@@ -944,20 +1021,7 @@ func TestRunWithArgsPipelineApplyDeploysSyncedPipelinesToEnvironment(t *testing.
 			}`))
 		case "/api/organizations/acme/projects/data-pipelines/environments/prod/pipelines/acme-users-sync:deploy":
 			gotDeploy = true
-			gotDeployMethod = r.Method
-			gotDeployAuth = r.Header.Get("Authorization")
-			deployDecodeErr = json.NewDecoder(r.Body).Decode(&gotDeployBody)
-			_, _ = w.Write([]byte(`{
-				"pipeline_slug": "acme-users-sync",
-				"project_slug": "data-pipelines",
-				"environment_slug": "prod",
-				"current_version_spec_hash": "synced-hash",
-				"current_version_short_spec_hash": "synced-hash",
-				"deployed_by_actor_type": "api_key",
-				"deployed_by_actor_slug": "fake-cli",
-				"deployed_at": "2026-05-15T08:00:00Z",
-				"updated_at": "2026-05-15T08:00:00Z"
-			}`))
+			http.Error(w, "deployment must be explicit", http.StatusBadRequest)
 		default:
 			http.NotFound(w, r)
 		}
@@ -991,16 +1055,12 @@ func TestRunWithArgsPipelineApplyDeploysSyncedPipelinesToEnvironment(t *testing.
 	require.Empty(t, stderr.String())
 	require.True(t, gotReconcile)
 	require.Equal(t, http.MethodPost, gotReconcileMethod)
-	require.True(t, gotDeploy)
-	require.Equal(t, http.MethodPost, gotDeployMethod)
-	require.NoError(t, deployDecodeErr)
-	require.Equal(t, "Bearer xto_saved_token", gotDeployAuth)
-	require.Equal(t, "synced-hash", gotDeployBody.SpecHash)
+	require.False(t, gotDeploy)
 	require.Contains(t, stdout.String(), `"dry_run": false`)
 	require.Contains(t, stdout.String(), "acme-users-sync")
 }
 
-func TestRunWithArgsPipelineApplyRequiresEnvironmentScope(t *testing.T) {
+func TestRunWithArgsPipelineApplyDoesNotRequireEnvironmentScope(t *testing.T) {
 	t.Parallel()
 
 	configPath := filepath.Join(t.TempDir(), "braidplane.toml")
@@ -1036,12 +1096,10 @@ func TestRunWithArgsPipelineApplyRequiresEnvironmentScope(t *testing.T) {
 		cliRuntime{configPath: configPath},
 	)
 
-	require.Error(t, err)
-	require.ErrorContains(t, err, "project environment is required")
-	require.ErrorContains(t, err, "set --environment or BRAIDPLANE_ENVIRONMENT")
-	require.Empty(t, stdout.String())
+	require.NoError(t, err)
+	require.Contains(t, stdout.String(), `"dry_run": true`)
 	require.Empty(t, stderr.String())
-	require.Zero(t, requestCount)
+	require.Equal(t, 1, requestCount)
 }
 
 func TestRunWithArgsPipelineApplyRejectsSourceOverrideFlags(t *testing.T) {
@@ -3784,6 +3842,7 @@ func TestRunWithArgsPipelineRunStartUsesSavedLoginAndPrintsRun(t *testing.T) {
 			"--project", "data-pipelines",
 			"--environment", "prod",
 			"--run-slug", "acme-users-sync-run-001",
+			"--backfill-json", `{"source_windows":{"source":{"lower_bound":{"value":9007199254740993},"upper_bound":{"value":9007199254740995}}}}`,
 			"--input-json", `{"customer_id":"cus_123","dry_run":true}`,
 		},
 		&stdout,
@@ -3806,6 +3865,13 @@ func TestRunWithArgsPipelineRunStartUsesSavedLoginAndPrintsRun(t *testing.T) {
 	}, *gotBody.Input)
 	require.Contains(t, stdout.String(), "acme-users-sync-run-001")
 	require.Contains(t, stdout.String(), "\"status\": \"queued\"")
+	require.NotNil(t, gotBody.Backfill)
+	require.Equal(t, `{"value":9007199254740993}`, string(gotBody.Backfill.SourceWindows["source"].LowerBound))
+
+	for _, suffix := range []string{"{}", "garbage"} {
+		err := runWithRuntime([]string{"braidplane", "pipeline", "run", "start", "acme-users-sync", "--project", "data-pipelines", "--environment", "prod", "--backfill-json", `{"source_windows":{"source":{"lower_bound":{"value":1},"upper_bound":{"value":5}}}}` + suffix}, &stdout, &stderr, cliRuntime{configPath: configPath})
+		require.ErrorContains(t, err, "backfill JSON must contain one object")
+	}
 }
 
 func TestParseRuntimeInputJSON(t *testing.T) {
@@ -4210,4 +4276,37 @@ func pipelineWebhookTriggerResponseJSON(slug string, enabled bool) string {
 		"created_at": "2026-06-12T07:00:00Z",
 		"updated_at": "2026-06-12T07:00:00Z"
 	}`
+}
+
+func TestWritePipelineValidationResultPrintsODCSConversionDiagnostics(t *testing.T) {
+	t.Parallel()
+	step := api.NullableSlug("fetch")
+	var output bytes.Buffer
+	err := writePipelineValidationResult(&output, &api.PipelineValidationResponse{Valid: false, Diagnostics: []api.PipelineValidationDiagnostic{{
+		Severity: api.PipelineValidationDiagnosticSeverityError, Code: "ODCS_TYPE_UNSUPPORTED", Field: "steps[0].query.output_contract_ref", StepSlug: &step,
+		Message: "$.schema[0].properties[0].logicalType: Declare a supported type.",
+	}}})
+	require.NoError(t, err)
+	require.Contains(t, output.String(), "ERROR steps[0].query.output_contract_ref fetch ODCS_TYPE_UNSUPPORTED: $.schema[0].properties[0].logicalType: Declare a supported type.")
+}
+
+func TestRunWithArgsPipelineBootstrap(t *testing.T) {
+	t.Parallel()
+	var got api.BootstrapPipelineCheckpointsRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/organizations/acme/projects/default/environments/prod/pipelines/users-sync:bootstrap-checkpoints", r.URL.Path)
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.NoError(t, json.NewDecoder(r.Body).Decode(&got))
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(server.Close)
+	config := filepath.Join(t.TempDir(), "braidplane.toml")
+	require.NoError(t, saveLogin(config, cliAuthConfig{ServerURL: server.URL + "/api", Organization: "acme", APIKey: "xto_saved_token"}))
+	var stdout, stderr bytes.Buffer
+	err := runWithRuntime([]string{"braidplane", "pipeline", "bootstrap", "users-sync", "--project", "default", "--environment", "prod", "--confirm-environment", "prod", "--request-slug", "bootstrap-001", "--seeds-json", `{"source":{"value":9007199254740993}}`}, &stdout, &stderr, cliRuntime{configPath: config})
+	require.NoError(t, err)
+	require.Empty(t, stderr.String())
+	require.Equal(t, "bootstrap-001", got.RequestSlug)
+	require.Equal(t, `{"value":9007199254740993}`, string(got.SourceSeeds["source"]))
+	require.Contains(t, stdout.String(), "bootstrapped")
 }

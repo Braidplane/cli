@@ -1,11 +1,13 @@
 package validate
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
+	workspace "github.com/Braidplane/cli/pkg/connector/googleworkspace"
 	"github.com/Braidplane/cli/pkg/model"
 	pipelinegraph "github.com/Braidplane/cli/pkg/pipeline/graph"
 	"github.com/Braidplane/cli/pkg/pipeline/payload"
@@ -107,20 +109,24 @@ func validateSteps(steps []pipelinespec.Step) error {
 			if err := structvalidate.Default().Struct(*step.Input); err != nil {
 				return xerror.Wrapf("step[%d] %q: %w", i, step.Slug, err)
 			}
-			if step.Input.OutputContract.Representation != model.ContractRepresentationJSON {
-				return xerror.InvalidInput(xerror.Pipeline).Detailf(
-					"step[%d] %q input output_contract requires json representation",
-					i,
-					step.Slug,
-				)
-			}
-			if err := validateStepContract(
-				step.Input.OutputContract,
-				false,
-				model.ContractRepresentationJSON,
-				step.Input.OutputContract.RootShape,
-			); err != nil {
+			if err := validateContractDeclaration(step.Input.OutputContract, step.Input.OutputContractRef); err != nil {
 				return xerror.Wrapf("step[%d] %q output_contract: %w", i, step.Slug, err)
+			}
+			if step.Input.OutputContract == nil && step.Input.OutputContractRef == nil {
+				return xerror.InvalidInput(xerror.Pipeline).Detail("input requires an output contract or reference")
+			}
+			if ref := step.Input.OutputContractRef; ref != nil {
+				if ref.Representation != model.ContractRepresentationJSON || ref.RootShape == model.ContractRootShapeUnknown {
+					return xerror.InvalidInput(xerror.Pipeline).Detail("input output_contract_ref requires json representation and root_shape")
+				}
+			}
+			if contract := step.Input.OutputContract; contract != nil {
+				if contract.Representation != model.ContractRepresentationJSON {
+					return xerror.InvalidInput(xerror.Pipeline).Detail("input output_contract requires json representation")
+				}
+				if err := validateStepContract(contract, false, model.ContractRepresentationJSON, contract.RootShape); err != nil {
+					return xerror.Wrapf("step[%d] %q output_contract: %w", i, step.Slug, err)
+				}
 			}
 		case nodeKindQuery:
 			if step.Query == nil {
@@ -138,6 +144,9 @@ func validateSteps(steps []pipelinespec.Step) error {
 			}
 			if err := validateIncrementalSourceContract(step.Query); err != nil {
 				return xerror.Wrapf("step[%d] %q: %w", i, step.Slug, err)
+			}
+			if err := validateContractDeclaration(step.Query.OutputContract, step.Query.OutputContractRef); err != nil {
+				return xerror.Wrapf("step[%d] %q output_contract: %w", i, step.Slug, err)
 			}
 			queryRuntimeRepresentation, queryRuntimeRootShape := producerOutputFacets(step)
 			queryRepresentation, queryRootShape := producerContractFacets(
@@ -170,6 +179,12 @@ func validateSteps(steps []pipelinespec.Step) error {
 			if _, err := transformsql.ValidateTransformSQL(step.Transform.SQL); err != nil {
 				return xerror.Wrapf("step[%d] %q: %w", i, step.Slug, err)
 			}
+			if err := validateContractDeclaration(step.Transform.InputContract, step.Transform.InputContractRef); err != nil {
+				return xerror.Wrapf("step[%d] %q input_contract: %w", i, step.Slug, err)
+			}
+			if err := validateContractDeclaration(step.Transform.OutputContract, step.Transform.OutputContractRef); err != nil {
+				return xerror.Wrapf("step[%d] %q output_contract: %w", i, step.Slug, err)
+			}
 			transformInputRepresentation, transformInputRootShape := outputContractFacets(
 				step.Transform.InputContract,
 				model.ContractRepresentationRows,
@@ -185,6 +200,9 @@ func validateSteps(steps []pipelinespec.Step) error {
 			}
 			if err := validateSQLTransformContractRepresentation(step.Transform.InputContract); err != nil {
 				return xerror.Wrapf("step[%d] %q input_contract: %w", i, step.Slug, err)
+			}
+			if err := validateTransformInputAttachments(step.Transform); err != nil {
+				return xerror.Wrapf("step[%d] %q input_contracts: %w", i, step.Slug, err)
 			}
 			if err := validateNamedTransformInputContractPrefixes(step.Transform); err != nil {
 				return xerror.Wrapf("step[%d] %q input_contract: %w", i, step.Slug, err)
@@ -225,6 +243,9 @@ func validateSteps(steps []pipelinespec.Step) error {
 			}
 			if err := validateSinkOperationContract(step.Sink); err != nil {
 				return xerror.Wrapf("step[%d] %q: %w", i, step.Slug, err)
+			}
+			if err := validateContractDeclaration(step.Sink.InputContract, step.Sink.InputContractRef); err != nil {
+				return xerror.Wrapf("step[%d] %q input_contract: %w", i, step.Slug, err)
 			}
 			sinkRepresentation, sinkRootShape := sinkInputContractFacets(step.Sink.InputContract)
 			sinkRepresentation, sinkRootShape = outputContractFacets(
@@ -273,6 +294,19 @@ func validateQueryOperationContract(query *pipelinespec.QueryRef) error {
 		)
 	}
 
+	if query.OperationType == pipelinespec.OperationTypeGoogleWorkspace && hasInline {
+		raw, err := json.Marshal(query.OperationInline)
+		if err != nil {
+			return xerror.InvalidInput(xerror.Pipeline).With(err)
+		}
+		statement, err := workspace.DecodeStatement(raw)
+		if err != nil {
+			return xerror.Wrapf("validate Google Workspace operation: %w", err)
+		}
+		if !statement.IsRead() {
+			return xerror.InvalidInput(xerror.Pipeline).Detail("Workspace source operations require read or list")
+		}
+	}
 	return nil
 }
 
@@ -419,6 +453,33 @@ func validateSinkOperationContract(sink *pipelinespec.SinkSpec) error {
 		)
 	}
 
+	if sink.OperationType == pipelinespec.OperationTypeGoogleWorkspace && hasInline {
+		raw, err := json.Marshal(sink.OperationInline)
+		if err != nil {
+			return xerror.InvalidInput(xerror.Pipeline).With(err)
+		}
+		statement, err := workspace.DecodeStatement(raw)
+		if err != nil {
+			return xerror.Wrapf("validate Google Workspace operation: %w", err)
+		}
+		if statement.IsRead() {
+			return xerror.InvalidInput(xerror.Pipeline).Detail("Workspace sink operations require create or update")
+		}
+		if (statement.Resource == "file" && statement.Operation == "create" || statement.IsNative()) && sink.IdempotencyClass != pipelinespec.SinkIdempotencyClassUnsafe {
+			return xerror.InvalidInput(xerror.Pipeline).Detail("Native writes and Drive file creation require unsafe replay policy")
+		}
+		if statement.IsNative() && statement.Operation == "create" {
+			return nil
+		}
+		var rows string
+		binding := statement.Rows
+		if statement.Resource == "file" || statement.IsNative() {
+			binding = statement.Content
+		}
+		if err := json.Unmarshal(binding, &rows); err != nil || rows != "{{input}}" {
+			return xerror.InvalidInput(xerror.Pipeline).Detail("Workspace inline sinks require payload bound to {{input}}")
+		}
+	}
 	return nil
 }
 
@@ -461,6 +522,9 @@ func validateStepInputCompatibility(p *pipelinespec.Pipeline) error {
 	}
 
 	for _, ctx := range contexts {
+		if edgeHasUnresolvedContractRef(ctx.fromStep, ctx.toStep) {
+			continue
+		}
 		diagnostic := evaluateEdgeDiagnosticsForSteps(ctx.fromStep, ctx.toStep)
 		if !diagnostic.Compatible {
 			if diagnostic.ReasonCode == ContractReasonMissingContract {
@@ -492,13 +556,60 @@ func validateStepInputCompatibility(p *pipelinespec.Pipeline) error {
 		}
 	}
 
-	if err := validateFanOutInferredOutputContracts(contexts); err != nil {
+	resolvedContexts := withoutUnresolvedContractRefEdges(contexts)
+	if err := validateFanOutInferredOutputContracts(resolvedContexts); err != nil {
 		return err
 	}
-	if err := validateWatermarkEffectiveOutputContracts(p, contexts); err != nil {
+	if err := validateWatermarkEffectiveOutputContracts(p, resolvedContexts); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func withoutUnresolvedContractRefEdges(contexts []stepEdgeContext) []stepEdgeContext {
+	resolved := make([]stepEdgeContext, 0, len(contexts))
+	for _, ctx := range contexts {
+		if !edgeHasUnresolvedContractRef(ctx.fromStep, ctx.toStep) {
+			resolved = append(resolved, ctx)
+		}
+	}
+	return resolved
+}
+
+func edgeHasUnresolvedContractRef(fromStep, toStep pipelinespec.Step) bool {
+	return stepOutputContractRef(fromStep) != nil || stepInputContractRef(toStep) != nil
+}
+
+func stepOutputContractRef(step pipelinespec.Step) *pipelinespec.ODCSContractRef {
+	switch step.Kind {
+	case nodeKindInput:
+		if step.Input != nil {
+			return step.Input.OutputContractRef
+		}
+	case nodeKindQuery:
+		if step.Query != nil {
+			return step.Query.OutputContractRef
+		}
+	case nodeKindTransform:
+		if step.Transform != nil {
+			return step.Transform.OutputContractRef
+		}
+	}
+	return nil
+}
+
+func stepInputContractRef(step pipelinespec.Step) *pipelinespec.ODCSContractRef {
+	switch step.Kind {
+	case nodeKindTransform:
+		if step.Transform != nil {
+			return step.Transform.InputContractRef
+		}
+	case nodeKindSink:
+		if step.Sink != nil {
+			return step.Sink.InputContractRef
+		}
+	}
 	return nil
 }
 
@@ -519,6 +630,7 @@ func AggregateStepInputCompatibilityDiagnostics(
 	}
 
 	diagnostics := make([]EdgeCompatibilityResult, 0)
+	contexts = withoutUnresolvedContractRefEdges(contexts)
 	diagnostics = append(diagnostics, fanOutInferredOutputContractDiagnostics(contexts)...)
 	diagnostics = append(diagnostics, watermarkEffectiveOutputContractDiagnostics(p, contexts)...)
 
@@ -707,6 +819,9 @@ func watermarkEffectiveOutputContractDiagnostics(
 		if query == nil || !isWatermarkIncrementalContract(query.Incremental) {
 			continue
 		}
+		if query.OutputContractRef != nil {
+			continue
+		}
 
 		contract, err := effectiveOutputContractForStep(step, contexts)
 		if err != nil {
@@ -880,6 +995,9 @@ func mergeInferredContract(
 
 		for _, previous := range fieldRequirements[field.Name] {
 			if compatibleInferredFieldTypes(previous.field.Type, field.Type) {
+				if previous.field.Type == model.ContractFieldTypeValueDecimal && field.Type == model.ContractFieldTypeValueDecimal && (payload.ValidateDecimalFieldDeclaration(previous.field) != nil || payload.ValidateDecimalFieldDeclaration(field) != nil) {
+					return conflictingInferredOutputError(merged.Name, map[string]slug.Slug{field.Name: previous.toStep}, requirement, "invalid decimal declaration")
+				}
 				continue
 			}
 			if !previous.field.Required && !field.Required {
@@ -894,7 +1012,11 @@ func mergeInferredContract(
 		}
 
 		existing := merged.Fields[i]
-		merged.Fields[i] = mergeInferredField(existing, field)
+		mergedField := mergeInferredField(existing, field)
+		if err := payload.ValidateDecimalFieldDeclaration(mergedField); err != nil {
+			return conflictingInferredOutputError(merged.Name, fieldSources, requirement, "decimal requirements have no representable shared declaration")
+		}
+		merged.Fields[i] = mergedField
 		fieldRequirements[field.Name] = append(
 			fieldRequirements[field.Name],
 			inferredFieldRequirement{toStep: requirement.toStep, field: field},
@@ -923,6 +1045,15 @@ func mergeInferredField(
 	if existing.Type == model.ContractFieldTypeValueNumber &&
 		next.Type == model.ContractFieldTypeValueInteger {
 		existing.Type = next.Type
+	}
+	if existing.Type == model.ContractFieldTypeValueDecimal && next.Type == model.ContractFieldTypeValueInteger {
+		existing.Type = next.Type
+		existing.Precision, existing.Scale = nil, nil
+	}
+	if existing.Type == model.ContractFieldTypeValueDecimal && next.Type == model.ContractFieldTypeValueDecimal && existing.Precision != nil && existing.Scale != nil && next.Precision != nil && next.Scale != nil {
+		scale := min(*existing.Scale, *next.Scale)
+		precision := min(*existing.Precision-*existing.Scale, *next.Precision-*next.Scale) + scale
+		existing.Precision, existing.Scale = &precision, &scale
 	}
 	existing.Required = existing.Required || next.Required
 	existing.Nullable = existing.Nullable && next.Nullable
@@ -977,6 +1108,13 @@ func StepEdgeContexts(p *pipelinespec.Pipeline) ([]EdgeContext, error) {
 				edge.InputName,
 				len(toStep.Transform.Inputs),
 			)
+			if toStep.Transform.InputContracts != nil {
+				transform.InputContracts = map[string]*pipelinespec.InputContractAttachment{edge.InputName: toStep.Transform.InputContracts[edge.InputName]}
+				if attachment := toStep.Transform.InputContracts[edge.InputName]; attachment != nil {
+					transform.InputContract = attachment.Contract
+					transform.InputContractRef = attachment.ContractRef
+				}
+			}
 			toStep.Transform = &transform
 		}
 		contexts = append(contexts, EdgeContext{FromStep: fromStep, ToStep: toStep})
@@ -1021,7 +1159,14 @@ func sortedTransformInputs(transform *pipelinespec.TransformSpec) []namedStepInp
 func EvaluateEdgeDiagnosticsForSteps(
 	fromStep pipelinespec.Step,
 	toStep pipelinespec.Step,
-) *EdgeCompatibilityResult {
+) (result *EdgeCompatibilityResult) {
+	defer func() {
+		if result != nil && toStep.Transform != nil && len(toStep.Transform.InputContracts) == 1 {
+			for name := range toStep.Transform.InputContracts {
+				result.EdgeSlug += ":" + name
+			}
+		}
+	}()
 	edge := EdgeLink{FromStep: fromStep.Slug, ToStep: toStep.Slug}
 	if diagnostic := producerContractFacetDiagnostic(edge, fromStep); diagnostic != nil {
 		return diagnostic
@@ -1387,6 +1532,14 @@ func queryOutputFacets(
 	switch strings.ToLower(strings.TrimSpace(query.OperationType)) {
 	case "", "sql", "postgres", "mysql", "hubspot":
 		return model.ContractRepresentationRows, model.ContractRootShapeUnknown
+	case "google_workspace":
+		if query.OperationRef != "" {
+			return model.ContractRepresentationUnknown, model.ContractRootShapeUnknown
+		}
+		if query.OperationInline["operation"] == "export" || query.OperationInline["resource"] == "file" && queryInlineFormat(query) == "file" {
+			return model.ContractRepresentationFile, model.ContractRootShapeUnknown
+		}
+		return model.ContractRepresentationRows, model.ContractRootShapeUnknown
 	case "ftp", "git":
 		if queryInlineFormat(query) == model.ContractRepresentationFile.String() {
 			return model.ContractRepresentationFile, model.ContractRootShapeUnknown
@@ -1530,6 +1683,33 @@ func validateStepContract(
 	return nil
 }
 
+func validateContractDeclaration(contract *payload.Contract, ref *pipelinespec.ODCSContractRef) error {
+	if contract != nil && ref != nil {
+		return xerror.InvalidInput(xerror.Pipeline).Detail(
+			"inline contract and contract reference are mutually exclusive",
+		)
+	}
+	if ref == nil {
+		return nil
+	}
+	if _, err := slug.New(ref.ContractSlug.String()); err != nil {
+		return xerror.InvalidInput(xerror.Pipeline).Detail("contract reference requires a valid contract_slug")
+	}
+	if _, err := slug.New(ref.RevisionSlug.String()); err != nil || ref.RevisionSlug == "latest" {
+		return xerror.InvalidInput(xerror.Pipeline).Detail("contract reference requires an exact revision_slug")
+	}
+	if strings.TrimSpace(ref.SchemaObjectID) == "" {
+		return xerror.InvalidInput(xerror.Pipeline).Detail("contract reference requires schema_object_id")
+	}
+	if err := structvalidate.Default().Var(ref.Representation, "omitempty,contractrepresentation"); err != nil {
+		return xerror.ValidationFailed().Detailf("validate contract reference: %w", err)
+	}
+	if err := structvalidate.Default().Var(ref.RootShape, "omitempty,contractrootshape"); err != nil {
+		return xerror.ValidationFailed().Detailf("validate contract reference: %w", err)
+	}
+	return nil
+}
+
 // validateNamedTransformInputContractPrefixes ensures multi-input transform
 // contracts can be split unambiguously into per-edge requirements.
 func validateNamedTransformInputContractPrefixes(transform *pipelinespec.TransformSpec) error {
@@ -1637,10 +1817,12 @@ func outputContractToSchemaContract(
 	fields := make([]payload.ContractField, 0, len(contract.Fields))
 	for _, field := range contract.Fields {
 		fields = append(fields, payload.ContractField{
-			Name:     field.Name,
-			Type:     field.Type,
-			Required: field.Required,
-			Nullable: field.Nullable,
+			Name:      field.Name,
+			Type:      field.Type,
+			Precision: field.Precision,
+			Scale:     field.Scale,
+			Required:  field.Required,
+			Nullable:  field.Nullable,
 		})
 	}
 
@@ -1727,4 +1909,53 @@ func contractRepresentationToOutputKind(
 	default:
 		return model.TransformOutputKindUnknown
 	}
+}
+
+func validateTransformInputAttachments(transform *pipelinespec.TransformSpec) error {
+	if transform.InputContracts == nil {
+		return nil
+	}
+	if len(transform.InputContracts) == 0 || transform.InputContract != nil || transform.InputContractRef != nil {
+		return xerror.InvalidInput(xerror.Pipeline).Detail("input_contracts must be nonempty and mutually exclusive with the combined input contract/reference")
+	}
+	for _, input := range sortedTransformInputs(transform) {
+		attachment, exists := transform.InputContracts[input.name]
+		if !exists {
+			continue
+		}
+		if attachment == nil || (attachment.Contract == nil && attachment.ContractRef == nil) {
+			return xerror.InvalidInput(xerror.Pipeline).Detailf("input_contracts.%s requires a contract or contract_ref", input.name)
+		}
+		if err := validateContractDeclaration(attachment.Contract, attachment.ContractRef); err != nil {
+			return xerror.Wrapf("input_contracts.%s: %w", input.name, err)
+		}
+		if ref := attachment.ContractRef; ref != nil && (ref.Representation == model.ContractRepresentationFile || ref.Representation == model.ContractRepresentationMultipartForm) {
+			return xerror.InvalidInput(xerror.Pipeline).Detailf("input_contracts.%s contract_ref requires rows, json, or csv representation", input.name)
+		}
+		representation, root := outputContractFacets(attachment.Contract, model.ContractRepresentationRows, model.ContractRootShapeUnknown)
+		if err := validateStepContract(attachment.Contract, false, representation, root); err != nil {
+			return xerror.Wrapf("input_contracts.%s: %w", input.name, err)
+		}
+		if err := validateSQLTransformContractRepresentation(attachment.Contract); err != nil {
+			return err
+		}
+	}
+	for name := range transform.InputContracts {
+		if _, exists := transform.Inputs[name]; !exists {
+			return xerror.InvalidInput(xerror.Pipeline).Detailf("input_contracts.%s names an unknown transform input", name)
+		}
+	}
+	return nil
+}
+
+// ValidateContractAttachment validates a saved-operation attachment using the same
+// declaration rules as a pipeline port, without resolving a catalog reference.
+func ValidateContractAttachment(contract *payload.Contract, ref *pipelinespec.ODCSContractRef) error {
+	if err := validateContractDeclaration(contract, ref); err != nil {
+		return err
+	}
+	if contract == nil {
+		return nil
+	}
+	return validateStepContract(contract, true, contract.Representation, contract.RootShape)
 }

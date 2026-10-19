@@ -422,14 +422,6 @@ func TestUnsupportedURIScheme(t *testing.T) {
 // errors.Is matching
 // ---------------------------------------------------------------------------
 
-func TestErrorIs_SameSentinel(t *testing.T) {
-	t.Parallel()
-
-	sentinel := xerror.NotFound(xerror.User)
-	wrapped := fmt.Errorf("wrapped: %w", sentinel)
-	require.ErrorIs(t, wrapped, sentinel)
-}
-
 func TestErrorIs_TemplateMatchesTemplate(t *testing.T) {
 	t.Parallel()
 

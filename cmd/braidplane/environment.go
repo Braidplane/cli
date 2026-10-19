@@ -119,7 +119,7 @@ func (c *createEnvironmentCommand) Run(output *cliOutput, runtime *cliRuntime) e
 	body := api.NewEnvironment{
 		Name:        c.Name,
 		Slug:        optionalAPISlug(c.Slug),
-		Description: optionalEnvironmentDescription(c.Description),
+		Description: optionalString(c.Description),
 		Color:       color,
 	}
 	if c.Protected {
@@ -174,7 +174,7 @@ func (c *updateEnvironmentCommand) Run(output *cliOutput, runtime *cliRuntime) e
 	}
 	environment, err := client.updateEnvironment(context.Background(), c.EnvironmentSlug, api.UpdateEnvironment{
 		Name:                             c.Name,
-		Description:                      optionalEnvironmentDescription(c.Description),
+		Description:                      optionalString(c.Description),
 		Color:                            color,
 		Protected:                        protected,
 		ProtectedEnvironmentConfirmation: optionalAPISlug(c.Confirm),
@@ -400,7 +400,7 @@ func (c *upsertRuntimeVariableCommand) Run(output *cliOutput, runtime *cliRuntim
 		api.UpsertRuntimeVariable{
 			ValueType:                        valueType,
 			Value:                            c.Value,
-			Description:                      optionalRuntimeVariableDescription(c.Description),
+			Description:                      optionalString(c.Description),
 			ProtectedEnvironmentConfirmation: optionalAPISlug(c.Confirm),
 		},
 	)
@@ -582,11 +582,7 @@ type listDataSourceBindingsCommand struct {
 }
 
 func (c *listDataSourceBindingsCommand) Run(output *cliOutput, runtime *cliRuntime) error {
-	client, projectSlug, err := newPipelineAPIClient(c.apiPipelineFlags, runtime)
-	if err != nil {
-		return err
-	}
-	environmentSlug, err := runtime.resolveEnvironmentSlug(c.Environment)
+	client, projectSlug, environmentSlug, err := newPipelineEnvironmentAPIClient(c.apiPipelineFlags, c.Environment, runtime)
 	if err != nil {
 		return err
 	}
@@ -612,11 +608,7 @@ type getDataSourceBindingCommand struct {
 }
 
 func (c *getDataSourceBindingCommand) Run(output *cliOutput, runtime *cliRuntime) error {
-	client, projectSlug, err := newPipelineAPIClient(c.apiPipelineFlags, runtime)
-	if err != nil {
-		return err
-	}
-	environmentSlug, err := runtime.resolveEnvironmentSlug(c.Environment)
+	client, projectSlug, environmentSlug, err := newPipelineEnvironmentAPIClient(c.apiPipelineFlags, c.Environment, runtime)
 	if err != nil {
 		return err
 	}
@@ -640,11 +632,7 @@ type upsertDataSourceBindingCommand struct {
 }
 
 func (c *upsertDataSourceBindingCommand) Run(output *cliOutput, runtime *cliRuntime) error {
-	client, projectSlug, err := newPipelineAPIClient(c.apiPipelineFlags, runtime)
-	if err != nil {
-		return err
-	}
-	environmentSlug, err := runtime.resolveEnvironmentSlug(c.Environment)
+	client, projectSlug, environmentSlug, err := newPipelineEnvironmentAPIClient(c.apiPipelineFlags, c.Environment, runtime)
 	if err != nil {
 		return err
 	}
@@ -677,11 +665,7 @@ type deleteDataSourceBindingCommand struct {
 }
 
 func (c *deleteDataSourceBindingCommand) Run(_ *cliOutput, runtime *cliRuntime) error {
-	client, projectSlug, err := newPipelineAPIClient(c.apiPipelineFlags, runtime)
-	if err != nil {
-		return err
-	}
-	environmentSlug, err := runtime.resolveEnvironmentSlug(c.Environment)
+	client, projectSlug, environmentSlug, err := newPipelineEnvironmentAPIClient(c.apiPipelineFlags, c.Environment, runtime)
 	if err != nil {
 		return err
 	}
@@ -772,22 +756,6 @@ func applyLimitCursor(limit int32, cursor string, limitTarget **api.LimitParam, 
 }
 
 func optionalAPISlug(value string) *api.Slug {
-	trimmed := strings.TrimSpace(value)
-	if trimmed == "" {
-		return nil
-	}
-	return &trimmed
-}
-
-func optionalEnvironmentDescription(value string) *api.EnvironmentDescription {
-	trimmed := strings.TrimSpace(value)
-	if trimmed == "" {
-		return nil
-	}
-	return &trimmed
-}
-
-func optionalRuntimeVariableDescription(value string) *api.RuntimeVariableDescription {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
 		return nil

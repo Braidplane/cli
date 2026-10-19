@@ -14,4 +14,5 @@ const (
 	ContractFieldTypeValueObject                            // object
 	ContractFieldTypeValueArray                             // array
 	ContractFieldTypeValueDatetime                          // datetime
+	ContractFieldTypeValueDecimal                           // decimal
 )

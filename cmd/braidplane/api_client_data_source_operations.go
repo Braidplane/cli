@@ -90,7 +90,7 @@ func (c *cliAPIClient) revokeDataSourceProviderGrant(ctx context.Context, dataSo
 }
 
 func (c *cliAPIClient) rotateDataSourceProviderGrant(ctx context.Context, dataSource string) (*api.ProviderConnectorInstall, error) {
-	resp, err := c.openapi.RotateDataSourceProviderGrantWithResponse(ctx, c.organization, dataSource)
+	resp, err := c.openapi.RotateDataSourceProviderGrantWithResponse(ctx, c.organization, dataSource, nil)
 	if err != nil {
 		return nil, xerror.Wrapf("rotate data source provider grant: %w", err)
 	}
@@ -101,4 +101,32 @@ func (c *cliAPIClient) rotateDataSourceProviderGrant(ctx context.Context, dataSo
 		return nil, xerror.Unexpected().Detail("unexpected API response: missing provider connector install payload")
 	}
 	return resp.JSON201, nil
+}
+
+func (c *cliAPIClient) getSnowflakeOnboarding(ctx context.Context, dataSource string) (*api.SnowflakeOnboarding, error) {
+	resp, err := c.openapi.GetSnowflakeOnboardingWithResponse(ctx, c.organization, dataSource)
+	if err != nil {
+		return nil, xerror.Wrapf("get Snowflake onboarding: %w", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, decodeAPIError(resp.StatusCode(), resp.Body)
+	}
+	if resp.JSON200 == nil {
+		return nil, xerror.Unexpected().Detail("missing Snowflake onboarding payload")
+	}
+	return resp.JSON200, nil
+}
+
+func (c *cliAPIClient) connectDataSourceHTTPOAuth(ctx context.Context, source string) (*api.HTTPOAuthConnection, error) {
+	response, err := c.openapi.ConnectDataSourceHTTPOAuthWithResponse(ctx, c.organization, source)
+	if err != nil {
+		return nil, xerror.Wrapf("connect HTTP OAuth source: %w", err)
+	}
+	if response.StatusCode() != http.StatusOK {
+		return nil, decodeAPIError(response.StatusCode(), response.Body)
+	}
+	if response.JSON200 == nil {
+		return nil, xerror.Unexpected().Detail("unexpected API response: missing HTTP OAuth connection")
+	}
+	return response.JSON200, nil
 }

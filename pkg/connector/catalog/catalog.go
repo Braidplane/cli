@@ -6,6 +6,8 @@ type SchemaFamily string
 
 type SinkPayloadBinding string
 
+const S3ResourceScopePolicyID = "s3/relative-key/v1"
+
 const (
 	SinkPayloadBindingEncoded   SinkPayloadBinding = "encoded"
 	SinkPayloadBindingRowObject SinkPayloadBinding = "row_object"
@@ -43,6 +45,7 @@ const (
 const (
 	SchemaFamilyUnknown     SchemaFamily = "unknown"
 	SchemaFamilySQL         SchemaFamily = "sql"
+	SchemaFamilySpreadsheet SchemaFamily = "spreadsheet"
 	SchemaFamilyHTTP        SchemaFamily = "http"
 	SchemaFamilyDocument    SchemaFamily = "document"
 	SchemaFamilyFile        SchemaFamily = "file"
@@ -51,18 +54,29 @@ const (
 )
 
 const (
-	OperationTypeSQL       = "sql"
-	OperationTypeBigQuery  = "bigquery"
-	OperationTypeHTTP      = "http"
-	OperationTypeFTP       = "ftp"
-	OperationTypeGit       = "git"
-	OperationTypeMongoDB   = "mongodb"
-	OperationTypeHubSpot   = "hubspot"
-	OperationTypeS3        = "s3"
-	OperationTypeSnowflake = "snowflake"
+	OperationTypeSQL             = "sql"
+	OperationTypeBigQuery        = "bigquery"
+	OperationTypeGoogleWorkspace = "google_workspace"
+	OperationTypeHTTP            = "http"
+	OperationTypeFTP             = "ftp"
+	OperationTypeGit             = "git"
+	OperationTypeMongoDB         = "mongodb"
+	OperationTypeHubSpot         = "hubspot"
+	OperationTypeS3              = "s3"
+	OperationTypeSnowflake       = "snowflake"
 )
 
+// ProofMetadataCapability declares fresh selected-resource support separately
+// from pipeline execution and cached schema assistance.
+type ProofMetadataCapability struct {
+	SourceClaimSuffix string
+	SinkClaimSuffix   string
+	Operations        []string
+	UnsupportedReason string
+}
+
 type Descriptor struct {
+	ProofMetadata                    ProofMetadataCapability
 	Type                             model.DataSourceType
 	SchemaFamily                     SchemaFamily
 	QueryOperationType               string
@@ -76,9 +90,46 @@ type Descriptor struct {
 	ForcedReadOnly                   bool
 }
 
+// ResourceScopeCapability advertises confinement separately from ordinary
+// execution. An unsupported mapping must never be treated as a fixed target.
+type ResourceScopeCapability struct {
+	PolicyID          string
+	Representations   []model.ContractRepresentation
+	FixedFields       []string
+	DynamicSelectors  []string
+	ExecutionValues   []string
+	UnsupportedReason string
+}
+
+func (d Descriptor) ResourceScopeCapability() ResourceScopeCapability {
+	if d.Type != model.DataSourceTypeS3 {
+		return ResourceScopeCapability{UnsupportedReason: "connector has no validated resource scope policy"}
+	}
+	return ResourceScopeCapability{
+		PolicyID:         S3ResourceScopePolicyID,
+		Representations:  []model.ContractRepresentation{model.ContractRepresentationRows},
+		FixedFields:      []string{"endpoint", "region", "bucket", "prefix", "force_path_style", "operation", "format", "delimiter", "has_header", "overwrite"},
+		DynamicSelectors: []string{"key"},
+		ExecutionValues:  []string{"content", "content_type", "metadata"},
+	}
+}
+
 var descriptors = []Descriptor{
 	{
+		Type:                          model.DataSourceTypeGoogleWorkspace,
+		ProofMetadata:                 ProofMetadataCapability{Operations: []string{"google_workspace.worksheet_metadata", "google_workspace.file_metadata"}, SourceClaimSuffix: "/source/selected_resource", SinkClaimSuffix: "/destination/selected_resource"},
+		SchemaFamily:                  SchemaFamilyFile,
+		QueryOperationType:            OperationTypeGoogleWorkspace,
+		SinkBackend:                   model.SinkBackendHTTP,
+		SupportsPipelineSource:        true,
+		SupportsPipelineSink:          true,
+		SupportedSinkReplayStrategies: []SinkReplayStrategy{SinkReplayStrategyNaturallyIdempotent, SinkReplayStrategyUnsafe},
+		SinkPayloadBinding:            SinkPayloadBindingEncoded,
+		SinkResult:                    SinkResultCapability{Kind: SinkResultKindObjectRows, Operation: "update"},
+	},
+	{
 		Type:                   model.DataSourceTypePostgres,
+		ProofMetadata:          ProofMetadataCapability{Operations: []string{"postgres.table_metadata"}, SourceClaimSuffix: "/source/selected_resource", SinkClaimSuffix: "/destination/selected_resource"},
 		SchemaFamily:           SchemaFamilySQL,
 		QueryOperationType:     OperationTypeSQL,
 		SinkBackend:            model.SinkBackendDB,
@@ -95,6 +146,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeMySQL,
+		ProofMetadata:          ProofMetadataCapability{Operations: []string{"mysql.table_metadata"}, SourceClaimSuffix: "/source/selected_resource", SinkClaimSuffix: "/destination/selected_resource"},
 		SchemaFamily:           SchemaFamilySQL,
 		QueryOperationType:     OperationTypeSQL,
 		SinkBackend:            model.SinkBackendDB,
@@ -111,6 +163,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeBigQuery,
+		ProofMetadata:          ProofMetadataCapability{Operations: []string{"bigquery.table_metadata"}, SinkClaimSuffix: "/destination/append_capability"},
 		SchemaFamily:           SchemaFamilySQL,
 		QueryOperationType:     OperationTypeBigQuery,
 		SinkBackend:            model.SinkBackendDB,
@@ -129,6 +182,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeSnowflake,
+		ProofMetadata:          ProofMetadataCapability{UnsupportedReason: "SDK session, OCSP and telemetry traffic and warehouse-backed metadata queries lack an admitted bounded no-cost observation."},
 		SchemaFamily:           SchemaFamilySQL,
 		QueryOperationType:     OperationTypeSnowflake,
 		SinkBackend:            model.SinkBackendDB,
@@ -144,6 +198,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeHTTP,
+		ProofMetadata:          ProofMetadataCapability{UnsupportedReason: "Generic requests and whole OpenAPI documents do not establish selected-resource metadata semantics."},
 		SchemaFamily:           SchemaFamilyHTTP,
 		QueryOperationType:     OperationTypeHTTP,
 		SinkBackend:            model.SinkBackendHTTP,
@@ -160,6 +215,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeMongoDB,
+		ProofMetadata:          ProofMetadataCapability{Operations: []string{"mongodb.collection_metadata"}, SourceClaimSuffix: "/source/selected_resource", SinkClaimSuffix: "/destination/selected_resource"},
 		SchemaFamily:           SchemaFamilyDocument,
 		QueryOperationType:     OperationTypeMongoDB,
 		SinkBackend:            model.SinkBackendMongo,
@@ -176,6 +232,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeHubSpot,
+		ProofMetadata:          ProofMetadataCapability{Operations: []string{"hubspot.contact_metadata"}, SourceClaimSuffix: "/source/live_identity"},
 		SchemaFamily:           SchemaFamilyObjectAPI,
 		QueryOperationType:     OperationTypeHubSpot,
 		SinkBackend:            model.SinkBackendHTTP,
@@ -196,6 +253,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeFTP,
+		ProofMetadata:          ProofMetadataCapability{UnsupportedReason: "Current introspection lists and samples files; no admitted selected-file metadata operation exists."},
 		SchemaFamily:           SchemaFamilyFile,
 		QueryOperationType:     OperationTypeFTP,
 		SinkBackend:            model.SinkBackendFTP,
@@ -208,6 +266,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeGit,
+		ProofMetadata:          ProofMetadataCapability{UnsupportedReason: "Repository clone/list/sample operations have no bounded selected-resource metadata observation."},
 		SchemaFamily:           SchemaFamilyFile,
 		QueryOperationType:     OperationTypeGit,
 		SinkBackend:            model.SinkBackendGit,
@@ -221,6 +280,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeGithub,
+		ProofMetadata:          ProofMetadataCapability{UnsupportedReason: "Repository clone/list/sample operations have no bounded selected-resource metadata observation."},
 		SchemaFamily:           SchemaFamilyFile,
 		QueryOperationType:     OperationTypeGit,
 		SinkBackend:            model.SinkBackendGit,
@@ -233,6 +293,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeGitlab,
+		ProofMetadata:          ProofMetadataCapability{UnsupportedReason: "Repository clone/list/sample operations have no bounded selected-resource metadata observation."},
 		SchemaFamily:           SchemaFamilyFile,
 		QueryOperationType:     OperationTypeGit,
 		SinkBackend:            model.SinkBackendGit,
@@ -245,6 +306,7 @@ var descriptors = []Descriptor{
 	},
 	{
 		Type:                   model.DataSourceTypeS3,
+		ProofMetadata:          ProofMetadataCapability{Operations: []string{"s3.object_metadata"}, SourceClaimSuffix: "/source/selected_resource", SinkClaimSuffix: "/destination/selected_resource"},
 		SchemaFamily:           SchemaFamilyObjectStore,
 		QueryOperationType:     OperationTypeS3,
 		SinkBackend:            model.SinkBackendS3,

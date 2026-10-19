@@ -8,6 +8,25 @@ import (
 	"github.com/Braidplane/cli/pkg/model"
 )
 
+func TestResourceScopeCapabilitiesFailClosed(t *testing.T) {
+	t.Parallel()
+	for _, descriptor := range AllDescriptors() {
+		capability := descriptor.ResourceScopeCapability()
+		if descriptor.Type == model.DataSourceTypeS3 {
+			require.Equal(t, "s3/relative-key/v1", capability.PolicyID)
+			require.Equal(t, []model.ContractRepresentation{model.ContractRepresentationRows}, capability.Representations)
+			require.Equal(t, []string{"key"}, capability.DynamicSelectors)
+			require.Contains(t, capability.FixedFields, "bucket")
+			require.Empty(t, capability.UnsupportedReason)
+		} else {
+			require.Empty(t, capability.PolicyID)
+			require.Empty(t, capability.Representations)
+			require.Empty(t, capability.DynamicSelectors)
+			require.NotEmpty(t, capability.UnsupportedReason)
+		}
+	}
+}
+
 func TestDescriptorForDefinesConnectorDomainContract(t *testing.T) {
 	t.Parallel()
 
@@ -375,5 +394,13 @@ func TestSupportsIncrementalSourceCheckpointKind(t *testing.T) {
 
 			require.Equal(t, tt.want, got)
 		})
+	}
+}
+
+func TestEveryConnectorDeclaresFreshProofMetadataScope(t *testing.T) {
+	for _, descriptor := range AllDescriptors() {
+		supported := len(descriptor.ProofMetadata.Operations) > 0
+		explained := descriptor.ProofMetadata.UnsupportedReason != ""
+		require.NotEqual(t, supported, explained, descriptor.Type.String())
 	}
 }

@@ -333,6 +333,21 @@ steps:
 	require.NotContains(t, err.Error(), "not-an-email")
 }
 
+func TestValidateTransformInputContract_RequiredFieldInLaterRow(t *testing.T) {
+	t.Parallel()
+
+	contract := &pipepayload.Contract{Fields: []pipepayload.ContractField{{
+		Name:     "email",
+		Required: true,
+	}}}
+	err := validateTransformInputContract(
+		[]map[string]any{{"email": "first@example.com"}, {}},
+		contract,
+		"runtime payload",
+	)
+	require.ErrorIs(t, err, xerror.TransformInputContractViolation())
+}
+
 func loadTransformOutputContractFromYAML(t *testing.T, data string) *pipepayload.Contract {
 	t.Helper()
 

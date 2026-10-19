@@ -13,6 +13,7 @@ import (
 )
 
 type dataSourceRequestFile struct {
+	IsActive    *bool           `json:"is_active,omitempty"`
 	Type        string          `json:"type"`
 	Slug        string          `json:"slug,omitempty"`
 	Name        string          `json:"name,omitempty"`
@@ -40,11 +41,20 @@ type snowflakeCredentialFile struct {
 }
 
 type httpCredentialFile struct {
-	BearerToken     string `json:"bearer_token"`
-	BearerTokenFile string `json:"bearer_token_file"`
-	Username        string `json:"username"`
-	Password        string `json:"password"`
-	PasswordFile    string `json:"password_file"`
+	APIKey          string                   `json:"api_key"`
+	APIKeyFile      string                   `json:"api_key_file"`
+	APIKeyHeader    string                   `json:"api_key_header"`
+	OAuth           *httpOAuthCredentialFile `json:"oauth"`
+	BearerToken     string                   `json:"bearer_token"`
+	BearerTokenFile string                   `json:"bearer_token_file"`
+	Username        string                   `json:"username"`
+	Password        string                   `json:"password"`
+	PasswordFile    string                   `json:"password_file"`
+}
+
+type httpOAuthCredentialFile struct {
+	api.HTTPOAuthCredentials
+	ClientSecretFile string `json:"client_secret_file"`
 }
 
 type hubSpotCredentialFile struct {
@@ -118,6 +128,7 @@ func updateDataSourceBodyFromFile(path string) (api.UpdateDataSourceRequest, str
 		return api.UpdateDataSourceRequest{}, "", err
 	}
 	command := updateDataSourceCommand{
+		Active:                 file.IsActive,
 		Type:                   file.Type,
 		DataSourceSlug:         file.Slug,
 		Name:                   file.Name,
@@ -240,11 +251,20 @@ func decodeDataSourceConfigFile(
 		return nil
 	}
 	switch dataSourceType {
+	case api.DataSourceTypeGoogleWorkspace:
+		var config api.GoogleWorkspaceConfig
+		if err := decodeStrictJSON(raw, &config, "google_workspace config"); err != nil {
+			return err
+		}
+		if config.AccessMode != nil {
+			flags.WorkspaceAccessMode = string(*config.AccessMode)
+		}
 	case api.DataSourceTypePostgres:
 		var config api.PostgresConfig
 		if err := decodeStrictJSON(raw, &config, "postgres config"); err != nil {
 			return err
 		}
+		flags.AllowPrivateHosts = boolValue(config.AllowPrivateHosts)
 		flags.Host = config.Host
 		flags.Port = config.Port
 		flags.Database = config.Database
@@ -276,6 +296,19 @@ func decodeDataSourceConfigFile(
 		if err := decodeStrictJSON(raw, &config, "snowflake config"); err != nil {
 			return err
 		}
+		if config.WifObjects != nil {
+			for _, object := range *config.WifObjects {
+				switch object.Privilege {
+				case api.SELECT:
+					flags.WIFSelectTables = append(flags.WIFSelectTables, object.Name)
+				case api.INSERT:
+					flags.WIFInsertTables = append(flags.WIFInsertTables, object.Name)
+				default:
+					return xerror.InvalidInput(xerror.DataSource).Detail("WIF table privilege must be SELECT or INSERT")
+				}
+			}
+		}
+
 		flags.Account = config.Account
 		flags.Warehouse = config.Warehouse
 		flags.Database = config.Database
@@ -319,7 +352,19 @@ func decodeDataSourceConfigFile(
 		flags.BasePath = stringValue(config.BasePath)
 		flags.ConnectTimeout = intValue(config.ConnectTimeout)
 		flags.AllowPrivateHosts = boolValue(config.AllowPrivateHosts)
-	case api.DataSourceTypeGit, api.DataSourceTypeGithub, api.DataSourceTypeGitlab:
+	case api.DataSourceTypeGithub:
+		var config api.GitHubRepositoryConfig
+		if err := decodeStrictJSON(raw, &config, "managed GitHub config"); err != nil {
+			return err
+		}
+		flags.RepositoryID, flags.BasePath = config.RepositoryId, stringValue(config.BasePath)
+	case api.DataSourceTypeGitlab:
+		var config api.GitLabRepositoryConfig
+		if err := decodeStrictJSON(raw, &config, "managed GitLab config"); err != nil {
+			return err
+		}
+		flags.ProjectID, flags.BasePath = config.ProjectId, stringValue(config.BasePath)
+	case api.DataSourceTypeGit:
 		var config api.GitConfig
 		if err := decodeStrictJSON(raw, &config, "git config"); err != nil {
 			return err
@@ -354,6 +399,19 @@ func decodeDataSourceCredentialsFile(
 	required bool,
 	flags *dataSourceRequestFlags,
 ) ([]string, error) {
+	if dataSourceType == api.DataSourceTypeGoogleWorkspace {
+		if len(bytes.TrimSpace(raw)) > 0 || required {
+			return nil, xerror.InvalidInput(xerror.DataSource).Detail("Google Workspace uses provider OAuth onboarding; static credentials are not supported")
+		}
+		return nil, nil
+	}
+
+	if dataSourceType == api.DataSourceTypeGithub || dataSourceType == api.DataSourceTypeGitlab {
+		if len(bytes.TrimSpace(raw)) != 0 {
+			return nil, xerror.InvalidInput(xerror.DataSource).Detail("Managed Git sources use organization connections. Use Generic Git for manual credentials.")
+		}
+		return nil, nil
+	}
 	if len(bytes.TrimSpace(raw)) == 0 {
 		if required && dataSourceType != api.DataSourceTypeHttp {
 			return nil, xerror.InvalidRequired(xerror.DataSource).Detail("set credentials in --file")
@@ -409,6 +467,29 @@ func decodeDataSourceCredentialsFile(
 		if err := decodeStrictJSON(raw, &credentials, "http credentials"); err != nil {
 			return nil, err
 		}
+		if credentials.OAuth != nil {
+			if credentials.APIKey != "" || credentials.APIKeyFile != "" || credentials.APIKeyHeader != "" || credentials.BearerToken != "" || credentials.BearerTokenFile != "" || credentials.Username != "" || credentials.Password != "" || credentials.PasswordFile != "" {
+				return nil, xerror.InvalidInput(xerror.DataSource).Detail("HTTP OAuth settings cannot be combined with other credentials")
+			}
+			oauth := credentials.OAuth
+			direct := ""
+			if oauth.ClientSecret != nil {
+				direct = *oauth.ClientSecret
+			}
+			value, secrets, err := readSecretFileValue("client secret", direct, oauth.ClientSecretFile, baseDir, string(oauth.GrantType) == "client_credentials")
+			if err != nil {
+				return nil, err
+			}
+			oauth.ClientSecret = optionalCredentialString(value)
+			flags.HTTPOAuth = &oauth.HTTPOAuthCredentials
+			flags.HTTPOAuthSecrets = secrets
+			return secrets, nil
+		}
+		key, keySecrets, err := readSecretFileValue("API key", credentials.APIKey, credentials.APIKeyFile, baseDir, false)
+		if err != nil {
+			return nil, err
+		}
+		flags.APIKey, flags.APIKeyHeader = key, credentials.APIKeyHeader
 		bearer, bearerSecrets, err := readSecretFileValue("bearer token", credentials.BearerToken, credentials.BearerTokenFile, baseDir, false)
 		if err != nil {
 			return nil, err
@@ -420,7 +501,7 @@ func decodeDataSourceCredentialsFile(
 		flags.BearerToken = bearer
 		flags.Username = credentials.Username
 		flags.Password = password
-		return append(bearerSecrets, passwordSecrets...), nil
+		return append(append(keySecrets, bearerSecrets...), passwordSecrets...), nil
 	case api.DataSourceTypeHubspot:
 		var credentials hubSpotCredentialFile
 		if err := decodeStrictJSON(raw, &credentials, "hubspot credentials"); err != nil {
@@ -432,7 +513,7 @@ func decodeDataSourceCredentialsFile(
 		}
 		flags.PrivateAppToken = token
 		return secrets, nil
-	case api.DataSourceTypeGit, api.DataSourceTypeGithub, api.DataSourceTypeGitlab:
+	case api.DataSourceTypeGit:
 		var credentials gitCredentialFile
 		if err := decodeStrictJSON(raw, &credentials, "git credentials"); err != nil {
 			return nil, err
@@ -579,11 +660,11 @@ func (f dataSourceRequestFlags) hasDirectInputFlags() bool {
 		f.HealthPath != "" || f.TimeoutSeconds != 0 || f.OpenAPIURL != "" ||
 		f.OpenAPIFetchTimeoutSeconds != 0 || f.ProjectID != "" || f.DefaultDataset != "" ||
 		f.Location != "" || f.MaximumBytesBilled != 0 || f.Account != "" ||
-		f.Warehouse != "" || f.Schema != "" || f.Role != "" || f.SnowflakeAuthType != "" || f.RepoURL != "" ||
+		len(f.WIFSelectTables) > 0 || len(f.WIFInsertTables) > 0 || f.Warehouse != "" || f.Schema != "" || f.Role != "" || f.SnowflakeAuthType != "" || f.RepoURL != "" ||
 		f.DefaultBranch != "" || f.BasePath != "" || f.Endpoint != "" || f.Region != "" ||
 		f.Bucket != "" || f.Prefix != "" || f.ForcePathStyle != nil ||
 		f.AllowPrivateHosts != nil || f.ReadOnly || f.ReadWrite || f.Username != "" ||
-		f.Password != "" || f.BearerToken != "" || f.PrivateAppToken != "" ||
+		f.APIKey != "" || f.APIKeyHeader != "" || f.Password != "" || f.BearerToken != "" || f.PrivateAppToken != "" ||
 		f.ServiceAccountJSON != "" || f.GitAuthType != "" || f.GitToken != "" ||
 		f.SSHPrivateKey != "" || f.SSHPassphrase != "" || f.SSHKnownHosts != "" ||
 		f.AccessKeyID != "" || f.SecretAccessKey != "" || f.SessionToken != ""

@@ -9,6 +9,8 @@ createDataSourceRef
 createEnvironment
 createMember
 createMemberInvitation
+createODCSContract
+createODCSRevision
 createOrganization
 createPersonalAccessToken
 createPipelineTrigger
@@ -34,6 +36,7 @@ deleteRole
 deployPipeline
 disableProjectEnvironment
 enableProjectEnvironment
+bootstrapPipelineCheckpoints
 executePipeline
 executeQuery
 formatPipelineSpec
@@ -42,13 +45,19 @@ getAlertDestination
 getAlertPolicy
 getDataSource
 getDataSourceBinding
+getDataSourceProofConfiguration
 getDataSourceRef
 getDriftImpactReport
 getEnvironment
 getEnvironmentRuntimeVariable
 getEnvironmentSecret
+getGoogleWorkspaceFile
+getGoogleWorkspaceWorksheets
 getMemberInvitation
 getNotification
+getODCSArtifact
+getODCSContract
+getODCSRevision
 getOrganization
 getOrganizationRetentionPolicy
 getPersonalAccessToken
@@ -65,7 +74,10 @@ getProofReceipt
 getQuery
 getQueryExecution
 getRole
+getSnowflakeOnboarding
 getUsersProfile
+importODCSArtifacts
+inspectODCSRevision
 introspectDataSourceSchema
 listAPIKeys
 listAlertDeliveryAttempts
@@ -81,11 +93,14 @@ listEnvironmentRuntimeVariables
 listEnvironmentSecrets
 listEnvironments
 listEvents
+listGoogleWorkspaceFiles
 listMemberInvitations
 listMembers
 listMyMemberInvitations
 listNotificationDeliveryAttempts
 listNotifications
+listODCSContracts
+listODCSRevisions
 listOrganizationRetentionRuns
 listOrganizations
 listPersonalAccessTokens
@@ -105,6 +120,7 @@ listQueryExecutions
 listRoles
 patchUsersProfile
 publishPipelineDraft
+previewODCSRevisionImpact
 purgeQuery
 reconcilePipelines
 refreshDataSourceProviderGrant
@@ -124,6 +140,7 @@ rotateDataSourceProviderGrant
 rotatePersonalAccessToken
 rotatePipelineWebhookSecret
 savePipelineDraft
+setDataSourceProofConfiguration
 setProjectPipelineBackend
 startProviderConnectorInstall
 startProviderDataSourceInstall
@@ -138,6 +155,7 @@ updateDataSourceCredentials
 updateDataSourceRef
 updateEnvironment
 updateMember
+updateODCSContract
 updateOrganization
 updateOrganizationRetentionPolicy
 updatePersonalAccessToken
@@ -150,3 +168,6 @@ upsertDataSourceBinding
 upsertEnvironmentRuntimeVariable
 upsertEnvironmentSecret
 validatePipeline
+verifyGoogleWorkspaceFiles
+
+connectDataSourceHTTPOAuth

@@ -356,3 +356,13 @@ func TestResolvePipelineValidatesResolvedLookbackWindow(t *testing.T) {
 	require.ErrorContains(t, err, `step[0] "fetch-orders" query incremental.lookback_window`)
 	require.ErrorContains(t, err, "lookback_window must resolve to a positive duration")
 }
+
+func TestEnvironmentKeysMatchExecutableSubstitutions(t *testing.T) {
+	t.Parallel()
+	pipeline := &pipelinespec.Pipeline{Metadata: pipelinespec.Metadata{Name: "{{runtime.env.IGNORED}}"}, Steps: []pipelinespec.Step{
+		{Query: &pipelinespec.QueryRef{Parameters: map[string]any{"a": "{{ runtime.env.CUSTOMER }}", "b": []any{"{{runtime.env.DATE}}", "{{runtime.secrets.TOKEN}}"}}, OperationInline: map[string]any{"sql": "{{runtime.input.VALUE}} {{runtime.env.CUSTOMER}}"}}},
+		{Sink: &pipelinespec.SinkSpec{Config: map[string]any{"path": "{{runtime.env.PREFIX}}"}}},
+	}}
+	require.Equal(t, []string{"CUSTOMER", "DATE", "PREFIX"}, EnvironmentKeys(pipeline))
+	require.Empty(t, EnvironmentKeys(nil))
+}

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -339,4 +340,22 @@ func runCLIForQueryTest(t *testing.T, serverURL string, args []string) (string, 
 		cliRuntime{configPath: filepath.Join(t.TempDir(), "braidplane.toml")},
 	)
 	return stdout.String(), stderr.String(), err
+}
+
+func TestRunWithArgsQueryExecuteReportsHTTPRowLimitExceeded(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/api/organizations/acme/data-sources/http-posts/queries/posts/execute", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":{"code":"EXECUTION_ROW_LIMIT_EXCEEDED","message":"execution row limit exceeded","detailed_error":"HTTP request completed with status 201; verify remote state before retrying a write."}}`))
+	}))
+	t.Cleanup(server.Close)
+	stdout, _, err := runCLIForQueryTest(t, server.URL, []string{
+		"braidplane", "query", "execute", "posts", "--data-source", "http-posts",
+	})
+	require.ErrorContains(t, err, "EXECUTION_ROW_LIMIT_EXCEEDED")
+	require.ErrorContains(t, err, "HTTP request completed with status 201")
+	require.ErrorContains(t, err, "verify remote state before retrying a write")
+	require.Empty(t, stdout, "over-limit execution must not print a successful result")
 }

@@ -769,3 +769,14 @@ func decodePipelineDraftConflictError(statusCode int, body []byte) error {
 
 	return xerror.Unexpected().Detail(strings.Join(parts, ": "))
 }
+
+func (c *cliAPIClient) bootstrapPipelineCheckpoints(ctx context.Context, project, environment, pipeline string, body api.BootstrapPipelineCheckpointsRequest) error {
+	resp, err := c.openapi.BootstrapPipelineCheckpointsWithResponse(ctx, c.organization, project, environment, pipeline, body)
+	if err != nil {
+		return xerror.Wrapf("bootstrap pipeline checkpoints: %w", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		return decodeAPIError(resp.StatusCode(), resp.Body)
+	}
+	return nil
+}

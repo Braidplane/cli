@@ -6,15 +6,16 @@ import (
 )
 
 const (
-	OperationTypeSQL       = catalog.OperationTypeSQL
-	OperationTypeBigQuery  = catalog.OperationTypeBigQuery
-	OperationTypeSnowflake = catalog.OperationTypeSnowflake
-	OperationTypeHTTP      = catalog.OperationTypeHTTP
-	OperationTypeFTP       = catalog.OperationTypeFTP
-	OperationTypeGit       = catalog.OperationTypeGit
-	OperationTypeMongoDB   = catalog.OperationTypeMongoDB
-	OperationTypeHubSpot   = catalog.OperationTypeHubSpot
-	OperationTypeS3        = catalog.OperationTypeS3
+	OperationTypeSQL             = catalog.OperationTypeSQL
+	OperationTypeBigQuery        = catalog.OperationTypeBigQuery
+	OperationTypeGoogleWorkspace = catalog.OperationTypeGoogleWorkspace
+	OperationTypeSnowflake       = catalog.OperationTypeSnowflake
+	OperationTypeHTTP            = catalog.OperationTypeHTTP
+	OperationTypeFTP             = catalog.OperationTypeFTP
+	OperationTypeGit             = catalog.OperationTypeGit
+	OperationTypeMongoDB         = catalog.OperationTypeMongoDB
+	OperationTypeHubSpot         = catalog.OperationTypeHubSpot
+	OperationTypeS3              = catalog.OperationTypeS3
 )
 
 // ConnectorCapability is the pipeline-facing subset of connector catalog facts.

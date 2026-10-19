@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-const _DataSourceTypeName = "unknown_type_should_not_be_usedpostgresmysqlbigqueryhttpmongodbhubspotftpgitgithubgitlabs3snowflake"
+const _DataSourceTypeName = "unknown_type_should_not_be_usedpostgresmysqlbigqueryhttpmongodbhubspotftpgitgithubgitlabs3snowflakegoogle_workspace"
 
-var _DataSourceTypeIndex = [...]uint8{0, 31, 39, 44, 52, 56, 63, 70, 73, 76, 82, 88, 90, 99}
+var _DataSourceTypeIndex = [...]uint8{0, 31, 39, 44, 52, 56, 63, 70, 73, 76, 82, 88, 90, 99, 115}
 
-const _DataSourceTypeLowerName = "unknown_type_should_not_be_usedpostgresmysqlbigqueryhttpmongodbhubspotftpgitgithubgitlabs3snowflake"
+const _DataSourceTypeLowerName = "unknown_type_should_not_be_usedpostgresmysqlbigqueryhttpmongodbhubspotftpgitgithubgitlabs3snowflakegoogle_workspace"
 
 func (i DataSourceType) String() string {
 	if i < 0 || i >= DataSourceType(len(_DataSourceTypeIndex)-1) {
@@ -37,37 +37,40 @@ func _DataSourceTypeNoOp() {
 	_ = x[DataSourceTypeGitlab-(10)]
 	_ = x[DataSourceTypeS3-(11)]
 	_ = x[DataSourceTypeSnowflake-(12)]
+	_ = x[DataSourceTypeGoogleWorkspace-(13)]
 }
 
-var _DataSourceTypeValues = []DataSourceType{DataSourceTypeUnknown, DataSourceTypePostgres, DataSourceTypeMySQL, DataSourceTypeBigQuery, DataSourceTypeHTTP, DataSourceTypeMongoDB, DataSourceTypeHubSpot, DataSourceTypeFTP, DataSourceTypeGit, DataSourceTypeGithub, DataSourceTypeGitlab, DataSourceTypeS3, DataSourceTypeSnowflake}
+var _DataSourceTypeValues = []DataSourceType{DataSourceTypeUnknown, DataSourceTypePostgres, DataSourceTypeMySQL, DataSourceTypeBigQuery, DataSourceTypeHTTP, DataSourceTypeMongoDB, DataSourceTypeHubSpot, DataSourceTypeFTP, DataSourceTypeGit, DataSourceTypeGithub, DataSourceTypeGitlab, DataSourceTypeS3, DataSourceTypeSnowflake, DataSourceTypeGoogleWorkspace}
 
 var _DataSourceTypeNameToValueMap = map[string]DataSourceType{
-	_DataSourceTypeName[0:31]:       DataSourceTypeUnknown,
-	_DataSourceTypeLowerName[0:31]:  DataSourceTypeUnknown,
-	_DataSourceTypeName[31:39]:      DataSourceTypePostgres,
-	_DataSourceTypeLowerName[31:39]: DataSourceTypePostgres,
-	_DataSourceTypeName[39:44]:      DataSourceTypeMySQL,
-	_DataSourceTypeLowerName[39:44]: DataSourceTypeMySQL,
-	_DataSourceTypeName[44:52]:      DataSourceTypeBigQuery,
-	_DataSourceTypeLowerName[44:52]: DataSourceTypeBigQuery,
-	_DataSourceTypeName[52:56]:      DataSourceTypeHTTP,
-	_DataSourceTypeLowerName[52:56]: DataSourceTypeHTTP,
-	_DataSourceTypeName[56:63]:      DataSourceTypeMongoDB,
-	_DataSourceTypeLowerName[56:63]: DataSourceTypeMongoDB,
-	_DataSourceTypeName[63:70]:      DataSourceTypeHubSpot,
-	_DataSourceTypeLowerName[63:70]: DataSourceTypeHubSpot,
-	_DataSourceTypeName[70:73]:      DataSourceTypeFTP,
-	_DataSourceTypeLowerName[70:73]: DataSourceTypeFTP,
-	_DataSourceTypeName[73:76]:      DataSourceTypeGit,
-	_DataSourceTypeLowerName[73:76]: DataSourceTypeGit,
-	_DataSourceTypeName[76:82]:      DataSourceTypeGithub,
-	_DataSourceTypeLowerName[76:82]: DataSourceTypeGithub,
-	_DataSourceTypeName[82:88]:      DataSourceTypeGitlab,
-	_DataSourceTypeLowerName[82:88]: DataSourceTypeGitlab,
-	_DataSourceTypeName[88:90]:      DataSourceTypeS3,
-	_DataSourceTypeLowerName[88:90]: DataSourceTypeS3,
-	_DataSourceTypeName[90:99]:      DataSourceTypeSnowflake,
-	_DataSourceTypeLowerName[90:99]: DataSourceTypeSnowflake,
+	_DataSourceTypeName[0:31]:        DataSourceTypeUnknown,
+	_DataSourceTypeLowerName[0:31]:   DataSourceTypeUnknown,
+	_DataSourceTypeName[31:39]:       DataSourceTypePostgres,
+	_DataSourceTypeLowerName[31:39]:  DataSourceTypePostgres,
+	_DataSourceTypeName[39:44]:       DataSourceTypeMySQL,
+	_DataSourceTypeLowerName[39:44]:  DataSourceTypeMySQL,
+	_DataSourceTypeName[44:52]:       DataSourceTypeBigQuery,
+	_DataSourceTypeLowerName[44:52]:  DataSourceTypeBigQuery,
+	_DataSourceTypeName[52:56]:       DataSourceTypeHTTP,
+	_DataSourceTypeLowerName[52:56]:  DataSourceTypeHTTP,
+	_DataSourceTypeName[56:63]:       DataSourceTypeMongoDB,
+	_DataSourceTypeLowerName[56:63]:  DataSourceTypeMongoDB,
+	_DataSourceTypeName[63:70]:       DataSourceTypeHubSpot,
+	_DataSourceTypeLowerName[63:70]:  DataSourceTypeHubSpot,
+	_DataSourceTypeName[70:73]:       DataSourceTypeFTP,
+	_DataSourceTypeLowerName[70:73]:  DataSourceTypeFTP,
+	_DataSourceTypeName[73:76]:       DataSourceTypeGit,
+	_DataSourceTypeLowerName[73:76]:  DataSourceTypeGit,
+	_DataSourceTypeName[76:82]:       DataSourceTypeGithub,
+	_DataSourceTypeLowerName[76:82]:  DataSourceTypeGithub,
+	_DataSourceTypeName[82:88]:       DataSourceTypeGitlab,
+	_DataSourceTypeLowerName[82:88]:  DataSourceTypeGitlab,
+	_DataSourceTypeName[88:90]:       DataSourceTypeS3,
+	_DataSourceTypeLowerName[88:90]:  DataSourceTypeS3,
+	_DataSourceTypeName[90:99]:       DataSourceTypeSnowflake,
+	_DataSourceTypeLowerName[90:99]:  DataSourceTypeSnowflake,
+	_DataSourceTypeName[99:115]:      DataSourceTypeGoogleWorkspace,
+	_DataSourceTypeLowerName[99:115]: DataSourceTypeGoogleWorkspace,
 }
 
 var _DataSourceTypeNames = []string{
@@ -84,6 +87,7 @@ var _DataSourceTypeNames = []string{
 	_DataSourceTypeName[82:88],
 	_DataSourceTypeName[88:90],
 	_DataSourceTypeName[90:99],
+	_DataSourceTypeName[99:115],
 }
 
 // DataSourceTypeString retrieves an enum value from the enum constants string name.

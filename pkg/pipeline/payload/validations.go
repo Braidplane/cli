@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"math/big"
 	"net/mail"
 	"net/url"
 	"reflect"
@@ -12,6 +13,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/Braidplane/cli/pkg/decimal"
 	"github.com/Braidplane/cli/pkg/model"
 	"github.com/Braidplane/cli/pkg/xerror"
 )
@@ -61,6 +63,14 @@ func (f ContractFieldValidationError) Summary() string {
 	if count <= 0 {
 		count = 1
 	}
+	if f.Rule == ContractValidationRuleUnknown {
+		return fmt.Sprintf(
+			"contract %q field %q failed required/non-null validation (%d violation(s))",
+			contractName,
+			f.FieldName,
+			count,
+		)
+	}
 	return fmt.Sprintf(
 		"contract %q field %q failed %s validation (%d violation(s))",
 		contractName,
@@ -78,6 +88,9 @@ func ValidateContractFieldDeclarations(contract *Contract) error {
 	}
 
 	for _, field := range contract.Fields {
+		if err := ValidateDecimalFieldDeclaration(field); err != nil {
+			return err
+		}
 		if err := validateFieldValidationDeclaration(contract, field); err != nil {
 			return err
 		}
@@ -128,7 +141,7 @@ func ValidateContractFieldValues(
 	}
 
 	for _, field := range contract.Fields {
-		if field.Validations == nil {
+		if field.Validations == nil && !field.Required && field.Nullable {
 			continue
 		}
 		if failure := validateRuntimeField(contract, field, rows); failure != nil {
@@ -184,6 +197,7 @@ func validateFieldValidationDeclaration(contract *Contract, field ContractField)
 		case model.ContractFieldTypeValueString,
 			model.ContractFieldTypeValueInteger,
 			model.ContractFieldTypeValueNumber,
+			model.ContractFieldTypeValueDecimal,
 			model.ContractFieldTypeValueBoolean:
 			for _, literal := range validations.Enum {
 				if !validationLiteralMatchesFieldType(literal, field.Type) {
@@ -207,6 +221,7 @@ func validateFieldValidationDeclaration(contract *Contract, field ContractField)
 		switch field.Type {
 		case model.ContractFieldTypeValueInteger,
 			model.ContractFieldTypeValueNumber,
+			model.ContractFieldTypeValueDecimal,
 			model.ContractFieldTypeValueDatetime:
 		default:
 			return invalidValidationDeclaration(field, ContractValidationRuleMin, "min/max require number, integer, or datetime field type")
@@ -270,9 +285,15 @@ func coerceSerializedValidationValue(value any, fieldType model.ContractFieldTyp
 			return value, true
 		}
 		return parsed, true
+	case model.ContractFieldTypeValueDecimal:
+		parsed, err := decimal.From(value)
+		if err != nil {
+			return value, true
+		}
+		return parsed, true
 	case model.ContractFieldTypeValueNumber:
-		parsed, err := strconv.ParseFloat(text, 64)
-		if err != nil || !finiteFloat(parsed) {
+		parsed, ok := numberValue(json.Number(text))
+		if !ok {
 			return value, true
 		}
 		return parsed, true
@@ -308,7 +329,7 @@ func validateRuntimeField(
 			return contractFieldValidationFailure(
 				contract,
 				field,
-				firstActiveValidationRule(field.Validations),
+				structuralValidationRule(field.Validations),
 				1,
 			)
 		}
@@ -317,17 +338,17 @@ func validateRuntimeField(
 				return contractFieldValidationFailure(
 					contract,
 					field,
-					firstActiveValidationRule(field.Validations),
+					structuralValidationRule(field.Validations),
 					1,
 				)
 			}
 			continue
 		}
-		if hasMissing {
+		if hasMissing && (field.Required || hasActiveValidationRule(field.Validations)) {
 			return contractFieldValidationFailure(
 				contract,
 				field,
-				firstActiveValidationRule(field.Validations),
+				structuralValidationRule(field.Validations),
 				1,
 			)
 		}
@@ -336,11 +357,18 @@ func validateRuntimeField(
 				if field.Nullable {
 					continue
 				}
-				values = append(values, nil)
-				continue
+				return contractFieldValidationFailure(
+					contract,
+					field,
+					structuralValidationRule(field.Validations),
+					1,
+				)
 			}
 			values = append(values, value)
 		}
+	}
+	if !hasActiveValidationRule(field.Validations) {
+		return nil
 	}
 	if len(values) == 0 {
 		return nil
@@ -424,6 +452,13 @@ func firstActiveValidationRule(validations *ContractFieldValidations) ContractVa
 	return ContractValidationRuleEnum
 }
 
+func structuralValidationRule(validations *ContractFieldValidations) ContractValidationRule {
+	if !hasActiveValidationRule(validations) {
+		return ContractValidationRuleUnknown
+	}
+	return firstActiveValidationRule(validations)
+}
+
 func hasActiveValidationRule(validations *ContractFieldValidations) bool {
 	if validations == nil {
 		return false
@@ -448,6 +483,9 @@ func validationLiteralMatchesFieldType(value any, fieldType model.ContractFieldT
 	case model.ContractFieldTypeValueInteger:
 		_, ok := integerValue(value)
 		return ok
+	case model.ContractFieldTypeValueDecimal:
+		_, err := decimal.From(value)
+		return err == nil
 	case model.ContractFieldTypeValueNumber:
 		_, ok := numberValue(value)
 		return ok
@@ -468,10 +506,16 @@ func validationBound(value any, fieldType model.ContractFieldType, rule Contract
 			return nil, false, ruleName + " requires an integer bound"
 		}
 		return bound, true, ""
+	case model.ContractFieldTypeValueDecimal:
+		bound, err := decimal.From(value)
+		if err != nil {
+			return nil, false, ruleName + " requires an exact decimal bound"
+		}
+		return bound, true, ""
 	case model.ContractFieldTypeValueNumber:
 		bound, ok := numberValue(value)
 		if !ok {
-			return nil, false, ruleName + " requires a numeric bound"
+			return nil, false, ruleName + " requires a finite numeric bound with lossless integer conversion"
 		}
 		return bound, true, ""
 	case model.ContractFieldTypeValueDatetime:
@@ -491,6 +535,8 @@ func validationBound(value any, fieldType model.ContractFieldType, rule Contract
 
 func compareComparable(left, right any) int {
 	switch l := left.(type) {
+	case decimal.Value:
+		return l.Cmp(right.(decimal.Value))
 	case int64:
 		r := right.(int64)
 		return compareInt64(l, r)
@@ -599,6 +645,10 @@ func validationValuesEqual(fieldType model.ContractFieldType, left, right any) b
 		l, lok := integerValue(left)
 		r, rok := integerValue(right)
 		return lok && rok && l == r
+	case model.ContractFieldTypeValueDecimal:
+		l, le := decimal.From(left)
+		r, re := decimal.From(right)
+		return le == nil && re == nil && l.Cmp(r) == 0
 	case model.ContractFieldTypeValueNumber:
 		l, lok := numberValue(left)
 		r, rok := numberValue(right)
@@ -644,6 +694,9 @@ func comparableRuntimeValue(value any, fieldType model.ContractFieldType) (any, 
 	switch fieldType {
 	case model.ContractFieldTypeValueInteger:
 		return integerValue(value)
+	case model.ContractFieldTypeValueDecimal:
+		parsed, err := decimal.From(value)
+		return parsed, err == nil
 	case model.ContractFieldTypeValueNumber:
 		return numberValue(value)
 	case model.ContractFieldTypeValueDatetime:
@@ -749,6 +802,12 @@ func uniqueKey(fieldType model.ContractFieldType, value any) (string, bool) {
 			return "", false
 		}
 		return "i:" + strconv.FormatInt(typed, 10), true
+	case model.ContractFieldTypeValueDecimal:
+		typed, err := decimal.From(value)
+		if err != nil {
+			return "", false
+		}
+		return "d:" + typed.Rat().RatString(), true
 	case model.ContractFieldTypeValueNumber:
 		typed, ok := numberValue(value)
 		if !ok {
@@ -839,12 +898,12 @@ func integerValue(value any) (int64, bool) {
 		return int64(typed), true
 	case float32:
 		value := float64(typed)
-		if !finiteFloat(value) || value < math.MinInt64 || value > math.MaxInt64 || math.Trunc(value) != value {
+		if !finiteFloat(value) || value < math.MinInt64 || value >= 0x1p63 || math.Trunc(value) != value {
 			return 0, false
 		}
 		return int64(value), true
 	case float64:
-		if !finiteFloat(typed) || typed < math.MinInt64 || typed > math.MaxInt64 || math.Trunc(typed) != typed {
+		if !finiteFloat(typed) || typed < math.MinInt64 || typed >= 0x1p63 || math.Trunc(typed) != typed {
 			return 0, false
 		}
 		return int64(typed), true
@@ -858,26 +917,8 @@ func integerValue(value any) (int64, bool) {
 
 func numberValue(value any) (float64, bool) {
 	switch typed := value.(type) {
-	case int:
-		return float64(typed), true
-	case int8:
-		return float64(typed), true
-	case int16:
-		return float64(typed), true
-	case int32:
-		return float64(typed), true
-	case int64:
-		return float64(typed), true
-	case uint:
-		return float64(typed), true
-	case uint8:
-		return float64(typed), true
-	case uint16:
-		return float64(typed), true
-	case uint32:
-		return float64(typed), true
-	case uint64:
-		return float64(typed), true
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return numberValue(json.Number(fmt.Sprint(typed)))
 	case float32:
 		value := float64(typed)
 		return value, finiteFloat(value)
@@ -885,7 +926,20 @@ func numberValue(value any) (float64, bool) {
 		return typed, finiteFloat(typed)
 	case json.Number:
 		parsed, err := typed.Float64()
-		return parsed, err == nil && finiteFloat(parsed)
+		if err != nil || !finiteFloat(parsed) {
+			return 0, false
+		}
+		if math.Abs(parsed) >= 0x1p53 {
+			// Bound exact parsing; small values need no integer precision check.
+			if len(typed) > 128 {
+				return 0, false
+			}
+			exact, ok := new(big.Rat).SetString(typed.String())
+			if !ok || (exact.IsInt() && exact.Cmp(new(big.Rat).SetFloat64(parsed)) != 0) {
+				return 0, false
+			}
+		}
+		return parsed, true
 	default:
 		return 0, false
 	}

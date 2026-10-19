@@ -112,7 +112,7 @@ func EvaluateEdgeCompatibility(
 			)
 		}
 
-		if !isCompatibleContractFieldType(actualField.Type, expectedField.Type) {
+		if !isCompatibleContractFieldType(actualField.Type, expectedField.Type) || (actualField.Type == model.ContractFieldTypeValueDecimal && expectedField.Type == model.ContractFieldTypeValueDecimal && !payload.DecimalFieldCompatible(actualField, expectedField)) {
 			return incompatibleEdge(
 				result,
 				ContractReasonTypeMismatch,
@@ -170,6 +170,9 @@ func validateCompatibilityContract(contract *payload.Contract) error {
 		return xerror.Unexpected().Detail("root_shape requires json representation")
 	}
 
+	if err := payload.ValidateContractFieldDeclarations(contract); err != nil {
+		return err
+	}
 	seen := make(map[string]struct{}, len(contract.Fields))
 	for _, field := range contract.Fields {
 		if _, ok := seen[field.Name]; ok {
@@ -189,7 +192,7 @@ func isCompatibleContractFieldType(
 		return true
 	}
 
-	if consumer == model.ContractFieldTypeValueNumber &&
+	if (consumer == model.ContractFieldTypeValueNumber || consumer == model.ContractFieldTypeValueDecimal) &&
 		producer == model.ContractFieldTypeValueInteger {
 		return true
 	}

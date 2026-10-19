@@ -22,21 +22,22 @@ import (
 const unavailablePipelineRunSourceLabel = "unavailable"
 
 type pipelineCommand struct {
-	List       listPipelinesCommand             `cmd:"" help:"List pipelines from the Braidplane API."`
-	Get        getPipelineCommand               `cmd:"" help:"Get a pipeline from the Braidplane API."`
-	Update     updatePipelineCommand            `cmd:"" help:"Propose a pipeline update through the Braidplane API."`
-	Draft      draftPipelineCommand             `cmd:"" help:"Manage pipeline drafts through the Braidplane API."`
-	Run        runPipelineCommand               `cmd:"" help:"Inspect persisted pipeline runs through the Braidplane API."`
-	Trigger    triggerPipelineCommand           `cmd:"" help:"Manage environment-scoped pipeline triggers through the Braidplane API."`
-	Version    versionPipelineCommand           `cmd:"" help:"Inspect immutable pipeline versions through the Braidplane API."`
-	Apply      applyPipelineCommand             `cmd:"" help:"Materialize Git-authored pipelines from the project backend into Braidplane."`
-	Deploy     deployPipelineCommand            `cmd:"" help:"Deploy an immutable pipeline version to an environment."`
-	Deployment pipelineDeploymentCommand        `cmd:"" help:"Inspect environment deployment state and history."`
-	Validation pipelineValidationHistoryCommand `cmd:"" help:"Inspect and refresh persisted validation history."`
-	Drift      pipelineDriftCommand             `cmd:"" help:"Inspect drift and impact reports."`
-	Validate   validateCommand                  `cmd:"" help:"Validate pipeline specs without running a server."`
-	Format     formatPipelineCommand            `cmd:"" help:"Format a pipeline spec through the Braidplane API."`
-	Diff       diffPipelineCommand              `cmd:"" help:"Compare a local pipeline spec with the upstream Braidplane API pipeline."`
+	Bootstrap  bootstrapPipelineCheckpointsCommand `cmd:"" help:"Seed initial incremental checkpoints without running a pipeline."`
+	List       listPipelinesCommand                `cmd:"" help:"List pipelines from the Braidplane API."`
+	Get        getPipelineCommand                  `cmd:"" help:"Get a pipeline from the Braidplane API."`
+	Update     updatePipelineCommand               `cmd:"" help:"Propose a pipeline update through the Braidplane API."`
+	Draft      draftPipelineCommand                `cmd:"" help:"Manage pipeline drafts through the Braidplane API."`
+	Run        runPipelineCommand                  `cmd:"" help:"Inspect persisted pipeline runs through the Braidplane API."`
+	Trigger    triggerPipelineCommand              `cmd:"" help:"Manage environment-scoped pipeline triggers through the Braidplane API."`
+	Version    versionPipelineCommand              `cmd:"" help:"Inspect immutable pipeline versions through the Braidplane API."`
+	Apply      applyPipelineCommand                `cmd:"" help:"Materialize Git-authored pipelines from the project backend into Braidplane."`
+	Deploy     deployPipelineCommand               `cmd:"" help:"Deploy an immutable pipeline version to an environment."`
+	Deployment pipelineDeploymentCommand           `cmd:"" help:"Inspect environment deployment state and history."`
+	Validation pipelineValidationHistoryCommand    `cmd:"" help:"Inspect and refresh persisted validation history."`
+	Drift      pipelineDriftCommand                `cmd:"" help:"Inspect drift and impact reports."`
+	Validate   validateCommand                     `cmd:"" help:"Validate pipeline specs without running a server."`
+	Format     formatPipelineCommand               `cmd:"" help:"Format a pipeline spec through the Braidplane API."`
+	Diff       diffPipelineCommand                 `cmd:"" help:"Compare a local pipeline spec with the upstream Braidplane API pipeline."`
 }
 
 type draftPipelineCommand struct {
@@ -228,7 +229,7 @@ type updatePipelineCommand struct {
 }
 
 func (c *updatePipelineCommand) Run(output *cliOutput, runtime *cliRuntime) error {
-	_, spec, err := loadUpdatePipelineSpecs(c.File, c.PipelineSlug)
+	spec, err := loadUpdatePipelineSpecs(c.File, c.PipelineSlug)
 	if err != nil {
 		return err
 	}
@@ -488,6 +489,8 @@ func (c *listPipelineRunRetryAttemptsCommand) Run(output *cliOutput, runtime *cl
 }
 
 type startPipelineRunCommand struct {
+	BackfillJSON string `help:"Bounded backfill JSON with source_windows for every incremental source; normal checkpoints remain unchanged." name:"backfill-json"`
+
 	apiPipelineFlags
 
 	PipelineSlug string `arg:"" name:"pipeline-slug" help:"Pipeline slug." required:""`
@@ -519,6 +522,22 @@ func (c *startPipelineRunCommand) Run(output *cliOutput, runtime *cliRuntime) er
 			return err
 		}
 		body.Input = &input
+	}
+	if c.BackfillJSON != "" {
+		var backfill api.PipelineBackfillRequest
+		decoder := json.NewDecoder(strings.NewReader(c.BackfillJSON))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&backfill); err != nil {
+			return xerror.InvalidInput(xerror.PipelineRun).Detail("invalid backfill JSON").With(err)
+		}
+		var trailing any
+		if err := decoder.Decode(&trailing); err != io.EOF {
+			return xerror.InvalidInput(xerror.PipelineRun).Detail("backfill JSON must contain one object")
+		}
+		if len(backfill.SourceWindows) == 0 {
+			return xerror.InvalidInput(xerror.PipelineRun).Detail("backfill requires source_windows")
+		}
+		body.Backfill = &backfill
 	}
 	body.ProtectedEnvironmentConfirmation = optionalAPISlug(c.Confirm)
 
@@ -658,18 +677,14 @@ func (c *publishPipelineDraftCommand) Run(output *cliOutput, runtime *cliRuntime
 type applyPipelineCommand struct {
 	apiPipelineFlags
 
-	DryRun      bool     `help:"Compute the deploy-from-git report without mutating DB state." name:"dry-run"`
+	DryRun      bool     `help:"Preview the Git import report without mutating DB state." name:"dry-run"`
 	Dir         string   `help:"Directory inside the git repository to scan for pipeline specs." name:"dir"`
 	Pipelines   []string `help:"Pipeline slug filter. Repeat to apply multiple pipelines." name:"pipeline"`
-	Environment string   `help:"Project environment slug for this reconcile/deploy workflow." name:"environment" env:"BRAIDPLANE_ENVIRONMENT"`
+	Environment string   `help:"Optional environment context; Apply imports without deployment." name:"environment" env:"BRAIDPLANE_ENVIRONMENT"`
 }
 
 func (c *applyPipelineCommand) Run(output *cliOutput, runtime *cliRuntime) error {
 	client, projectSlug, err := newPipelineAPIClient(c.apiPipelineFlags, runtime)
-	if err != nil {
-		return err
-	}
-	environmentSlug, err := runtime.resolveEnvironmentSlug(c.Environment)
 	if err != nil {
 		return err
 	}
@@ -682,40 +697,8 @@ func (c *applyPipelineCommand) Run(output *cliOutput, runtime *cliRuntime) error
 	if err != nil {
 		return err
 	}
-	if !response.DryRun {
-		if err := c.deployAppliedPipelines(context.Background(), client, projectSlug, environmentSlug, response); err != nil {
-			return err
-		}
-	}
 
 	return writeCLIJSON(output.stdout, response)
-}
-
-func (c *applyPipelineCommand) deployAppliedPipelines(
-	ctx context.Context,
-	client *cliAPIClient,
-	projectSlug string,
-	environmentSlug string,
-	response *api.PipelineReconcileResponse,
-) error {
-	if response == nil {
-		return nil
-	}
-	for _, synced := range response.Synced {
-		_, err := client.deployPipeline(
-			ctx,
-			projectSlug,
-			environmentSlug,
-			synced.PipelineSlug,
-			api.PipelineDeploymentRequest{
-				SpecHash: synced.SpecHash,
-			},
-		)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (c *applyPipelineCommand) applyRequest() api.PipelineReconcileRequest {
@@ -1229,17 +1212,7 @@ func loadPipelineSpecForProposal(path string) (api.PipelineSpec, error) {
 		return api.PipelineSpec{}, xerror.Wrapf("validate pipeline: %w", err)
 	}
 
-	data, err := json.Marshal(pipeline)
-	if err != nil {
-		return api.PipelineSpec{}, xerror.InvalidInput(xerror.JSON).With(err)
-	}
-
-	var spec api.PipelineSpec
-	if err := json.Unmarshal(data, &spec); err != nil {
-		return api.PipelineSpec{}, xerror.InvalidInput(xerror.JSON).With(err)
-	}
-
-	return spec, nil
+	return pipelineToAPIPipelineSpec(pipeline)
 }
 
 func loadPipelineValidationSpec(path string) (api.PipelineSpec, error) {
@@ -1270,20 +1243,20 @@ func pipelineToAPIPipelineSpec(pipeline *pipelinespec.Pipeline) (api.PipelineSpe
 	return spec, nil
 }
 
-func loadUpdatePipelineSpecs(path, pipelineSlug string) (api.PipelineSpec, api.PipelineSpecUpdate, error) {
+func loadUpdatePipelineSpecs(path, pipelineSlug string) (api.PipelineSpecUpdate, error) {
 	spec, err := loadPipelineSpecForProposal(path)
 	if err != nil {
-		return api.PipelineSpec{}, api.PipelineSpecUpdate{}, err
+		return api.PipelineSpecUpdate{}, err
 	}
 	if spec.Metadata.Slug != pipelineSlug {
-		return api.PipelineSpec{}, api.PipelineSpecUpdate{}, xerror.InvalidInput(xerror.Pipeline).Detailf(
+		return api.PipelineSpecUpdate{}, xerror.InvalidInput(xerror.Pipeline).Detailf(
 			"pipeline slug mismatch: CLI slug %q does not match file slug %q",
 			pipelineSlug,
 			spec.Metadata.Slug,
 		)
 	}
 
-	return spec, api.PipelineSpecUpdate{
+	return api.PipelineSpecUpdate{
 		Metadata: api.PipelineMetadataUpdate{
 			Name: spec.Metadata.Name,
 		},
@@ -1663,4 +1636,44 @@ func apiPipelineRunSourceView(source *api.PipelineRunSourceSummary) pipelineRunS
 	default:
 		return pipelineRunSourceView{}
 	}
+}
+
+type bootstrapPipelineCheckpointsCommand struct {
+	apiPipelineFlags
+	PipelineSlug string `arg:"" name:"pipeline-slug" required:""`
+	Environment  string `name:"environment" env:"BRAIDPLANE_ENVIRONMENT" help:"Project environment slug."`
+	RequestSlug  string `name:"request-slug" required:"" help:"Audit identifier for this bootstrap request."`
+	SeedsJSON    string `name:"seeds-json" required:"" help:"Object mapping every incremental source step to its value or cursor checkpoint envelope."`
+	Confirm      string `name:"confirm-environment" help:"Exact protected environment slug."`
+	InputJSON    string `name:"input-json" help:"Non-secret runtime inputs used to resolve source identities."`
+}
+
+func (c *bootstrapPipelineCheckpointsCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	client, project, environment, err := newPipelineEnvironmentAPIClient(c.apiPipelineFlags, c.Environment, runtime)
+	if err != nil {
+		return err
+	}
+	var seeds map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(c.SeedsJSON), &seeds); err != nil {
+		return xerror.InvalidInput(xerror.PipelineCheckpoint).Detail("invalid seeds JSON").With(err)
+	}
+	if len(seeds) == 0 {
+		return xerror.InvalidInput(xerror.PipelineCheckpoint).Detail("bootstrap requires source seeds")
+	}
+	body := api.BootstrapPipelineCheckpointsRequest{RequestSlug: c.RequestSlug, SourceSeeds: seeds, ProtectedEnvironmentConfirmation: optionalAPISlug(c.Confirm)}
+	if c.InputJSON != "" {
+		input, err := parseRuntimeInputJSON(c.InputJSON)
+		if err != nil {
+			return err
+		}
+		body.Input = &input
+	}
+	if err := client.bootstrapPipelineCheckpoints(context.Background(), project, environment, c.PipelineSlug, body); err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(output.stdout, "Initial checkpoints bootstrapped (request: "+c.RequestSlug+")")
+	if err != nil {
+		return xerror.Wrapf("write checkpoint bootstrap result: %w", err)
+	}
+	return nil
 }

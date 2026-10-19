@@ -29,6 +29,12 @@ func TestCloneContractFieldValidations_NormalizesJSONNumberBounds(t *testing.T) 
 			wantEnum: []any{int64(1), float64(2.5)},
 		},
 		{
+			name:    "LargeExponentIntegerRemainsExact",
+			raw:     `{"min":9007199254740993e0,"max":9223372036854775807.0}`,
+			wantMin: json.Number("9007199254740993e0"),
+			wantMax: json.Number("9223372036854775807.0"),
+		},
+		{
 			name:     "ScientificNotation",
 			raw:      `{"min":1e6,"max":2.5e-3,"enum":[1e2,2.5e-3]}`,
 			wantMin:  float64(1000000),
@@ -145,6 +151,38 @@ func TestContractHasFieldValidations_TreatsDisabledUniqueAsInactive(t *testing.T
 	}
 
 	require.False(t, payload.ContractHasFieldValidations(contract))
+}
+
+func TestValidateContractFieldValues_EnforcesRequiredAndNonNullableWithoutRules(t *testing.T) {
+	t.Parallel()
+
+	disabledUnique := false
+	activeUnique := true
+	for _, tc := range []struct {
+		name     string
+		field    payload.ContractField
+		rows     []map[string]any
+		wantRule payload.ContractValidationRule
+	}{
+		{"empty validations", payload.ContractField{Name: "id", Validations: &payload.ContractFieldValidations{}}, []map[string]any{{"id": nil}}, payload.ContractValidationRuleUnknown},
+		{"disabled unique", payload.ContractField{Name: "id", Validations: &payload.ContractFieldValidations{Unique: &disabledUnique}}, []map[string]any{{"id": nil}}, payload.ContractValidationRuleUnknown},
+		{"unique only", payload.ContractField{Name: "id", Validations: &payload.ContractFieldValidations{Unique: &activeUnique}}, []map[string]any{{"id": nil}}, payload.ContractValidationRuleUnique},
+		{"required null", payload.ContractField{Name: "id", Required: true}, []map[string]any{{"id": nil}}, payload.ContractValidationRuleUnknown},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			failure := payload.ValidateContractFieldValues(&payload.Contract{Fields: []payload.ContractField{tc.field}}, tc.rows)
+			require.NotNil(t, failure)
+			require.Equal(t, tc.wantRule, failure.Rule)
+		})
+	}
+
+	optional := &payload.Contract{Fields: []payload.ContractField{{Name: "items[].sku"}}}
+	require.Nil(t, payload.ValidateContractFieldValues(optional, []map[string]any{{
+		"items": []any{map[string]any{"sku": "one"}, map[string]any{}},
+	}}))
+	nullable := &payload.Contract{Fields: []payload.ContractField{{Name: "id", Nullable: true}}}
+	require.Nil(t, payload.ValidateContractFieldValues(nullable, []map[string]any{{"id": nil}}))
+	require.Nil(t, payload.ValidateContractFieldValues(optional, nil))
 }
 
 func TestValidateContractFieldValues_LengthAcceptsTypedSlices(t *testing.T) {
@@ -382,4 +420,37 @@ func TestValidateContractFieldValues_PartiallyMissingArrayPathFailsValidation(t 
 	require.NotNil(t, failure)
 	require.Equal(t, payload.ContractValidationRuleFormat, failure.Rule)
 	require.Equal(t, 1, failure.ViolationCount)
+}
+
+func TestIntegerValidationRejectsUnsupportedRanges(t *testing.T) {
+	t.Parallel()
+	contract := &payload.Contract{Fields: []payload.ContractField{{Name: "id", Type: model.ContractFieldTypeValueInteger, Validations: &payload.ContractFieldValidations{Min: int64(-9223372036854775808)}}}}
+	require.Nil(t, payload.ValidateContractFieldValues(contract, []map[string]any{{"id": json.Number("9223372036854775807")}}))
+	for _, value := range []any{float64(0x1p63), float32(0x1p63), json.Number("9223372036854775808")} {
+		require.NotNil(t, payload.ValidateContractFieldValues(contract, []map[string]any{{"id": value}}))
+	}
+	bound := json.Number("9223372036854775809")
+	cloned := payload.CloneContractFieldValidations(&payload.ContractFieldValidations{Max: bound})
+	require.Equal(t, bound, cloned.Max)
+	contract.Fields[0].Validations = cloned
+	require.Error(t, payload.ValidateContractFieldDeclarations(contract))
+}
+
+func TestNumberValidationRejectsLossyIntegerConversion(t *testing.T) {
+	t.Parallel()
+	contract := &payload.Contract{Fields: []payload.ContractField{{Name: "id", Type: model.ContractFieldTypeValueNumber, Validations: &payload.ContractFieldValidations{Min: json.Number("9007199254740996")}}}}
+	require.NoError(t, payload.ValidateContractFieldDeclarations(contract))
+	for _, value := range []any{int64(9007199254740995), json.Number("9007199254740995"), json.Number("9007199254740995e0")} {
+		require.NotNil(t, payload.ValidateContractFieldValues(contract, []map[string]any{{"id": value}}))
+	}
+	rows := payload.CoerceContractFieldValidationRows(contract, []map[string]any{{"id": "9007199254740995"}})
+	require.Equal(t, "9007199254740995", rows[0]["id"])
+	require.NotNil(t, payload.ValidateContractFieldValues(contract, rows))
+	for _, value := range []any{int64(9007199254740996), json.Number("9007199254740996e0"), uint64(1 << 63)} {
+		require.Nil(t, payload.ValidateContractFieldValues(contract, []map[string]any{{"id": value}}))
+	}
+	contract.Fields[0].Validations.Min = json.Number("9007199254740995")
+	require.ErrorContains(t, payload.ValidateContractFieldDeclarations(contract), "lossless integer conversion")
+	contract.Fields[0].Validations = &payload.ContractFieldValidations{Max: int64(0)}
+	require.NotNil(t, payload.ValidateContractFieldValues(contract, []map[string]any{{"id": int64(-9007199254740993)}}))
 }

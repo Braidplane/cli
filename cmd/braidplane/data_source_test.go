@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	api "github.com/Braidplane/cli/internal/apiclient"
@@ -926,6 +927,14 @@ func TestDataSourceProviderBuildersUseGeneratedShapes(t *testing.T) {
 			},
 		},
 		{
+			name: "PasswordlessMySQL",
+			typ:  "mysql",
+			flag: dataSourceRequestFlags{
+				Host: "mysql.example.test", Port: 3306, Database: "app", ConnectTimeout: 5,
+				Username: "reader",
+			},
+		},
+		{
 			name: "BigQuery",
 			typ:  "bigquery",
 			flag: dataSourceRequestFlags{
@@ -994,8 +1003,7 @@ func TestDataSourceProviderBuildersUseGeneratedShapes(t *testing.T) {
 			name: "GitLab",
 			typ:  "gitlab",
 			flag: dataSourceRequestFlags{
-				ProjectID: "42", RepoURL: "https://gitlab.example.test/acme/repo.git", DefaultBranch: "main", BasePath: "pipelines",
-				GitAuthType: "https", Username: "app", GitToken: dataSourceTestGitTokenValue,
+				ProjectID: "42", BasePath: "pipelines",
 			},
 		},
 		{
@@ -1023,7 +1031,7 @@ func TestDataSourceProviderBuildersUseGeneratedShapes(t *testing.T) {
 			createCommand.ReadOnly = true
 			createBody, createSecrets, err := createCommand.createBody()
 			require.NoError(t, err)
-			if tt.typ == "github" {
+			if tt.typ == "github" || tt.typ == "gitlab" || tt.name == "PasswordlessMySQL" {
 				require.Empty(t, createSecrets)
 			} else {
 				require.NotEmpty(t, createSecrets)
@@ -1032,24 +1040,33 @@ func TestDataSourceProviderBuildersUseGeneratedShapes(t *testing.T) {
 			require.Equal(t, tt.typ, createJSON["type"])
 			require.Equal(t, tt.name, createJSON["name"])
 			require.NotEmpty(t, createJSON["config"])
-			if tt.typ == "github" {
+			if tt.typ == "github" || tt.typ == "gitlab" {
 				require.NotContains(t, createJSON, "credentials")
-				require.Equal(t, "42", createJSON["config"].(map[string]any)["repository_id"])
+				if tt.typ == "github" {
+					require.Equal(t, "42", createJSON["config"].(map[string]any)["repository_id"])
+				}
 			} else {
 				require.NotEmpty(t, createJSON["credentials"])
+			}
+			if tt.name == "PasswordlessMySQL" {
+				require.Equal(t, map[string]any{"username": "reader", "password": ""}, createJSON["credentials"])
 			}
 			require.Equal(t, true, createJSON["read_only"])
 			if tt.typ == "gitlab" {
 				require.Equal(t, "42", createJSON["config"].(map[string]any)["project_id"])
 				require.NotContains(t, createJSON["config"], "repo_url")
 			}
-			if tt.typ == "github" {
+			if tt.typ == "github" || tt.typ == "gitlab" {
 				testCommand := testDataSourceCommand{Type: tt.typ, dataSourceRequestFlags: tt.flag}
 				testBody, testSecrets, err := testCommand.testBody()
 				require.NoError(t, err)
 				require.Empty(t, testSecrets)
 				testJSON := jsonObject(t, testBody)
-				require.Equal(t, "42", testJSON["config"].(map[string]any)["repository_id"])
+				key := "repository_id"
+				if tt.typ == "gitlab" {
+					key = "project_id"
+				}
+				require.Equal(t, "42", testJSON["config"].(map[string]any)[key])
 				require.NotContains(t, testJSON, "credentials")
 
 				updateCommand := updateDataSourceCommand{Type: tt.typ, DataSourceSlug: "slug-github", dataSourceRequestFlags: tt.flag}
@@ -1058,7 +1075,7 @@ func TestDataSourceProviderBuildersUseGeneratedShapes(t *testing.T) {
 
 				credentialsCommand := updateDataSourceCredentialsCommand{Type: tt.typ, DataSourceSlug: "slug-github", dataSourceRequestFlags: tt.flag}
 				_, _, _, err = credentialsCommand.credentialsBody(true)
-				require.ErrorContains(t, err, "organization GitHub App")
+				require.ErrorContains(t, err, "organization connection")
 				return
 			}
 
@@ -1080,7 +1097,11 @@ func TestDataSourceProviderBuildersUseGeneratedShapes(t *testing.T) {
 			testCommand := testDataSourceCommand{Type: tt.typ, dataSourceRequestFlags: tt.flag}
 			testBody, testSecrets, err := testCommand.testBody()
 			require.NoError(t, err)
-			require.NotEmpty(t, testSecrets)
+			if tt.name == "PasswordlessMySQL" {
+				require.Empty(t, testSecrets)
+			} else {
+				require.NotEmpty(t, testSecrets)
+			}
 			testJSON := jsonObject(t, testBody)
 			require.Equal(t, tt.typ, testJSON["type"])
 			require.NotEmpty(t, testJSON["config"])
@@ -1094,7 +1115,12 @@ func TestDataSourceProviderBuildersUseGeneratedShapes(t *testing.T) {
 			credentialsBody, credentialSecrets, credentialsSlug, err := credentialsCommand.credentialsBody(true)
 			require.NoError(t, err)
 			require.Equal(t, "slug-"+tt.typ, credentialsSlug)
-			require.NotEmpty(t, credentialSecrets)
+			if tt.name == "PasswordlessMySQL" {
+				require.Empty(t, credentialSecrets)
+				require.Equal(t, map[string]any{"username": "reader", "password": ""}, jsonObject(t, credentialsBody))
+			} else {
+				require.NotEmpty(t, credentialSecrets)
+			}
 			require.NotEmpty(t, jsonObject(t, credentialsBody))
 		})
 	}
@@ -1350,4 +1376,157 @@ func jsonString(t *testing.T, value string) string {
 	data, err := json.Marshal(value)
 	require.NoError(t, err)
 	return string(data)
+}
+
+func TestSnowflakeOnboardingCommand(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/organizations/acme/data-sources/warehouse/snowflake-onboarding", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"identity_state":"pending","active":false,"issuer":"https://issuer.test","subject":"public-subject","audience":"public-audience","sql":"reviewable SQL","diagnostic":"Provisioning"}`))
+	}))
+	defer server.Close()
+	stdout, stderr, err := runCLIForDataSourceTest(t, server.URL, []string{"braidplane", "data-source", "snowflake-onboarding", "warehouse"})
+	require.NoError(t, err)
+	require.Empty(t, stderr)
+	require.Contains(t, stdout, "reviewable SQL")
+	require.Contains(t, stdout, "pending")
+}
+
+func TestSnowflakeRequestFilePreservesObjectGrantsAndDisable(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "source.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{"type":"snowflake","slug":"source","name":"Source","read_only":true,"config":{"account":"acme-account","warehouse":"WH","database":"DB","schema":"PUBLIC","role":"DEDICATED","wif_objects":[{"name":"Orders.with dots","privilege":"SELECT"},{"name":"EXPORT","privilege":"INSERT"}]},"credentials":{"auth_type":"workload_identity"}}`), 0o600))
+	body, _, err := (&createDataSourceCommand{dataSourceRequestFlags: dataSourceRequestFlags{RequestFile: path}}).createBody()
+	require.NoError(t, err)
+	object := jsonObject(t, body)
+	config := object["config"].(map[string]any)
+	require.Len(t, config["wif_objects"], 2)
+	require.Contains(t, fmt.Sprint(config["wif_objects"]), "Orders.with dots")
+	require.NoError(t, os.WriteFile(path, []byte(`{"type":"snowflake","slug":"source","is_active":false}`), 0o600))
+	update, ds, err := (&updateDataSourceCommand{dataSourceRequestFlags: dataSourceRequestFlags{RequestFile: path}}).updateBody()
+	require.NoError(t, err)
+	require.Equal(t, "source", ds)
+	require.NotNil(t, update.IsActive)
+	require.False(t, *update.IsActive)
+}
+
+func TestManagedGitRequestFilesUseOrganizationCredentials(t *testing.T) {
+	t.Parallel()
+	for _, provider := range []struct{ name, key string }{{"github", "repository_id"}, {"gitlab", "project_id"}} {
+		t.Run(provider.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "source.json")
+			body := fmt.Sprintf(`{"type":%q,"name":"Managed repository","config":{%q:"42","base_path":"pipelines"}}`, provider.name, provider.key)
+			require.NoError(t, os.WriteFile(path, []byte(body), 0o600))
+			created, secrets, err := createDataSourceBodyFromFile(path)
+			require.NoError(t, err)
+			require.Empty(t, secrets)
+			require.NotContains(t, jsonObject(t, created), "credentials")
+			tested, secrets, err := testDataSourceBodyFromFile(path)
+			require.NoError(t, err)
+			require.Empty(t, secrets)
+			require.NotContains(t, jsonObject(t, tested), "credentials")
+			body = fmt.Sprintf(`{"type":%q,"name":"Managed repository","config":{%q:"42"},"credentials":{"token_file":"missing-secret"}}`, provider.name, provider.key)
+			require.NoError(t, os.WriteFile(path, []byte(body), 0o600))
+			_, _, err = createDataSourceBodyFromFile(path)
+			require.ErrorContains(t, err, "Generic Git")
+			flags := dataSourceRequestFlags{ProjectID: "42", RepositoryID: "42", GitToken: "fake-token"}
+			_, _, err = (&createDataSourceCommand{Type: provider.name, Name: "Managed repository", dataSourceRequestFlags: flags}).createBody()
+			require.ErrorContains(t, err, "Generic Git")
+		})
+	}
+}
+
+func TestWorkspaceVerifyPreservesAPIErrorsAndRejectsMissingPayload(t *testing.T) {
+	for _, tc := range []struct {
+		name                     string
+		loadStatus, verifyStatus int
+		want                     string
+	}{
+		{"source denied", http.StatusForbidden, http.StatusOK, "403"},
+		{"verification denied", http.StatusOK, http.StatusForbidden, "403"},
+		{"missing verification payload", http.StatusOK, http.StatusOK, "missing Google Workspace verification payload"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			verifications := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if r.Method == http.MethodGet {
+					w.WriteHeader(tc.loadStatus)
+					if tc.loadStatus == http.StatusOK {
+						_, _ = io.WriteString(w, `{"connection_revision":7}`)
+					} else {
+						_, _ = io.WriteString(w, `{"error":{"code":"FORBIDDEN","message":"access denied"}}`)
+					}
+					return
+				}
+				verifications++
+				if tc.verifyStatus == http.StatusOK {
+					w.Header().Set("Content-Type", "text/plain")
+				}
+				w.WriteHeader(tc.verifyStatus)
+				if tc.verifyStatus != http.StatusOK {
+					_, _ = io.WriteString(w, `{"error":{"code":"FORBIDDEN","message":"access denied"}}`)
+				}
+			}))
+			defer server.Close()
+			stdout, _, err := runCLIForDataSourceTest(t, server.URL, []string{"braidplane", "data-source", "provider", "verify", "sheet", "--file-id", "book"})
+			require.ErrorContains(t, err, tc.want)
+			require.Empty(t, stdout)
+			if tc.loadStatus != http.StatusOK {
+				require.Zero(t, verifications)
+			} else {
+				require.Equal(t, 1, verifications)
+			}
+		})
+	}
+}
+
+func TestHTTPOAuthRequestFileLoadsSecretAndPreservesApp(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "secret"), []byte("customer-secret"), 0o600))
+	path := filepath.Join(dir, "http.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{"type":"http","name":"HTTP app","slug":"http-app","config":{"base_url":"https://api.example/v1"},"credentials":{"oauth":{"issuer":"https://issuer.example","token_endpoint":"https://issuer.example/token","client_id":"customer-app","client_secret_file":"secret","grant_type":"client_credentials","scopes":["read"],"audience":"api"}}}`), 0o600))
+	body, secrets, err := createDataSourceBodyFromFile(path)
+	require.NoError(t, err)
+	require.Contains(t, secrets, "customer-secret")
+	object := jsonObject(t, body)
+	creds := object["credentials"].(map[string]any)
+	oauth := creds["oauth"].(map[string]any)
+	require.Equal(t, "customer-secret", oauth["client_secret"])
+	require.Equal(t, "api", oauth["audience"])
+	require.NotContains(t, oauth, "client_secret_file")
+	_, secrets, err = testDataSourceBodyFromFile(path)
+	require.NoError(t, err)
+	require.Contains(t, secrets, "customer-secret")
+	delete(object, "name")
+	delete(object, "config")
+	payload, err := json.Marshal(object)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(path, payload, 0o600))
+	_, secrets, _, err = dataSourceCredentialsBodyFromFile(path, true)
+	require.NoError(t, err)
+	require.Contains(t, secrets, "customer-secret")
+}
+
+func TestHTTPOAuthRequestFileRejectsMixedCredentials(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "http.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{"type":"http","name":"HTTP app","config":{"base_url":"https://api.example"},"credentials":{"bearer_token_file":"do-not-read","oauth":{"issuer":"https://issuer.example","token_endpoint":"https://issuer.example/token","client_id":"app","grant_type":"authorization_code"}}}`), 0o600))
+	_, _, err := createDataSourceBodyFromFile(path)
+	require.ErrorContains(t, err, "cannot be combined")
+}
+
+func TestPostgresRequestFilePreservesPrivateHostOptIn(t *testing.T) {
+	t.Parallel()
+	for _, enabled := range []bool{false, true} {
+		flags := dataSourceRequestFlags{}
+		raw := json.RawMessage(fmt.Sprintf(`{"host":"localhost","port":5432,"database":"demo","allow_private_hosts":%t}`, enabled))
+		require.NoError(t, decodeDataSourceConfigFile(api.DataSourceTypePostgres, raw, true, &flags))
+		config, err := flags.postgresConfig(true)
+		require.NoError(t, err)
+		require.NotNil(t, config.AllowPrivateHosts)
+		require.Equal(t, enabled, *config.AllowPrivateHosts)
+		require.True(t, (dataSourceRequestFlags{AllowPrivateHosts: &enabled}).hasConfigFlags(api.DataSourceTypePostgres))
+	}
 }

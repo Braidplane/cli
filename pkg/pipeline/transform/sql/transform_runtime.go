@@ -6,14 +6,19 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/opcode"
+	"github.com/pingcap/tidb/pkg/parser/test_driver"
 
+	"github.com/Braidplane/cli/pkg/decimal"
 	"github.com/Braidplane/cli/pkg/model"
 	pipepayload "github.com/Braidplane/cli/pkg/pipeline/payload"
 	domainvalidate "github.com/Braidplane/cli/pkg/structvalidate"
@@ -149,6 +154,19 @@ func executeTransformStepFromPayloadsWithBudget(
 	if err := budget.checkContext(); err != nil {
 		return nil, err
 	}
+	if transform != nil && transform.InputContracts != nil {
+		if transform.InputContract != nil {
+			return nil, xerror.InvalidInput(xerror.Pipeline).Detail("named and combined input contracts are mutually exclusive")
+		}
+		if len(transform.InputContracts) == 0 {
+			return nil, xerror.InvalidInput(xerror.Pipeline).Detail("input_contracts must contain at least one entry")
+		}
+		for name, contract := range transform.InputContracts {
+			if _, ok := upstreamPayloads[name]; !ok || contract == nil {
+				return nil, xerror.InvalidInput(xerror.Pipeline).Detailf("invalid named input contract %q", name)
+			}
+		}
+	}
 	decodedConfig, err := decodeTransformOperationConfig(transform)
 	if err != nil {
 		return nil, err
@@ -174,17 +192,36 @@ func executeTransformStepFromPayloadsWithBudget(
 		if upstreamPayload == nil {
 			return nil, xerror.UnexpectedUpstreamResultRequired()
 		}
+		inputContract := contractForNamedTransformInput(decodedConfig.sqlV1.InputSchema, name, len(upstreamPayloads))
+		if transform.InputContracts != nil {
+			inputContract = transform.InputContracts[name]
+			if inputContract != nil && ((inputContract.Representation != model.ContractRepresentationUnknown && inputContract.Representation != upstreamPayload.Representation) || (inputContract.RootShape != model.ContractRootShapeUnknown && inputContract.RootShape != upstreamPayload.RootShape)) {
+				return nil, xerror.TransformInputContractViolation().Detailf("input %q payload representation or root shape differs from its contract", name)
+			}
+		}
 		resolvedInput, err := runtimePayloadToTransformInputWithBudget(
 			upstreamPayload,
-			contractForNamedTransformInput(
-				decodedConfig.sqlV1.InputSchema,
-				name,
-				len(upstreamPayloads),
-			),
+			inputContract,
 			budget,
 		)
 		if err != nil {
-			return nil, err
+			return nil, xerror.Wrapf("input %q: %w", name, err)
+		}
+		if transform.InputContracts != nil && inputContract != nil {
+			rows := resolvedInput.Rows
+			if upstreamPayload.Representation == model.ContractRepresentationCSV {
+				rows = pipepayload.CoerceContractFieldValidationRows(inputContract, rows)
+			}
+			if err := validateRowsOutputContract(rows, inputContract); err != nil {
+				return nil, xerror.Wrapf("input %q: %w", name, xerror.Join(xerror.TransformInputContractViolation(), err))
+			}
+		}
+		// Empty relations still expose declared fields for LEFT JOIN null extension.
+		if inputContract != nil {
+			resolvedInput.ColumnNames = append([]string(nil), resolvedInput.ColumnNames...)
+			for _, field := range inputContract.Fields {
+				resolvedInput.ColumnNames = append(resolvedInput.ColumnNames, field.Name)
+			}
 		}
 		inputSQL[name] = resolvedInput
 	}
@@ -419,8 +456,8 @@ func buildTransformInputRowsFromNode(
 		if n.Right == nil {
 			return leftRows, nil
 		}
-		if n.Tp != ast.CrossJoin || n.Using != nil || n.NaturalJoin {
-			return nil, ErrFeatureNotAllowed.Detail("only inner joins with ON conditions are allowed")
+		if (n.Tp != ast.CrossJoin && n.Tp != ast.LeftJoin) || n.Using != nil || n.NaturalJoin || (n.Tp == ast.LeftJoin && (n.On == nil || n.On.Expr == nil)) {
+			return nil, ErrFeatureNotAllowed.Detail("only inner/cross joins and LEFT JOIN with ON conditions are allowed")
 		}
 		rightRows, err := buildTransformInputRowsFromNode(n.Right, inputs, budget, depth+1)
 		if err != nil {
@@ -430,8 +467,14 @@ func buildTransformInputRowsFromNode(
 		if err != nil {
 			return nil, err
 		}
-		if err := budget.chargeWork(candidateCount); err != nil {
+		rightIndex, leftKeys, err := indexTransformJoin(n.On, leftRows, rightRows, budget)
+		if err != nil {
 			return nil, err
+		}
+		if rightIndex == nil {
+			if err := budget.chargeWork(candidateCount); err != nil {
+				return nil, err
+			}
 		}
 		capacity := candidateCount
 		const boundedJoinPreallocation = int64(1024)
@@ -445,8 +488,20 @@ func buildTransformInputRowsFromNode(
 			}
 		}
 		joinedRows := make([]map[string]any, 0, int(capacity))
-		for _, leftRow := range leftRows {
-			for _, rightRow := range rightRows {
+		var nullRightRow map[string]any
+		for leftIndex, leftRow := range leftRows {
+			candidates := rightRows
+			if rightIndex != nil {
+				if err := budget.chargeWork(1); err != nil {
+					return nil, err
+				}
+				candidates = rightIndex[leftKeys[leftIndex]]
+				if err := budget.chargeWork(int64(len(candidates))); err != nil {
+					return nil, err
+				}
+			}
+			matched := false
+			for _, rightRow := range candidates {
 				if err := budget.checkContext(); err != nil {
 					return nil, err
 				}
@@ -463,14 +518,109 @@ func buildTransformInputRowsFromNode(
 					if err != nil {
 						return nil, xerror.Wrapf("evaluate JOIN ON expression: %w", err)
 					}
-					if !keep {
+					if keep != predicateTrue {
 						continue
 					}
 				}
+				matched = true
 				joinedRows = append(joinedRows, joinedRow)
+			}
+			if n.Tp == ast.LeftJoin && !matched {
+				if nullRightRow == nil {
+					nullRightRow, err = nullTransformInputRow(n.Right, inputs, budget, depth+1)
+					if err != nil {
+						return nil, err
+					}
+				}
+				if err := budget.chargeWork(1); err != nil {
+					return nil, err
+				}
+				size, err := estimateMergedTransformRowBytes(leftRow, nullRightRow, budget)
+				if err != nil {
+					return nil, err
+				}
+				if err := budget.chargeIntermediate(1, size); err != nil {
+					return nil, err
+				}
+				joinedRows = append(joinedRows, mergeTransformRows(leftRow, nullRightRow))
 			}
 		}
 		return joinedRows, nil
+	default:
+		return nil, ErrFeatureNotAllowed.Detail("unsupported from source")
+	}
+}
+
+// nullTransformInputRow retains relation qualifiers and ambiguous plain fields
+// even when the right subtree has no rows or filters every row out.
+func nullTransformInputRow(
+	node ast.ResultSetNode,
+	inputs map[string]*rowInput,
+	budget *executionBudget,
+	depth int,
+) (map[string]any, error) {
+	if err := budget.checkDepth(depth); err != nil {
+		return nil, err
+	}
+	switch n := node.(type) {
+	case *ast.TableSource:
+		table := n.Source.(*ast.TableName)
+		input := inputs[table.Name.L]
+		if err := budget.chargeIntermediate(1, 2); err != nil {
+			return nil, err
+		}
+		row := make(map[string]any)
+		addField := func(name string) error {
+			if err := budget.checkContext(); err != nil {
+				return err
+			}
+			if _, exists := row[name]; exists {
+				return nil
+			}
+			if err := budget.chargeIntermediate(0, int64(len(name))+8); err != nil {
+				return err
+			}
+			row[name] = nil
+			return nil
+		}
+		for _, name := range input.ColumnNames {
+			if err := addField(name); err != nil {
+				return nil, err
+			}
+		}
+		for _, inputRow := range input.Rows {
+			for name := range inputRow {
+				if err := addField(name); err != nil {
+					return nil, err
+				}
+			}
+		}
+		qualifier := table.Name.L
+		if n.AsName.L != "" {
+			qualifier = n.AsName.L
+		}
+		qualified, err := qualifiedTransformInputRows([]map[string]any{row}, qualifier, budget)
+		if err != nil {
+			return nil, err
+		}
+		return qualified[0], nil
+	case *ast.Join:
+		left, err := nullTransformInputRow(n.Left, inputs, budget, depth+1)
+		if err != nil || n.Right == nil {
+			return left, err
+		}
+		right, err := nullTransformInputRow(n.Right, inputs, budget, depth+1)
+		if err != nil {
+			return nil, err
+		}
+		size, err := estimateMergedTransformRowBytes(left, right, budget)
+		if err != nil {
+			return nil, err
+		}
+		if err := budget.chargeIntermediate(1, size); err != nil {
+			return nil, err
+		}
+		return mergeTransformRows(left, right), nil
 	default:
 		return nil, ErrFeatureNotAllowed.Detail("unsupported from source")
 	}
@@ -609,6 +759,7 @@ func runtimePayloadToTransformInputWithBudget(
 
 	switch upstreamPayload.Representation {
 	case model.ContractRepresentationRows:
+		var err error
 		validationRows := pipepayload.CoerceContractFieldValidationRows(contract, upstreamPayload.Rows)
 		if err := validateTransformInputContract(
 			validationRows,
@@ -622,6 +773,10 @@ func runtimePayloadToTransformInputWithBudget(
 			ColumnNames: upstreamPayload.ColumnNames,
 			RowCount:    upstreamPayload.RowCount,
 		}
+		input.Rows, err = pipepayload.CoerceDecimalRows(contract, input.Rows)
+		if err != nil {
+			return nil, err
+		}
 		if err := chargeInputRows(input.Rows, budget); err != nil {
 			return nil, err
 		}
@@ -633,18 +788,11 @@ func runtimePayloadToTransformInputWithBudget(
 			)
 		}
 
-		rows, columnNames, err := pipepayload.ParseJSONBodyToRows(upstreamPayload.Document)
+		rows, columnNames, err := pipepayload.ParseJSONBodyToRowsPreserveNumbers(upstreamPayload.Document)
 		if err != nil {
 			return nil, err
 		}
-		validationRows := rows
-		if contract != nil {
-			validationRows, _, err = pipepayload.ParseJSONBodyToRowsPreserveNumbers(upstreamPayload.Document)
-			if err != nil {
-				return nil, err
-			}
-		}
-		if err := validateTransformInputContract(validationRows, contract, "runtime payload"); err != nil {
+		if err := validateTransformInputContract(rows, contract, "runtime payload"); err != nil {
 			return nil, err
 		}
 
@@ -652,6 +800,10 @@ func runtimePayloadToTransformInputWithBudget(
 			Rows:        rows,
 			ColumnNames: columnNames,
 			RowCount:    len(rows),
+		}
+		input.Rows, err = pipepayload.CoerceDecimalRows(contract, input.Rows)
+		if err != nil {
+			return nil, err
 		}
 		if err := chargeInputRows(input.Rows, budget); err != nil {
 			return nil, err
@@ -671,6 +823,10 @@ func runtimePayloadToTransformInputWithBudget(
 			Rows:        rows,
 			ColumnNames: columnNames,
 			RowCount:    len(rows),
+		}
+		input.Rows, err = pipepayload.CoerceDecimalRows(contract, input.Rows)
+		if err != nil {
+			return nil, err
 		}
 		if err := chargeInputRows(input.Rows, budget); err != nil {
 			return nil, err
@@ -1118,7 +1274,11 @@ func evaluateTransformGroupedProjectionExpr(
 		if err != nil {
 			return nil, err
 		}
-		return castRuntimeValue(value, castExpr)
+		result, err := castRuntimeValue(value, castExpr)
+		if err != nil {
+			return nil, err
+		}
+		return chargeDecimalValue(result, budget)
 	}
 
 	if _, ok := expr.(*ast.AggregateFuncExpr); ok {
@@ -1237,7 +1397,7 @@ func applyWhereFilter(
 		if err != nil {
 			return nil, xerror.Wrapf("evaluate WHERE expression: %w", err)
 		}
-		if keep {
+		if keep == predicateTrue {
 			filtered = append(filtered, row)
 		}
 	}
@@ -1245,17 +1405,35 @@ func applyWhereFilter(
 	return filtered, nil
 }
 
+//go:generate -command enumer go tool enumer
+//go:generate enumer -type=predicateValue -trimprefix=predicate -transform=snake -output=predicate_value_enumer.go
+
+type predicateValue uint8
+
+const (
+	predicateFalse predicateValue = iota
+	predicateTrue
+	predicateUnknown
+)
+
+func predicateFromBool(value bool) predicateValue {
+	if value {
+		return predicateTrue
+	}
+	return predicateFalse
+}
+
 func evaluateWhereExpression(
 	expr ast.ExprNode,
 	row map[string]any,
 	budget *executionBudget,
 	depth int,
-) (bool, error) {
+) (predicateValue, error) {
 	if err := budget.checkExpression(depth); err != nil {
-		return false, err
+		return predicateUnknown, err
 	}
 	if expr == nil {
-		return true, nil
+		return predicateTrue, nil
 	}
 
 	if parenthesizedExpr, ok := expr.(*ast.ParenthesesExpr); ok && parenthesizedExpr != nil {
@@ -1267,11 +1445,14 @@ func evaluateWhereExpression(
 		case opcode.Not:
 			value, err := evaluateWhereExpression(unaryExpr.V, row, budget, depth+1)
 			if err != nil {
-				return false, err
+				return predicateUnknown, err
 			}
-			return !value, nil
+			if value == predicateUnknown {
+				return predicateUnknown, nil
+			}
+			return predicateFromBool(value == predicateFalse), nil
 		default:
-			return false, xerror.Wrapf(
+			return predicateUnknown, xerror.Wrapf(
 				"unsupported unary WHERE operator %q: %w",
 				unaryExpr.Op.String(),
 				ErrRuntimeWhereExpressionUnsupported,
@@ -1284,25 +1465,45 @@ func evaluateWhereExpression(
 		case opcode.LogicAnd:
 			left, err := evaluateWhereExpression(binaryExpr.L, row, budget, depth+1)
 			if err != nil {
-				return false, err
+				return predicateUnknown, err
 			}
-			if !left {
-				return false, nil
+			if left == predicateFalse {
+				return predicateFalse, nil
 			}
-			return evaluateWhereExpression(binaryExpr.R, row, budget, depth+1)
+			right, err := evaluateWhereExpression(binaryExpr.R, row, budget, depth+1)
+			if err != nil {
+				return predicateUnknown, err
+			}
+			if right == predicateFalse {
+				return predicateFalse, nil
+			}
+			if left == predicateUnknown {
+				return predicateUnknown, nil
+			}
+			return right, nil
 		case opcode.LogicOr:
 			left, err := evaluateWhereExpression(binaryExpr.L, row, budget, depth+1)
 			if err != nil {
-				return false, err
+				return predicateUnknown, err
 			}
-			if left {
-				return true, nil
+			if left == predicateTrue {
+				return predicateTrue, nil
 			}
-			return evaluateWhereExpression(binaryExpr.R, row, budget, depth+1)
+			right, err := evaluateWhereExpression(binaryExpr.R, row, budget, depth+1)
+			if err != nil {
+				return predicateUnknown, err
+			}
+			if right == predicateTrue {
+				return predicateTrue, nil
+			}
+			if left == predicateUnknown {
+				return predicateUnknown, nil
+			}
+			return right, nil
 		case opcode.EQ, opcode.NE, opcode.LT, opcode.LE, opcode.GT, opcode.GE:
 			return evaluateWhereComparison(binaryExpr, row, budget, depth)
 		default:
-			return false, xerror.Wrapf(
+			return predicateUnknown, xerror.Wrapf(
 				"unsupported binary WHERE operator %q: %w",
 				binaryExpr.Op.String(),
 				ErrRuntimeWhereExpressionUnsupported,
@@ -1313,26 +1514,29 @@ func evaluateWhereExpression(
 	if isNullExpr, ok := expr.(*ast.IsNullExpr); ok && isNullExpr != nil {
 		value, err := evaluateTransformProjectionExpr(isNullExpr.Expr, row, budget, depth+1)
 		if err != nil {
-			return false, err
+			return predicateUnknown, err
 		}
 		isNull := value == nil
 		if isNullExpr.Not {
-			return !isNull, nil
+			return predicateFromBool(!isNull), nil
 		}
-		return isNull, nil
+		return predicateFromBool(isNull), nil
 	}
 
 	value, err := evaluateTransformProjectionExpr(expr, row, budget, depth+1)
 	if err != nil {
-		return false, err
+		return predicateUnknown, err
+	}
+	if value == nil {
+		return predicateUnknown, nil
 	}
 
 	booleanValue, err := toBoolRuntimeValue(value)
 	if err != nil {
-		return false, xerror.Wrapf("coerce WHERE expression to boolean: %w", err)
+		return predicateUnknown, xerror.Wrapf("coerce WHERE expression to boolean: %w", err)
 	}
 
-	return booleanValue, nil
+	return predicateFromBool(booleanValue), nil
 }
 
 func evaluateWhereComparison(
@@ -1340,44 +1544,49 @@ func evaluateWhereComparison(
 	row map[string]any,
 	budget *executionBudget,
 	depth int,
-) (bool, error) {
+) (predicateValue, error) {
 	leftValue, err := evaluateTransformProjectionExpr(expr.L, row, budget, depth+1)
 	if err != nil {
-		return false, err
+		return predicateUnknown, err
 	}
 	rightValue, err := evaluateTransformProjectionExpr(expr.R, row, budget, depth+1)
 	if err != nil {
-		return false, err
+		return predicateUnknown, err
+	}
+	if leftValue == nil || rightValue == nil {
+		return predicateUnknown, nil
 	}
 
 	switch expr.Op {
 	case opcode.EQ:
-		return whereValuesEqual(leftValue, rightValue), nil
+		equal, err := whereValuesEqual(leftValue, rightValue)
+		return predicateFromBool(equal), err
 	case opcode.NE:
-		return !whereValuesEqual(leftValue, rightValue), nil
+		equal, err := whereValuesEqual(leftValue, rightValue)
+		return predicateFromBool(!equal), err
 	case opcode.LT, opcode.LE, opcode.GT, opcode.GE:
 		comparison, isComparable, err := compareOrderedWhereValues(leftValue, rightValue)
 		if err != nil {
-			return false, err
+			return predicateUnknown, err
 		}
 		if !isComparable {
-			return false, nil
+			return predicateUnknown, nil
 		}
 
 		switch expr.Op {
 		case opcode.LT:
-			return comparison < 0, nil
+			return predicateFromBool(comparison < 0), nil
 		case opcode.LE:
-			return comparison <= 0, nil
+			return predicateFromBool(comparison <= 0), nil
 		case opcode.GT:
-			return comparison > 0, nil
+			return predicateFromBool(comparison > 0), nil
 		case opcode.GE:
-			return comparison >= 0, nil
+			return predicateFromBool(comparison >= 0), nil
 		default:
 			panic("unreachable: constrained by outer LT/LE/GT/GE case")
 		}
 	default:
-		return false, xerror.Wrapf(
+		return predicateUnknown, xerror.Wrapf(
 			"unsupported comparison operator %q: %w",
 			expr.Op.String(),
 			ErrRuntimeWhereExpressionUnsupported,
@@ -1385,29 +1594,38 @@ func evaluateWhereComparison(
 	}
 }
 
-func whereValuesEqual(leftValue, rightValue any) bool {
+func whereValuesEqual(leftValue, rightValue any) (bool, error) {
 	if leftValue == nil || rightValue == nil {
-		return leftValue == rightValue
+		return leftValue == rightValue, nil
 	}
 
+	if order, decimalComparison, err := compareDecimalOperands(leftValue, rightValue); decimalComparison {
+		return order == 0, err
+	}
 	leftNumeric, leftErr := toWhereEqualityNumber(leftValue)
 	rightNumeric, rightErr := toWhereEqualityNumber(rightValue)
 	if leftErr == nil && rightErr == nil {
-		return leftNumeric == rightNumeric
+		return leftNumeric.Cmp(rightNumeric) == 0, nil
 	}
 
-	return fmt.Sprintf("%v", leftValue) == fmt.Sprintf("%v", rightValue)
+	if leftErr != nil && numericCandidate(leftValue) {
+		return false, leftErr
+	}
+	if rightErr != nil && numericCandidate(rightValue) {
+		return false, rightErr
+	}
+	return fmt.Sprintf("%v", leftValue) == fmt.Sprintf("%v", rightValue), nil
 }
 
-func toWhereEqualityNumber(value any) (float64, error) {
+func toWhereEqualityNumber(value any) (*big.Rat, error) {
 	if booleanValue, ok := value.(bool); ok {
 		if booleanValue {
-			return 1, nil
+			return numericValue(1)
 		}
-		return 0, nil
+		return numericValue(0)
 	}
 
-	return toFloat64(value)
+	return numericValue(value)
 }
 
 func compareOrderedWhereValues(leftValue, rightValue any) (int, bool, error) {
@@ -1415,19 +1633,21 @@ func compareOrderedWhereValues(leftValue, rightValue any) (int, bool, error) {
 		return 0, false, nil
 	}
 
-	leftNumeric, leftErr := toFloat64(leftValue)
-	rightNumeric, rightErr := toFloat64(rightValue)
+	if order, decimalComparison, err := compareDecimalOperands(leftValue, rightValue); decimalComparison {
+		return order, err == nil, err
+	}
+	leftNumeric, leftErr := numericValue(leftValue)
+	rightNumeric, rightErr := numericValue(rightValue)
 	if leftErr == nil && rightErr == nil {
-		switch {
-		case leftNumeric < rightNumeric:
-			return -1, true, nil
-		case leftNumeric > rightNumeric:
-			return 1, true, nil
-		default:
-			return 0, true, nil
-		}
+		return leftNumeric.Cmp(rightNumeric), true, nil
 	}
 
+	if leftErr != nil && numericCandidate(leftValue) {
+		return 0, false, leftErr
+	}
+	if rightErr != nil && numericCandidate(rightValue) {
+		return 0, false, rightErr
+	}
 	leftString, leftStringOK := leftValue.(string)
 	rightString, rightStringOK := rightValue.(string)
 	if leftStringOK && rightStringOK {
@@ -1479,6 +1699,12 @@ func toBoolRuntimeValue(value any) (bool, error) {
 		return v != 0, nil
 	case float64:
 		return v != 0, nil
+	case json.Number:
+		numeric, err := numericValue(v)
+		if err != nil {
+			return false, err
+		}
+		return numeric.Sign() != 0, nil
 	case string:
 		trimmed := strings.ToLower(strings.TrimSpace(v))
 		if trimmed == "true" || trimmed == "1" {
@@ -1502,12 +1728,34 @@ func evaluateTransformProjectionExpr(
 	if err := budget.checkExpression(depth); err != nil {
 		return nil, err
 	}
+	if caseExpr, ok := expr.(*ast.CaseExpr); ok {
+		for _, clause := range caseExpr.WhenClauses {
+			if err := budget.chargeWork(1); err != nil {
+				return nil, err
+			}
+			condition, err := evaluateWhereExpression(clause.Expr, row, budget, depth+1)
+			if err != nil {
+				return nil, err
+			}
+			if condition == predicateTrue {
+				return evaluateTransformProjectionExpr(clause.Result, row, budget, depth+1)
+			}
+		}
+		if caseExpr.ElseClause == nil {
+			return nil, nil //nolint:nilnil // CASE without ELSE yields NULL.
+		}
+		return evaluateTransformProjectionExpr(caseExpr.ElseClause, row, budget, depth+1)
+	}
 	if castExpr, ok := expr.(*ast.FuncCastExpr); ok && castExpr != nil {
 		value, err := evaluateTransformProjectionExpr(castExpr.Expr, row, budget, depth+1)
 		if err != nil {
 			return nil, err
 		}
-		return castRuntimeValue(value, castExpr)
+		result, err := castRuntimeValue(value, castExpr)
+		if err != nil {
+			return nil, err
+		}
+		return chargeDecimalValue(result, budget)
 	}
 
 	if fnExpr, ok := expr.(*ast.FuncCallExpr); ok && fnExpr != nil {
@@ -1515,9 +1763,36 @@ func evaluateTransformProjectionExpr(
 	}
 
 	if valueExpr, ok := expr.(ast.ValueExpr); ok {
+		if literal, ok := valueExpr.GetValue().(*test_driver.MyDecimal); ok {
+			parsed, err := decimal.Parse(literal.String())
+			if err != nil {
+				return nil, xerror.Wrapf("parse decimal literal: %w", err)
+			}
+			return chargeDecimalValue(parsed, budget)
+		}
 		return valueExpr.GetValue(), nil
 	}
 
+	if unary, ok := expr.(*ast.UnaryOperationExpr); ok && (unary.Op == opcode.Plus || unary.Op == opcode.Minus) {
+		value, err := evaluateTransformProjectionExpr(unary.V, row, budget, depth+1)
+		if err != nil {
+			return nil, err
+		}
+		if value == nil {
+			return nil, nil //nolint:nilnil // SQL NULL propagation.
+		}
+		if _, ok := value.(decimal.Value); !ok {
+			return nil, xerror.Wrapf("unsupported transform projection expression at runtime: %w", ErrRuntimeProjectionExpressionUnsupported)
+		}
+		if unary.Op == opcode.Plus {
+			return value, nil
+		}
+		result, err := numericOperation(decimal.Value{}, value, opcode.Minus)
+		if err != nil {
+			return nil, err
+		}
+		return chargeDecimalValue(result, budget)
+	}
 	if binaryExpr, ok := expr.(*ast.BinaryOperationExpr); ok && binaryExpr != nil {
 		return evaluateBinaryProjectionExpr(binaryExpr, row, budget, depth)
 	}
@@ -1569,6 +1844,8 @@ func evaluateTransformFuncCallExpr(
 	}
 
 	switch strings.ToLower(fnExpr.FnName.L) {
+	case "coalesce", "nullif", "trim", "lower", "upper", "str_to_date", "date_format":
+		return evaluateNormalizationFunction(fnExpr, row, budget, depth)
 	case jsonFuncObject:
 		if len(fnExpr.Args)%2 != 0 {
 			return nil, xerror.Wrapf(
@@ -1639,10 +1916,6 @@ func evaluateTransformFuncCallExpr(
 			)
 		}
 
-		if err := validateHeadlessCSVPathAccess(docValue, path); err != nil {
-			return nil, err
-		}
-
 		return extractJSONPathValue(docValue, path)
 	}
 
@@ -1650,35 +1923,6 @@ func evaluateTransformFuncCallExpr(
 		"unsupported transform projection expression at runtime: %w",
 		ErrRuntimeProjectionExpressionUnsupported,
 	)
-}
-
-func validateHeadlessCSVPathAccess(docValue any, path string) error {
-	normalized, err := normalizeJSONValue(docValue)
-	if err != nil {
-		return err
-	}
-
-	// Named access on array-backed values indicates a CSV-headless style misuse.
-	if _, isArray := normalized.([]any); !isArray {
-		return nil
-	}
-
-	tokens, err := tokenizeJSONPath(path)
-	if err != nil {
-		return err
-	}
-
-	for _, token := range tokens {
-		if token.kind == jsonPathTokenKey {
-			return xerror.Wrapf(
-				"path %q uses named access for a headless CSV/array value; use numeric index selectors like $[0]: %w",
-				path,
-				ErrRuntimeHeadlessCSVNamedAccessUnsupported,
-			)
-		}
-	}
-
-	return nil
 }
 
 func extractJSONPathValue(docValue any, path string) (any, error) {
@@ -1690,6 +1934,19 @@ func extractJSONPathValue(docValue any, path string) (any, error) {
 	tokens, err := tokenizeJSONPath(path)
 	if err != nil {
 		return nil, err
+	}
+
+	// Named access on array-backed values indicates a CSV-headless style misuse.
+	if _, isArray := normalized.([]any); isArray {
+		for _, token := range tokens {
+			if token.kind == jsonPathTokenKey {
+				return nil, xerror.Wrapf(
+					"path %q uses named access for a headless CSV/array value; use numeric index selectors like $[0]: %w",
+					path,
+					ErrRuntimeHeadlessCSVNamedAccessUnsupported,
+				)
+			}
+		}
 	}
 
 	current := normalized
@@ -1741,15 +1998,16 @@ func normalizeJSONValue(value any) (any, error) {
 	case transformJSONConstructedValue:
 		return nativeTransformJSONValue(v), nil
 	case string:
-		var decoded any
-		if err := json.Unmarshal([]byte(v), &decoded); err != nil {
-			return nil, xerror.Unexpected().Detailf("parse json value: %w", err)
-		}
-		return decoded, nil
+		return normalizeJSONValue([]byte(v))
 	case []byte:
 		var decoded any
-		if err := json.Unmarshal(v, &decoded); err != nil {
+		decoder := json.NewDecoder(bytes.NewReader(v))
+		decoder.UseNumber()
+		if err := decoder.Decode(&decoded); err != nil {
 			return nil, xerror.Unexpected().Detailf("parse json value: %w", err)
+		}
+		if err := decoder.Decode(new(any)); err != io.EOF {
+			return nil, xerror.Unexpected().Detail("expected one JSON value")
 		}
 		return decoded, nil
 	default:
@@ -1832,99 +2090,20 @@ func tokenizeJSONPath(path string) ([]jsonPathToken, error) {
 	return tokens, nil
 }
 
-func evaluateBinaryProjectionExpr(
-	expr *ast.BinaryOperationExpr,
-	row map[string]any,
-	budget *executionBudget,
-	depth int,
-) (any, error) {
-	switch expr.Op {
-	case opcode.Plus:
-		leftValue, err := evaluateTransformProjectionExpr(expr.L, row, budget, depth+1)
-		if err != nil {
-			return nil, err
-		}
-		rightValue, err := evaluateTransformProjectionExpr(expr.R, row, budget, depth+1)
-		if err != nil {
-			return nil, err
-		}
-
-		leftNumeric, err := toFloat64(leftValue)
-		if err != nil {
-			return nil, xerror.Wrapf("left operand numeric conversion failed: %w", err)
-		}
-		rightNumeric, err := toFloat64(rightValue)
-		if err != nil {
-			return nil, xerror.Wrapf("right operand numeric conversion failed: %w", err)
-		}
-		return leftNumeric + rightNumeric, nil
-	case opcode.Minus:
-		leftValue, err := evaluateTransformProjectionExpr(expr.L, row, budget, depth+1)
-		if err != nil {
-			return nil, err
-		}
-		rightValue, err := evaluateTransformProjectionExpr(expr.R, row, budget, depth+1)
-		if err != nil {
-			return nil, err
-		}
-
-		leftNumeric, err := toFloat64(leftValue)
-		if err != nil {
-			return nil, xerror.Wrapf("left operand numeric conversion failed: %w", err)
-		}
-		rightNumeric, err := toFloat64(rightValue)
-		if err != nil {
-			return nil, xerror.Wrapf("right operand numeric conversion failed: %w", err)
-		}
-		return leftNumeric - rightNumeric, nil
-	case opcode.Mul:
-		leftValue, err := evaluateTransformProjectionExpr(expr.L, row, budget, depth+1)
-		if err != nil {
-			return nil, err
-		}
-		rightValue, err := evaluateTransformProjectionExpr(expr.R, row, budget, depth+1)
-		if err != nil {
-			return nil, err
-		}
-
-		leftNumeric, err := toFloat64(leftValue)
-		if err != nil {
-			return nil, xerror.Wrapf("left operand numeric conversion failed: %w", err)
-		}
-		rightNumeric, err := toFloat64(rightValue)
-		if err != nil {
-			return nil, xerror.Wrapf("right operand numeric conversion failed: %w", err)
-		}
-		return leftNumeric * rightNumeric, nil
-	case opcode.Div:
-		leftValue, err := evaluateTransformProjectionExpr(expr.L, row, budget, depth+1)
-		if err != nil {
-			return nil, err
-		}
-		rightValue, err := evaluateTransformProjectionExpr(expr.R, row, budget, depth+1)
-		if err != nil {
-			return nil, err
-		}
-
-		leftNumeric, err := toFloat64(leftValue)
-		if err != nil {
-			return nil, xerror.Wrapf("left operand numeric conversion failed: %w", err)
-		}
-		rightNumeric, err := toFloat64(rightValue)
-		if err != nil {
-			return nil, xerror.Wrapf("right operand numeric conversion failed: %w", err)
-		}
-		if rightNumeric == 0 {
-			return nil, xerror.InvalidTransformDivisionByZero()
-		}
-		return leftNumeric / rightNumeric, nil
-	default:
-		return nil, xerror.Wrapf(
-			"unsupported transform projection binary operator %q at runtime: %w",
-			expr.Op.String(),
-			ErrRuntimeProjectionExpressionUnsupported,
-		)
+func evaluateBinaryProjectionExpr(expr *ast.BinaryOperationExpr, row map[string]any, budget *executionBudget, depth int) (any, error) {
+	left, err := evaluateTransformProjectionExpr(expr.L, row, budget, depth+1)
+	if err != nil {
+		return nil, err
 	}
+	right, err := evaluateTransformProjectionExpr(expr.R, row, budget, depth+1)
+	if err != nil {
+		return nil, err
+	}
+	result, err := numericOperation(left, right, expr.Op)
+	if err != nil {
+		return nil, err
+	}
+	return chargeDecimalValue(result, budget)
 }
 
 func evaluateTransformAggregateExpr(
@@ -1999,7 +2178,7 @@ func evaluateTransformAggregateExpr(
 		}
 
 		fieldName := aggregateArgFieldName(aggExpr.Args[0])
-		total := float64(0)
+		var total any = int64(0)
 		hasValue := false
 		for _, row := range rows {
 			numeric, exists, err := evaluateNumericAggregateArg(aggExpr.Args[0], row, budget, depth+1)
@@ -2010,7 +2189,13 @@ func evaluateTransformAggregateExpr(
 				continue
 			}
 			hasValue = true
-			total += numeric
+			total, err = numericOperation(total, numeric, opcode.Plus)
+			if err != nil {
+				return nil, err
+			}
+			if _, err := chargeDecimalValue(total, budget); err != nil {
+				return nil, err
+			}
 		}
 		if !hasValue {
 			return nil, nil //nolint:nilnil
@@ -2022,8 +2207,8 @@ func evaluateTransformAggregateExpr(
 		}
 
 		fieldName := aggregateArgFieldName(aggExpr.Args[0])
-		total := float64(0)
-		count := float64(0)
+		var total any = int64(0)
+		count := int64(0)
 		for _, row := range rows {
 			numeric, exists, err := evaluateNumericAggregateArg(aggExpr.Args[0], row, budget, depth+1)
 			if err != nil {
@@ -2032,13 +2217,23 @@ func evaluateTransformAggregateExpr(
 			if !exists {
 				continue
 			}
-			total += numeric
+			total, err = numericOperation(total, numeric, opcode.Plus)
+			if err != nil {
+				return nil, err
+			}
+			if _, err := chargeDecimalValue(total, budget); err != nil {
+				return nil, err
+			}
 			count++
 		}
 		if count == 0 {
 			return nil, nil //nolint:nilnil
 		}
-		return total / count, nil
+		result, err := numericOperation(total, count, opcode.Div)
+		if err != nil {
+			return nil, err
+		}
+		return chargeDecimalValue(result, budget)
 	case ast.AggFuncMax, ast.AggFuncMin:
 		if len(aggExpr.Args) == 0 {
 			return nil, xerror.Unexpected().Detailf(
@@ -2048,7 +2243,7 @@ func evaluateTransformAggregateExpr(
 		}
 
 		fieldName := aggregateArgFieldName(aggExpr.Args[0])
-		var selected float64
+		var selected any
 		hasValue := false
 		for _, row := range rows {
 			numeric, exists, err := evaluateNumericAggregateArg(aggExpr.Args[0], row, budget, depth+1)
@@ -2070,10 +2265,14 @@ func evaluateTransformAggregateExpr(
 				continue
 			}
 
-			if strings.EqualFold(aggExpr.F, ast.AggFuncMax) && numeric > selected {
+			comparison, _, err := compareOrderedWhereValues(numeric, selected)
+			if err != nil {
+				return nil, err
+			}
+			if strings.EqualFold(aggExpr.F, ast.AggFuncMax) && comparison > 0 {
 				selected = numeric
 			}
-			if strings.EqualFold(aggExpr.F, ast.AggFuncMin) && numeric < selected {
+			if strings.EqualFold(aggExpr.F, ast.AggFuncMin) && comparison < 0 {
 				selected = numeric
 			}
 		}
@@ -2082,7 +2281,17 @@ func evaluateTransformAggregateExpr(
 			return nil, nil //nolint:nilnil
 		}
 
-		return selected, nil
+		if _, ok := selected.(decimal.Value); ok {
+			return selected, nil
+		}
+		numeric, err := numericValue(selected)
+		if err != nil {
+			return nil, err
+		}
+		if numeric.IsInt() && !numericUsesFloat(selected) {
+			return integerNumericResult(numeric)
+		}
+		return numericFloat(numeric)
 	default:
 		return nil, xerror.Unexpected().Detailf(
 			"unsupported transform aggregate function %q at runtime",
@@ -2112,7 +2321,7 @@ func evaluateNumericAggregateArg(
 	row map[string]any,
 	budget *executionBudget,
 	depth int,
-) (float64, bool, error) {
+) (any, bool, error) {
 	if err := budget.checkExpression(depth); err != nil {
 		return 0, false, err
 	}
@@ -2133,12 +2342,12 @@ func evaluateNumericAggregateArg(
 			return 0, false, nil
 		}
 
-		numeric, err := toFloat64(value)
+		_, err = numericValue(value)
 		if err != nil {
 			return 0, false, err
 		}
 
-		return numeric, true, nil
+		return value, true, nil
 	}
 
 	castExpr, ok := expr.(*ast.FuncCastExpr)
@@ -2167,12 +2376,15 @@ func evaluateNumericAggregateArg(
 		return 0, false, err
 	}
 
-	numeric, err := toFloat64(castValue)
+	if _, err := chargeDecimalValue(castValue, budget); err != nil {
+		return nil, false, err
+	}
+	_, err = numericValue(castValue)
 	if err != nil {
 		return 0, false, err
 	}
 
-	return numeric, true, nil
+	return castValue, true, nil
 }
 
 func isCountStarArg(expr ast.ExprNode) bool {
@@ -2261,40 +2473,11 @@ func aggregateColumnReferenceRuntimeError(functionName string) error {
 }
 
 func toFloat64(value any) (float64, error) {
-	switch v := value.(type) {
-	case float64:
-		return v, nil
-	case float32:
-		return float64(v), nil
-	case int:
-		return float64(v), nil
-	case int8:
-		return float64(v), nil
-	case int16:
-		return float64(v), nil
-	case int32:
-		return float64(v), nil
-	case int64:
-		return float64(v), nil
-	case uint:
-		return float64(v), nil
-	case uint8:
-		return float64(v), nil
-	case uint16:
-		return float64(v), nil
-	case uint32:
-		return float64(v), nil
-	case uint64:
-		return float64(v), nil
-	case string:
-		parsed, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
-		if err != nil {
-			return 0, xerror.Unexpected().Detailf("parse numeric string %q: %w", v, err)
-		}
-		return parsed, nil
-	default:
-		return 0, xerror.Unexpected().Detailf("unsupported numeric type %T", value)
+	numeric, err := numericValue(value)
+	if err != nil {
+		return 0, err
 	}
+	return numericFloat(numeric)
 }
 
 func castRuntimeValue(value any, castExpr *ast.FuncCastExpr) (any, error) {
@@ -2305,6 +2488,17 @@ func castRuntimeValue(value any, castExpr *ast.FuncCastExpr) (any, error) {
 		return nil, nil //nolint:nilnil
 	}
 
+	if castExpr.Tp.GetType() == mysql.TypeNewDecimal {
+		parsed, err := decimal.Cast(value)
+		if err != nil {
+			return nil, xerror.Wrapf("convert decimal cast operand: %w", err)
+		}
+		result, err := parsed.Quantize(castExpr.Tp.GetFlen(), castExpr.Tp.GetDecimal())
+		if err != nil {
+			return nil, xerror.Wrapf("quantize decimal cast: %w", err)
+		}
+		return result, nil
+	}
 	targetType := strings.ToLower(castExpr.Tp.String())
 
 	if strings.Contains(targetType, "char") || strings.Contains(targetType, "text") ||
@@ -2313,49 +2507,21 @@ func castRuntimeValue(value any, castExpr *ast.FuncCastExpr) (any, error) {
 	}
 
 	if strings.Contains(targetType, "int") {
-		switch v := value.(type) {
-		case int:
-			return int64(v), nil
-		case int8:
-			return int64(v), nil
-		case int16:
-			return int64(v), nil
-		case int32:
-			return int64(v), nil
-		case int64:
-			return v, nil
-		case uint:
-			if v > uint(math.MaxInt64) {
-				return nil, xerror.Unexpected().Detailf("integer value %d exceeds int64 range", v)
-			}
-			return int64(v), nil
-		case uint8:
-			return int64(v), nil
-		case uint16:
-			return int64(v), nil
-		case uint32:
-			return int64(v), nil
-		case uint64:
-			if v > math.MaxInt64 {
-				return nil, xerror.Unexpected().Detailf("integer value %d exceeds int64 range", v)
-			}
-			return int64(v), nil
-		case float32:
-			return int64(v), nil
-		case float64:
-			return int64(v), nil
-		case string:
-			parsed, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
-			if err != nil {
-				return nil, xerror.Unexpected().Detailf("cast value %q to integer: %w", v, err)
-			}
-			return parsed, nil
-		default:
-			return nil, xerror.Unexpected().Detailf(
-				"unsupported cast source type %T to integer",
-				value,
-			)
+		numeric, err := numericValue(value)
+		if err != nil {
+			return nil, err
 		}
+		integer := new(big.Int).Quo(numeric.Num(), numeric.Denom())
+		if strings.Contains(targetType, "unsigned") {
+			if !integer.IsUint64() {
+				return nil, ErrNumericConversion.Detail("integer cast exceeds uint64 range")
+			}
+			return integer.Uint64(), nil
+		}
+		if !integer.IsInt64() {
+			return nil, ErrNumericConversion.Detail("integer cast exceeds int64 range")
+		}
+		return integer.Int64(), nil
 	}
 
 	if strings.Contains(targetType, "numeric") ||
