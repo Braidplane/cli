@@ -36,13 +36,26 @@ const (
 // Validate performs structural validation for steps, graph inputs,
 // connectivity, and connector-specific incremental source contracts.
 func Validate(p *pipelinespec.Pipeline) error {
+	return validate(p, true)
+}
+
+// ValidateArtifactStructure checks immutable artifact integrity without applying
+// current connectivity admission. Deployment and execution must use Validate.
+func ValidateArtifactStructure(p *pipelinespec.Pipeline) error {
+	return validate(p, false)
+}
+
+func validate(p *pipelinespec.Pipeline, requireConnected bool) error {
 	if err := structvalidate.Default().Struct(p); err != nil {
 		return xerror.Wrapf("validate pipeline: %w", err)
+	}
+	if err := pipelineruntime.ValidatePipelineExecution(p); err != nil {
+		return err
 	}
 	if err := validateSteps(p.Steps); err != nil {
 		return xerror.Wrapf("validate steps: %w", err)
 	}
-	if err := validateStepInputs(p); err != nil {
+	if err := validateStepInputs(p, requireConnected); err != nil {
 		return err
 	}
 	return nil
@@ -483,7 +496,7 @@ func validateSinkOperationContract(sink *pipelinespec.SinkSpec) error {
 	return nil
 }
 
-func validateStepInputs(p *pipelinespec.Pipeline) error {
+func validateStepInputs(p *pipelinespec.Pipeline, requireConnected bool) error {
 	if p == nil {
 		return nil
 	}
@@ -512,7 +525,33 @@ func validateStepInputs(p *pipelinespec.Pipeline) error {
 	if err != nil {
 		return err
 	}
-	return pipelinegraph.ValidateConnectivity(normalized)
+	if requireConnected {
+		if err := pipelinegraph.ValidateConnectivity(normalized); err != nil {
+			return err
+		}
+	}
+	return validateTransformCombineContracts(normalized)
+}
+
+func validateTransformCombineContracts(graph *pipelinegraph.Graph) error {
+	for _, step := range graph.TopologicalSteps() {
+		if step.Transform == nil {
+			continue
+		}
+		inputs, _ := graph.TransformInputStepSlugs(step.Slug)
+		contracts := make(map[string]*payload.Contract, len(inputs))
+		for name, upstream := range inputs {
+			producer, _ := graph.Step(upstream)
+			contracts[name], _ = stepOutputContract(producer)
+			if attachment := step.Transform.InputContracts[name]; attachment != nil && attachment.Contract != nil {
+				contracts[name] = attachment.Contract
+			}
+		}
+		if err := transformsql.ValidateTransformInputContracts(step.Transform.SQL, contracts); err != nil {
+			return xerror.Wrapf("transform step %q: %w", step.Slug, err)
+		}
+	}
+	return nil
 }
 
 func validateStepInputCompatibility(p *pipelinespec.Pipeline) error {
@@ -564,7 +603,11 @@ func validateStepInputCompatibility(p *pipelinespec.Pipeline) error {
 		return err
 	}
 
-	return nil
+	graph, err := pipelinegraph.Normalize(p)
+	if err != nil {
+		return err
+	}
+	return validateTransformCombineContracts(graph)
 }
 
 func withoutUnresolvedContractRefEdges(contexts []stepEdgeContext) []stepEdgeContext {

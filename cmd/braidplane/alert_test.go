@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -484,9 +486,9 @@ func TestRunWithArgsAlertHelpKeepsNotificationTypeGuidanceNarrow(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Empty(t, stderr.String())
-	require.Contains(t, stdout.String(), "pipeline.retry_exhausted")
-	require.NotContains(t, stdout.String(), "pipeline.run_failed")
-	require.NotContains(t, stdout.String(), "pipeline.contract_failure")
+	require.Contains(t, stdout.String(), "pipeline capabilities")
+	require.Contains(t, stdout.String(), "available")
+	require.NotContains(t, stdout.String(), "pipeline.freshness_sla_breached")
 }
 
 func runCLIForAlertTest(t *testing.T, serverURL string, args []string) (string, string, error) {
@@ -504,4 +506,42 @@ func runCLIForAlertTest(t *testing.T, serverURL string, args []string) (string, 
 		cliRuntime{configPath: filepath.Join(t.TempDir(), "braidplane.toml")},
 	)
 	return stdout.String(), stderr.String(), err
+}
+
+func TestProducerBackedAlertPolicyCreateAndDisable(t *testing.T) {
+	for _, kind := range []string{"pipeline.run_succeeded", "pipeline.run_failed", "pipeline.scheduled_run_delayed", "pipeline.scheduled_run_missing"} {
+		t.Run(kind, func(t *testing.T) {
+			for _, update := range []bool{false, true} {
+				t.Run(map[bool]string{false: "create", true: "disable"}[update], func(t *testing.T) {
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+						var body map[string]any
+						assert.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+						assert.Equal(t, kind, body["notification_type"])
+						assert.Equal(t, "project_environment", body["scope"])
+						assert.Equal(t, "ops", body["project_slug"])
+						assert.Equal(t, "prod", body["environment_slug"])
+						assert.Equal(t, []any{"finance-slack"}, body["destination_slugs"])
+						if update {
+							assert.Equal(t, false, body["enabled"])
+							assert.Equal(t, http.MethodPut, r.Method)
+						} else {
+							assert.Equal(t, http.MethodPost, r.Method)
+							w.WriteHeader(http.StatusCreated)
+						}
+						_, err := w.Write([]byte(alertPolicyPayload))
+						assert.NoError(t, err)
+					}))
+					defer server.Close()
+					args := []string{"braidplane", "alert", "policy", "create"}
+					if update {
+						args = []string{"braidplane", "alert", "policy", "update", "success", "--disabled"}
+					}
+					args = append(args, "--name", "Completed runs", "--scope", "project_environment", "--project", "ops", "--environment", "prod", "--notification-type", kind, "--destination", "finance-slack")
+					_, _, err := runCLIForAlertTest(t, server.URL, args)
+					require.NoError(t, err)
+				})
+			}
+		})
+	}
 }

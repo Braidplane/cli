@@ -6,8 +6,8 @@ toolchain go1.26.7
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/cockroachdb/apd/v3 v3.2.1
 	github.com/alecthomas/kong v1.16.1
+	github.com/cockroachdb/apd/v3 v3.2.1
 	github.com/go-openapi/jsonpointer v0.23.1
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/oapi-codegen/runtime v1.7.0
@@ -22,7 +22,7 @@ require (
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/emicklei/proto v1.14.3 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/getkin/kin-openapi v0.145.0 // indirect
+	github.com/getkin/kin-openapi v0.149.0 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
@@ -71,7 +71,7 @@ require (
 	github.com/pingcap/failpoint v0.0.0-20240528011301-b51a646c7c86 // indirect
 	github.com/pingcap/log v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect

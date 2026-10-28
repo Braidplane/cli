@@ -327,7 +327,7 @@ func OrphanStep() *Error {
 	return newStandalone(
 		KindInvalidInput,
 		"PIPELINE_ORPHAN_STEP",
-		"step must reference at least one upstream step output via $steps.*",
+		"pipeline steps must form one connected data flow",
 	)
 }
 
@@ -734,4 +734,14 @@ func DataSourceBindingUnavailable() *Error {
 		"DATA_SOURCE_BINDING_UNAVAILABLE",
 		"data source binding is unavailable",
 	)
+}
+
+// HTTPAcknowledgementRejected reports an explicit negative response without asserting rollback.
+func HTTPAcknowledgementRejected() *Error {
+	return newStandalone(KindInvalidInput, "HTTP_ACKNOWLEDGEMENT_REJECTED", "HTTP acknowledgement rejected")
+}
+
+// HTTPAcknowledgementUncertain prevents missing delivery evidence from becoming success.
+func HTTPAcknowledgementUncertain() *Error {
+	return newStandalone(KindUnavailable, "HTTP_ACKNOWLEDGEMENT_UNCERTAIN", "HTTP acknowledgement uncertain")
 }

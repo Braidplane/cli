@@ -172,7 +172,7 @@ func TestValidateTransformSQL(t *testing.T) {
 			sql:  "WITH active AS (SELECT id FROM input UNION SELECT id FROM input) SELECT id FROM active",
 			assertErr: func(t *testing.T, err error) {
 				require.ErrorIs(t, err, ErrFeatureNotAllowed)
-				require.ErrorContains(t, err, "cte body must be a single SELECT")
+				require.ErrorContains(t, err, "only flat UNION ALL")
 			},
 		},
 		{
@@ -298,7 +298,7 @@ func TestValidateTransformSQL_ForbidsWindowFunctions(t *testing.T) {
 	t.Parallel()
 
 	_, err := ValidateTransformSQL(
-		"SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn FROM input",
+		"SELECT id, RANK() OVER (ORDER BY id) AS rn FROM input",
 	)
 	require.ErrorIs(t, err, ErrFeatureNotAllowed)
 }

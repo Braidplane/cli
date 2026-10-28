@@ -8,6 +8,8 @@ import (
 	"github.com/Braidplane/cli/pkg/model"
 	pipelineruntime "github.com/Braidplane/cli/pkg/pipeline/runtime"
 	"github.com/Braidplane/cli/pkg/pipeline/spec"
+	"github.com/Braidplane/cli/pkg/slug"
+	"github.com/Braidplane/cli/pkg/xerror"
 )
 
 func TestNormalizeStepInputEdges(t *testing.T) {
@@ -70,6 +72,7 @@ func TestNormalizeStepInputEdges(t *testing.T) {
 	require.Equal(t, "load-users", edges[2].ToStepSlug.String())
 
 	inputs, ok := normalized.TransformInputStepSlugs("join-users")
+	require.NoError(t, ValidateConnectivity(normalized))
 	require.True(t, ok)
 	require.Equal(t, map[string]string{
 		"left":  "fetch-left-users",
@@ -136,6 +139,7 @@ func TestNormalizeAllowsOneProducerToMultipleSinks(t *testing.T) {
 	require.Equal(t, "fetch-users->call-webhook", edges[1].Slug())
 
 	ordered := normalized.TopologicalSteps()
+	require.NoError(t, ValidateConnectivity(normalized))
 	require.Len(t, ordered, 3)
 	require.Equal(t, "fetch-users", ordered[0].Slug.String())
 	require.Equal(t, "load-warehouse", ordered[1].Slug.String())
@@ -226,6 +230,7 @@ func TestNormalizeQueryParameterEdges(t *testing.T) {
 	require.NoError(t, err)
 
 	edges := normalized.QueryParameterEdges()
+	require.NoError(t, ValidateConnectivity(normalized))
 	require.Len(t, edges, 1)
 	require.Equal(t, EdgeKindQueryParameter, edges[0].Kind)
 	require.Equal(t, "fetch-users", edges[0].FromStepSlug.String())
@@ -319,7 +324,7 @@ func TestNormalizeRejectsInvalidGraph(t *testing.T) {
 					},
 				},
 			},
-			wantErrContains: "not connected",
+			wantErrContains: "disconnected data-flow groups",
 		},
 	}
 
@@ -378,4 +383,39 @@ func TestNormalizeTopologicalSteps(t *testing.T) {
 	require.Equal(t, "fetch-users", ordered[0].Slug.String())
 	require.Equal(t, "fetch-profiles", ordered[1].Slug.String())
 	require.Equal(t, "load-profiles", ordered[2].Slug.String())
+}
+
+func TestValidateConnectivityComponents(t *testing.T) {
+	t.Parallel()
+	query := func(name slug.Slug) spec.Step {
+		return spec.Step{Kind: "query", Slug: name, Query: &spec.QueryRef{DataSourceSlug: "shared-source"}}
+	}
+	sink := func(name, from slug.Slug) spec.Step {
+		return spec.Step{Kind: "sink", Slug: name, Sink: &spec.SinkSpec{Input: &spec.StepInput{FromStep: from}}}
+	}
+	for _, tc := range []struct {
+		name   string
+		steps  []spec.Step
+		groups string
+	}{
+		{name: "single query", steps: []spec.Step{query("a")}},
+		{name: "two chains sharing a connector", steps: []spec.Step{query("a"), sink("x", "a"), query("b"), sink("y", "b")}, groups: `["a", "x"]; ["b", "y"]`},
+		{name: "isolated first query", steps: []spec.Step{query("a"), query("b"), sink("y", "b")}, groups: `["a"]; ["b", "y"]`},
+		{name: "isolated last query", steps: []spec.Step{query("b"), sink("y", "b"), query("a")}, groups: `["b", "y"]; ["a"]`},
+		{name: "three groups", steps: []spec.Step{query("a"), query("b"), query("c")}, groups: `["a"]; ["b"]; ["c"]`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			g, err := Normalize(&spec.Pipeline{Steps: tc.steps})
+			require.NoError(t, err)
+			err = ValidateConnectivity(g)
+			if tc.groups == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorIs(t, err, ErrOrphanStep)
+			require.ErrorContains(t, err, tc.groups)
+			require.Contains(t, xerror.PublicDetail(err), tc.groups)
+			require.ErrorContains(t, err, "split independent flows into separate pipelines or connect them with an actual data dependency")
+		})
+	}
 }

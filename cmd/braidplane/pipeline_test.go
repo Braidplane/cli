@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1588,6 +1589,8 @@ func TestRunWithArgsPipelineDeployPostsRequestAndPrintsDeployment(t *testing.T) 
 			"braidplane", "pipeline", "deploy", "acme-users-sync",
 			"--project", "data-pipelines",
 			"--environment", "prod",
+			"--expected-revision", "7",
+			"--compiled-plan-digest", "sha256:" + strings.Repeat("a", 64),
 			"--spec-hash", "abc1234",
 			"--expected-current-spec-hash", "def5678",
 			"--source-environment", "stg",
@@ -1605,6 +1608,8 @@ func TestRunWithArgsPipelineDeployPostsRequestAndPrintsDeployment(t *testing.T) 
 	require.Equal(t, "Bearer xto_saved_token", gotAuth)
 	require.Equal(t, "/api/organizations/acme/projects/data-pipelines/environments/prod/pipelines/acme-users-sync:deploy", gotPath)
 	require.Equal(t, "abc1234", gotBody.SpecHash)
+	require.EqualValues(t, 7, *gotBody.ExpectedRevision)
+	require.Equal(t, "sha256:"+strings.Repeat("a", 64), *gotBody.CompiledPlanDigest)
 	require.NotNil(t, gotBody.ExpectedCurrentSpecHash)
 	require.Equal(t, "def5678", *gotBody.ExpectedCurrentSpecHash)
 	require.NotNil(t, gotBody.SourceEnvironmentSlug)
@@ -4035,7 +4040,7 @@ func TestRunWithArgsPipelineRunWatchPrintsSucceededRun(t *testing.T) {
 		gotPath = r.URL.Path
 		gotMethod = r.Method
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(pipelineRunRecordJSON("acme-users-sync", "run-001", `{
+		_, _ = w.Write([]byte(pipelineRunProgressJSON(t, pipelineRunRecordJSON("acme-users-sync", "run-001", `{
 			"type": "api",
 			"summary": "API key run",
 			"entrypoint": "api",
@@ -4045,7 +4050,7 @@ func TestRunWithArgsPipelineRunWatchPrintsSucceededRun(t *testing.T) {
 			"trace_id": null,
 			"parameter_keys": [],
 			"source_event_slug": "evt-pipeline-run-execute-001"
-		}`)))
+		}`))))
 	}))
 	t.Cleanup(server.Close)
 
@@ -4073,9 +4078,9 @@ func TestRunWithArgsPipelineRunWatchPrintsSucceededRun(t *testing.T) {
 	require.Empty(t, stderr.String())
 	require.Equal(t, http.MethodGet, gotMethod)
 	require.Equal(t, "Bearer xto_saved_token", gotAuth)
-	require.Equal(t, "/api/organizations/acme/projects/data-pipelines/environments/prod/runs/run-001", gotPath)
+	require.Equal(t, "/api/organizations/acme/projects/data-pipelines/environments/prod/runs/run-001/progress", gotPath)
 	require.Contains(t, stdout.String(), "run-001")
-	require.Contains(t, stdout.String(), "\"status\": \"succeeded\"")
+	require.Contains(t, stdout.String(), "\"status\":\"succeeded\"")
 }
 
 func TestRunWithArgsPipelineRunWatchReturnsPersistedFailedRunForExecutionFailure(t *testing.T) {
@@ -4088,7 +4093,7 @@ func TestRunWithArgsPipelineRunWatchReturnsPersistedFailedRunForExecutionFailure
 		gotPath = r.URL.Path
 		gotMethod = r.Method
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{
+		_, _ = w.Write([]byte(pipelineRunProgressJSON(t, `{
 			"metadata": {
 				"pipeline_slug": "acme-users-sync",
 				"pipeline_version_spec_hash": "spec-hash-12",
@@ -4123,7 +4128,7 @@ func TestRunWithArgsPipelineRunWatchReturnsPersistedFailedRunForExecutionFailure
 					"action_hint": "Review the sink insert strategy before retrying."
 				}
 			}
-		}`))
+		}`)))
 	}))
 	t.Cleanup(server.Close)
 
@@ -4151,9 +4156,9 @@ func TestRunWithArgsPipelineRunWatchReturnsPersistedFailedRunForExecutionFailure
 	require.Empty(t, stderr.String())
 	require.Equal(t, http.MethodGet, gotMethod)
 	require.Equal(t, "Bearer xto_env_token", gotAuth)
-	require.Equal(t, "/api/organizations/acme/projects/data-pipelines/environments/prod/runs/run-001", gotPath)
-	require.Contains(t, stdout.String(), "\"status\": \"failed\"")
-	require.Contains(t, stdout.String(), "Review the sink insert strategy before retrying.")
+	require.Equal(t, "/api/organizations/acme/projects/data-pipelines/environments/prod/runs/run-001/progress", gotPath)
+	require.Contains(t, stdout.String(), "\"status\":\"failed\"")
+	require.Contains(t, stdout.String(), "duplicate key value violates unique constraint")
 }
 
 func TestRunWithArgsPipelineRunStartMapsStructuredAPIError(t *testing.T) {
@@ -4309,4 +4314,35 @@ func TestRunWithArgsPipelineBootstrap(t *testing.T) {
 	require.Equal(t, "bootstrap-001", got.RequestSlug)
 	require.Equal(t, `{"value":9007199254740993}`, string(got.SourceSeeds["source"]))
 	require.Contains(t, stdout.String(), "bootstrapped")
+}
+
+func TestRunWithArgsPipelineRunGetResourceScopeRejection(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/organizations/acme/projects/etl/environments/staging/runs/scope-rejection", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"metadata":{"run_slug":"scope-rejection","pipeline_slug":"orders","status":"failed"},"timeline":{"failure":{"step":"fetch","kind":"data_source","side":"source","reason_code":"resource_scope_rejected","error":"resource scope or selector is unsupported or outside the permitted scope","action_hint":"Use an unambiguous relative object key within the pinned scope, without traversal or absolute paths. Keep the bucket and target settings fixed to the pinned scope."}}}`))
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("BRAIDPLANE_SERVER_URL", server.URL+"/api")
+	t.Setenv("BRAIDPLANE_ORG", "acme")
+	t.Setenv("BRAIDPLANE_API_KEY", "xto_test")
+	t.Setenv("BRAIDPLANE_ENVIRONMENT", "staging")
+	var stdout, stderr bytes.Buffer
+	err := runWithRuntime([]string{"braidplane", "pipeline", "run", "get", "scope-rejection", "--project", "etl", "--output", "text"}, &stdout, &stderr, cliRuntime{configPath: filepath.Join(t.TempDir(), "braidplane.toml")})
+	require.NoError(t, err)
+	require.Empty(t, stderr.String())
+	require.Contains(t, stdout.String(), "Failure step: fetch")
+	require.Contains(t, stdout.String(), "Failure reason: resource_scope_rejected")
+	require.Contains(t, stdout.String(), "Failure error: resource scope or selector is unsupported or outside the permitted scope")
+	require.Contains(t, stdout.String(), "Action hint: Use an unambiguous relative object key within the pinned scope, without traversal or absolute paths. Keep the bucket and target settings fixed to the pinned scope.")
+}
+
+func pipelineRunProgressJSON(t *testing.T, raw string) string {
+	t.Helper()
+	var run api.PipelineRunRecord
+	require.NoError(t, json.Unmarshal([]byte(raw), &run))
+	progress := api.PipelineRunProgress{Metadata: run.Metadata, Revision: 1, Events: run.Timeline.Events, EventCount: int64(len(run.Timeline.Events)), NextAfterEvent: int64(len(run.Timeline.Events)), WorkerLiveness: api.PipelineRunProgressWorkerLivenessTerminal, ServerTime: run.Metadata.StartedAt}
+	encoded, err := json.Marshal(progress)
+	require.NoError(t, err)
+	return string(encoded)
 }

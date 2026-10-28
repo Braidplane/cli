@@ -39,9 +39,10 @@ type braidplaneCLI struct {
 	Invitation         invitationCommand         `cmd:"" help:"Manage organization member invitations."`
 	Role               roleCommand               `cmd:"" help:"Manage organization roles."`
 	APIKey             apiKeyCommand             `cmd:"" name:"api-key" help:"Manage same-role organization API keys using an explicitly opted-in API key."`
+	SecurityAudit      securityAuditCommand      `cmd:"" name:"security-audit" help:"Inspect retained organization security audit events."`
 	Event              eventCommand              `cmd:"" help:"Inspect durable organization events."`
 	Notification       notificationCommand       `cmd:"" help:"Inspect and manage organization notifications."`
-	Alert              alertCommand              `cmd:"" help:"Manage alert destinations and alert policies."`
+	Alert              alertCommand              `cmd:"" help:"Manage notification connections, alert destinations, policies and delivery inspection."`
 	Project            projectCommand            `cmd:"" help:"Manage organization projects."`
 	Environment        environmentCommand        `cmd:"" help:"Manage organization runtime environment catalog entries and project enablement."`
 	ProjectEnvironment projectEnvironmentCommand `cmd:"" name:"project-environment" help:"Manage project-environment enablement for catalog environments."`

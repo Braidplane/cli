@@ -56,3 +56,34 @@ func TestHTTPAPIKeyRequestFileRejectsOAuth(t *testing.T) {
 		require.NotContains(t, err.Error(), "synthetic-key")
 	}
 }
+
+func TestHTTPSecretHeaderRequestFile(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "header"), []byte("synthetic-secret"), 0o600))
+	flags := dataSourceRequestFlags{}
+	secrets, err := decodeDataSourceCredentialsFile(api.DataSourceTypeHttp, json.RawMessage(`{"secret_headers":{"accessKey":"synthetic-access","appKey":"synthetic-app"},"secret_header_files":{"secretKey":"header"}}`), dir, true, &flags)
+	require.NoError(t, err)
+	require.Contains(t, secrets, "synthetic-secret")
+	credentials, secrets, err := flags.httpCredentials(true)
+	require.NoError(t, err)
+	require.Equal(t, map[string]string{"accessKey": "synthetic-access", "secretKey": "synthetic-secret", "appKey": "synthetic-app"}, *credentials.SecretHeaders)
+	require.Contains(t, secrets, "synthetic-secret")
+	flags.BearerToken = "conflict"
+	_, _, err = flags.httpCredentials(true)
+	require.Error(t, err)
+	flags.BearerToken = ""
+	flags.HTTPOAuth = &api.HTTPOAuthCredentials{}
+	_, _, err = flags.httpCredentials(true)
+	require.Error(t, err)
+}
+
+func TestHTTPSecretHeaderFileRejectsLineBreaks(t *testing.T) {
+	for _, ending := range []string{"\n", "\r\n"} {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "header"), []byte("synthetic-secret"+ending), 0o600))
+		flags := dataSourceRequestFlags{}
+		_, err := decodeDataSourceCredentialsFile(api.DataSourceTypeHttp, json.RawMessage(`{"secret_header_files":{"X-Key":"header"}}`), dir, true, &flags)
+		require.ErrorContains(t, err, "remove any trailing newline")
+		require.NotContains(t, err.Error(), "synthetic-secret")
+	}
+}

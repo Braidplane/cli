@@ -520,3 +520,35 @@ func TestLoadWatermarkIncrementalUsesEffectiveOutputContract(t *testing.T) {
 func incrementalCheckpointKind(kind model.IncrementalCheckpointKind) *model.IncrementalCheckpointKind {
 	return &kind
 }
+
+func TestHTTPWatermarkContractUsesSharedJSONFieldPath(t *testing.T) {
+	pipeline, err := Load("http-watermark.yaml", []byte(`metadata:
+  slug: http-watermark
+  name: HTTP Watermark
+steps:
+  - kind: query
+    slug: fetch-items
+    query:
+      data_source_ref: api
+      operation_type: http
+      operation_inline:
+        method: GET
+        path: /items
+        query_params:
+          updated_since: "{{runtime.incremental.lower_bound.value}}"
+      incremental:
+        checkpoint_kind: watermark
+        field: items[].updated_at
+        lookback_window: 5m
+      output_contract:
+        name: response
+        representation: json
+        root_shape: object
+        fields:
+          - name: items[].updated_at
+            type: datetime
+            required: true
+`))
+	require.NoError(t, err)
+	require.Equal(t, "items[].updated_at", pipeline.Steps[0].Query.Incremental.Field)
+}

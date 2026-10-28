@@ -24,7 +24,7 @@ type listNotificationsCommand struct {
 	Cursor           string `help:"Pagination cursor from a previous list response." name:"cursor"`
 	Direction        string `help:"Pagination direction: next or prev." name:"direction"`
 	LifecycleState   string `help:"Filter by lifecycle state: open, acknowledged, or resolved. Omit to list active unresolved notifications." name:"lifecycle-state"`
-	NotificationType string `help:"Filter by notification type. Current producer-backed value: pipeline.retry_exhausted." name:"notification-type"`
+	NotificationType string `help:"Filter by notification type. Use pipeline capabilities to discover available producers." name:"notification-type"`
 	Severity         string `help:"Filter by severity: info, warning, or critical." name:"severity"`
 	SourceKind       string `help:"Filter by source entity, such as pipeline_run. Source action values come from alert policy source metadata." name:"source-kind"`
 	SourceAction     string `help:"Filter by source action. Requires --source-kind." name:"source-action"`
@@ -84,7 +84,7 @@ func (c *listNotificationsCommand) params() (api.ListNotificationsParams, error)
 	if c.NotificationType != "" {
 		notificationType := api.NotificationType(c.NotificationType)
 		if !notificationType.Valid() || notificationType == api.NotificationTypeUnknown {
-			return params, xerror.ValidationFailed().Detail("notification-type must be a supported API enum value; current producer-backed value is pipeline.retry_exhausted")
+			return params, xerror.ValidationFailed().Detail("notification-type must be a supported API enum value; current producer-backed values are pipeline.retry_exhausted, pipeline.run_succeeded, pipeline.contract_failure, pipeline.run_failed, pipeline.scheduled_run_delayed and pipeline.scheduled_run_missing")
 		}
 		params.NotificationType = &notificationType
 	}

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"strings"
 
 	api "github.com/Braidplane/cli/internal/apiclient"
@@ -177,11 +179,12 @@ type testDataSourceCommand struct {
 	apiAuthFlags
 	dataSourceRequestFlags
 
-	Type string `arg:"" optional:"" name:"type" help:"Data-source type to test."`
+	Type   string `arg:"" optional:"" name:"type" help:"Data-source type to test; omit when using --file."`
+	Output string `help:"Output format: json or text." name:"output" default:"json" enum:"json,text"`
 }
 
 // Run tests draft config and credentials without persisting a data-source record.
-func (c *testDataSourceCommand) Run(_ *cliOutput, runtime *cliRuntime) error {
+func (c *testDataSourceCommand) Run(output *cliOutput, runtime *cliRuntime) error {
 	client, err := newAPIClient(c.apiAuthFlags, runtime)
 	if err != nil {
 		return err
@@ -191,10 +194,28 @@ func (c *testDataSourceCommand) Run(_ *cliOutput, runtime *cliRuntime) error {
 	if err != nil {
 		return err
 	}
+	typ, err := body.Discriminator()
+	if err != nil {
+		return xerror.Unexpected().With(err)
+	}
 	if err := client.testDataSourceConnection(context.Background(), body); err != nil {
 		return redactCredentialError(err, secrets)
 	}
 
+	return writeCLIOutput(output.stdout, dataSourceTestResult{Type: typ, Status: "succeeded"}, c.Output)
+}
+
+type dataSourceTestResult struct {
+	Type   string `json:"type"`
+	Status string `json:"status"`
+}
+
+func (r dataSourceTestResult) JSONValue() any { return r }
+
+func (r dataSourceTestResult) WriteCLIText(writer io.Writer) error {
+	if _, err := fmt.Fprintf(writer, "Draft %s connection test %s.\n", r.Type, r.Status); err != nil {
+		return xerror.Unexpected().With(err)
+	}
 	return nil
 }
 
@@ -275,7 +296,7 @@ type dataSourceRequestFlags struct {
 	HTTPOAuth           *api.HTTPOAuthCredentials `kong:"-"`
 	HTTPOAuthSecrets    []string                  `kong:"-"`
 	WorkspaceAccessMode string                    `kong:"-"`
-	RequestFile         string                    `help:"JSON data-source request file. Secret file paths inside it are resolved relative to the JSON file." name:"file" type:"path"`
+	RequestFile         string                    `help:"JSON data-source request file; omit positional arguments and provider/config/credential flags. Auth and --output flags may still be used where supported. Secret file paths are relative to this file." name:"file" type:"path"`
 
 	Host           string `help:"Database or FTP host." name:"host"`
 	Port           int    `help:"Database or FTP port." name:"port"`
@@ -321,8 +342,9 @@ type dataSourceRequestFlags struct {
 
 	Password string `help:"Password value." name:"password"`
 
-	APIKey       string `help:"HTTP API key value." name:"http-api-key"`
-	APIKeyHeader string `help:"HTTP API key header: X-Api-Key or Authorization (ApiKey scheme)." name:"http-api-key-header"`
+	SecretHeaders map[string]string `kong:"-"`
+	APIKey        string            `help:"HTTP API key value." name:"http-api-key"`
+	APIKeyHeader  string            `help:"HTTP API key header: X-Api-Key or Authorization (ApiKey scheme)." name:"http-api-key-header"`
 
 	BearerToken string `help:"HTTP bearer token value." name:"bearer-token"`
 
@@ -1215,7 +1237,7 @@ func (f dataSourceRequestFlags) snowflakeCredentials(required bool) (api.Snowfla
 // httpCredentials builds typed HTTP credentials and allows no-auth create/test payloads.
 func (f dataSourceRequestFlags) httpCredentials(required bool) (api.HTTPCredentials, []string, error) {
 	if f.HTTPOAuth != nil {
-		if f.APIKey != "" || f.APIKeyHeader != "" || f.BearerToken != "" || f.Username != "" || f.Password != "" {
+		if len(f.SecretHeaders) > 0 || f.APIKey != "" || f.APIKeyHeader != "" || f.BearerToken != "" || f.Username != "" || f.Password != "" {
 			return api.HTTPCredentials{}, nil, xerror.InvalidInput(xerror.DataSource).Detail("HTTP OAuth settings cannot be combined with other credentials")
 		}
 		return api.HTTPCredentials{Oauth: f.HTTPOAuth}, f.HTTPOAuthSecrets, nil
@@ -1237,7 +1259,7 @@ func (f dataSourceRequestFlags) httpCredentials(required bool) (api.HTTPCredenti
 		return api.HTTPCredentials{}, nil, err
 	}
 	methods := 0
-	for _, present := range []bool{key != "", bearer != "", f.Username != "" || password != ""} {
+	for _, present := range []bool{len(f.SecretHeaders) > 0, key != "", bearer != "", f.Username != "" || password != ""} {
 		if present {
 			methods++
 		}
@@ -1245,7 +1267,7 @@ func (f dataSourceRequestFlags) httpCredentials(required bool) (api.HTTPCredenti
 	if methods > 1 || (f.Username == "") != (password == "") {
 		return api.HTTPCredentials{}, nil, xerror.InvalidInput(xerror.DataSource).Detail("configure one HTTP authentication method; Basic requires username and password")
 	}
-	if required && key == "" && bearer == "" && password == "" {
+	if required && len(f.SecretHeaders) == 0 && key == "" && bearer == "" && password == "" {
 		return api.HTTPCredentials{}, nil, xerror.InvalidRequired(xerror.DataSource).
 			Detail("set --bearer-token, --password, --http-api-key with --http-api-key-header, or --file")
 	}
@@ -1256,7 +1278,14 @@ func (f dataSourceRequestFlags) httpCredentials(required bool) (api.HTTPCredenti
 		Username:     optionalString(f.Username),
 		Password:     optionalCredentialString(password),
 	}
-	return credentials, append(append(keySecrets, bearerSecrets...), passwordSecrets...), nil
+	secrets := append(append(keySecrets, bearerSecrets...), passwordSecrets...)
+	if len(f.SecretHeaders) > 0 {
+		credentials.SecretHeaders = &f.SecretHeaders
+		for _, value := range f.SecretHeaders {
+			secrets = append(secrets, value)
+		}
+	}
+	return credentials, secrets, nil
 }
 
 // hubSpotCredentials builds typed HubSpot private app credentials from direct secret flags.

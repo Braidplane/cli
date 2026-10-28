@@ -9,54 +9,64 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	api "github.com/Braidplane/cli/internal/apiclient"
 	pipelinediff "github.com/Braidplane/cli/pkg/pipeline/diff"
 	pipelineruntimevars "github.com/Braidplane/cli/pkg/pipeline/runtime"
 	pipelinespec "github.com/Braidplane/cli/pkg/pipeline/spec"
 	pipelinevalidate "github.com/Braidplane/cli/pkg/pipeline/validate"
+	"github.com/Braidplane/cli/pkg/slug"
 	"github.com/Braidplane/cli/pkg/xerror"
 )
 
 const unavailablePipelineRunSourceLabel = "unavailable"
 
 type pipelineCommand struct {
-	Bootstrap  bootstrapPipelineCheckpointsCommand `cmd:"" help:"Seed initial incremental checkpoints without running a pipeline."`
-	List       listPipelinesCommand                `cmd:"" help:"List pipelines from the Braidplane API."`
-	Get        getPipelineCommand                  `cmd:"" help:"Get a pipeline from the Braidplane API."`
-	Update     updatePipelineCommand               `cmd:"" help:"Propose a pipeline update through the Braidplane API."`
-	Draft      draftPipelineCommand                `cmd:"" help:"Manage pipeline drafts through the Braidplane API."`
-	Run        runPipelineCommand                  `cmd:"" help:"Inspect persisted pipeline runs through the Braidplane API."`
-	Trigger    triggerPipelineCommand              `cmd:"" help:"Manage environment-scoped pipeline triggers through the Braidplane API."`
-	Version    versionPipelineCommand              `cmd:"" help:"Inspect immutable pipeline versions through the Braidplane API."`
-	Apply      applyPipelineCommand                `cmd:"" help:"Materialize Git-authored pipelines from the project backend into Braidplane."`
-	Deploy     deployPipelineCommand               `cmd:"" help:"Deploy an immutable pipeline version to an environment."`
-	Deployment pipelineDeploymentCommand           `cmd:"" help:"Inspect environment deployment state and history."`
-	Validation pipelineValidationHistoryCommand    `cmd:"" help:"Inspect and refresh persisted validation history."`
-	Drift      pipelineDriftCommand                `cmd:"" help:"Inspect drift and impact reports."`
-	Validate   validateCommand                     `cmd:"" help:"Validate pipeline specs without running a server."`
-	Format     formatPipelineCommand               `cmd:"" help:"Format a pipeline spec through the Braidplane API."`
-	Diff       diffPipelineCommand                 `cmd:"" help:"Compare a local pipeline spec with the upstream Braidplane API pipeline."`
+	Mapping      pipelineMappingCommand              `cmd:"" help:"Inspect and author SQL field mappings locally without publishing or running a pipeline."`
+	Recency      pipelineRecencyCommand              `cmd:"" help:"Inspect and configure successful-run recency for one environment."`
+	Capabilities pipelineCapabilitiesCommand         `cmd:"" help:"Discover available operational features and notification selectors."`
+	Bootstrap    bootstrapPipelineCheckpointsCommand `cmd:"" help:"Seed initial incremental checkpoints without running a pipeline."`
+	List         listPipelinesCommand                `cmd:"" help:"List pipelines from the Braidplane API."`
+	Get          getPipelineCommand                  `cmd:"" help:"Get a pipeline from the Braidplane API."`
+	Update       updatePipelineCommand               `cmd:"" help:"Propose a pipeline update through the Braidplane API."`
+	Draft        draftPipelineCommand                `cmd:"" help:"Manage pipeline drafts through the Braidplane API."`
+	Run          runPipelineCommand                  `cmd:"" help:"Inspect persisted pipeline runs through the Braidplane API."`
+	Trigger      triggerPipelineCommand              `cmd:"" help:"Manage environment-scoped pipeline triggers through the Braidplane API."`
+	Version      versionPipelineCommand              `cmd:"" help:"Inspect immutable pipeline versions through the Braidplane API."`
+	Apply        applyPipelineCommand                `cmd:"" help:"Materialize Git-authored pipelines from the project backend into Braidplane."`
+	Deploy       deployPipelineCommand               `cmd:"" help:"Deploy an immutable pipeline version to an environment."`
+	Deployment   pipelineDeploymentCommand           `cmd:"" help:"Inspect environment deployment state and history."`
+	Validation   pipelineValidationHistoryCommand    `cmd:"" help:"Inspect and refresh persisted validation history."`
+	Drift        pipelineDriftCommand                `cmd:"" help:"Inspect drift and impact reports."`
+	Validate     validateCommand                     `cmd:"" help:"Validate pipeline specs without running a server."`
+	Format       formatPipelineCommand               `cmd:"" help:"Format a pipeline spec through the Braidplane API."`
+	Diff         diffPipelineCommand                 `cmd:"" help:"Compare a local pipeline spec with the upstream Braidplane API pipeline."`
+	Create       createPipelineCommand               `cmd:"" help:"Propose a new pipeline file; review and merge it before pipeline apply and deploy."`
+	Creation     pipelineCreationCommand             `cmd:"" help:"Inspect proposals for pipelines not yet imported from Git."`
 }
 
 type draftPipelineCommand struct {
-	Get     getPipelineDraftCommand     `cmd:"" help:"Get a pipeline draft from the Braidplane API."`
-	Save    savePipelineDraftCommand    `cmd:"" help:"Save a pipeline draft through the Braidplane API."`
-	Publish publishPipelineDraftCommand `cmd:"" help:"Propose a pipeline draft as Git branch work through the Braidplane API."`
-	Discard discardPipelineDraftCommand `cmd:"" help:"Discard a pipeline draft through the Braidplane API."`
+	RefreshProposal refreshPipelineDraftProposalCommand `cmd:"" name:"refresh-proposal" help:"Queue refresh of the exact provider proposal attached to your draft."`
+	Get             getPipelineDraftCommand             `cmd:"" help:"Get a pipeline draft from the Braidplane API."`
+	Save            savePipelineDraftCommand            `cmd:"" help:"Save a pipeline draft through the Braidplane API."`
+	Publish         publishPipelineDraftCommand         `cmd:"" help:"Propose a pipeline draft as Git branch work through the Braidplane API."`
+	Discard         discardPipelineDraftCommand         `cmd:"" help:"Discard a pipeline draft through the Braidplane API."`
 }
 
 type versionPipelineCommand struct {
-	List listPipelineVersionsCommand `cmd:"" help:"List immutable versions for a pipeline from the Braidplane API."`
-	Get  getPipelineVersionCommand   `cmd:"" help:"Get an immutable pipeline version from the Braidplane API."`
+	Compile compilePipelineVersionCommand  `cmd:"" help:"Compile a full retained immutable version hash."`
+	Plan    getPipelineCompiledPlanCommand `cmd:"" help:"Inspect an exact retained compiled digest."`
+	List    listPipelineVersionsCommand    `cmd:"" help:"List immutable versions for a pipeline from the Braidplane API."`
+	Get     getPipelineVersionCommand      `cmd:"" help:"Get an immutable pipeline version from the Braidplane API."`
 }
 
 type runPipelineCommand struct {
 	List          listPipelineRunsCommand             `cmd:"" help:"List persisted runs for a pipeline from the Braidplane API."`
 	Get           getPipelineRunCommand               `cmd:"" help:"Get persisted pipeline run details from the Braidplane API."`
-	Watch         watchPipelineRunCommand             `cmd:"" help:"Poll a pipeline run until it reaches a terminal status."`
+	Progress      pipelineRunProgressCommand          `cmd:"" help:"Inspect a bounded page of durable run progress."`
+	Watch         watchPipelineRunCommand             `cmd:"" help:"Stream durable progress until this attempt reaches a terminal status."`
 	Start         startPipelineRunCommand             `cmd:"" help:"Start a pipeline run through the Braidplane API."`
+	Completion    inspectPipelineRunCompletionCommand `cmd:"" help:"Inspect logical closure, attempts and independently authorized completion causes and dispatch decisions."`
 	RetryAttempts listPipelineRunRetryAttemptsCommand `cmd:"" name:"retry-attempts" help:"List trigger retry attempts for a pipeline run retry group."`
 }
 
@@ -399,55 +409,6 @@ type watchPipelineRunCommand struct {
 	Output          string `help:"Output format: json or text." name:"output" default:"json"`
 }
 
-func (c *watchPipelineRunCommand) Run(output *cliOutput, runtime *cliRuntime) error {
-	client, projectSlug, environmentSlug, err := newPipelineEnvironmentAPIClient(
-		c.apiPipelineFlags,
-		c.Environment,
-		runtime,
-	)
-	if err != nil {
-		return err
-	}
-	if c.PollIntervalSec <= 0 {
-		return xerror.Unexpected().Detail("poll-interval-seconds must be greater than zero")
-	}
-	if c.TimeoutSec < 0 {
-		return xerror.Unexpected().Detail("timeout-seconds must be zero or greater")
-	}
-
-	ctx := context.Background()
-	if c.TimeoutSec > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.TimeoutSec)*time.Second)
-		defer cancel()
-	}
-
-	ticker := time.NewTicker(time.Duration(c.PollIntervalSec) * time.Second)
-	defer ticker.Stop()
-
-	for {
-		run, err := client.getPipelineRun(ctx, projectSlug, environmentSlug, c.RunSlug)
-		if err != nil {
-			return xerror.Wrapf("watch pipeline run %s: %w", c.RunSlug, err)
-		}
-		if pipelineRunTerminalStatus(string(run.Metadata.Status)) {
-			if writeErr := writePipelineRunOutput(output.stdout, run, c.Output); writeErr != nil {
-				return writeErr
-			}
-			if string(run.Metadata.Status) == "failed" || string(run.Metadata.Status) == "canceled" {
-				return xerror.ExecutionFailed().Detailf("pipeline run %s %s", c.RunSlug, run.Metadata.Status)
-			}
-			return nil
-		}
-
-		select {
-		case <-ctx.Done():
-			return xerror.ExecutionUnavailable().Detailf("timed out waiting for pipeline run %s", c.RunSlug)
-		case <-ticker.C:
-		}
-	}
-}
-
 func pipelineRunTerminalStatus(status string) bool {
 	switch strings.TrimSpace(status) {
 	case "succeeded", "failed", "canceled":
@@ -720,6 +681,9 @@ func (c *applyPipelineCommand) applyRequest() api.PipelineReconcileRequest {
 }
 
 type deployPipelineCommand struct {
+	ExpectedRevision   *int64  `help:"Expected deployment revision; use zero for the first deployment." name:"expected-revision"`
+	CompiledPlanDigest *string `help:"Exact retained compiled plan digest." name:"compiled-plan-digest"`
+	ResolutionDigest   *string `help:"Exact retained resolution digest for rollback." name:"resolution-digest"`
 	apiPipelineFlags
 
 	PipelineSlug            string  `arg:"" name:"pipeline-slug" help:"Pipeline slug." required:""`
@@ -742,6 +706,9 @@ func (c *deployPipelineCommand) Run(output *cliOutput, runtime *cliRuntime) erro
 	}
 
 	body := api.PipelineDeploymentRequest{
+		ExpectedRevision:                 c.ExpectedRevision,
+		CompiledPlanDigest:               c.CompiledPlanDigest,
+		ResolutionDigest:                 c.ResolutionDigest,
 		SpecHash:                         c.SpecHash,
 		ExpectedCurrentSpecHash:          c.ExpectedCurrentSpecHash,
 		ProtectedEnvironmentConfirmation: optionalAPISlug(c.Confirm),
@@ -1344,6 +1311,58 @@ func (o pipelineRunOutput) WriteCLIText(writer io.Writer) error {
 	if fire := pipelineRunSourceScheduleFireText(run.Metadata.Source); fire != "" {
 		lines = append(lines, fire)
 	}
+	lines = append(lines, "Executed authored version: "+run.Metadata.PipelineVersionSpecHash)
+	if run.Composition != nil {
+		composition := run.Composition
+		lines = append(lines, fmt.Sprintf("Current composition admission enabled: %t; historical selection unchanged", composition.AdmissionEnabled))
+		lines = append(lines, "Stored composition: "+string(composition.Status)+"; current authoring and bindings are independent")
+		if composition.Status == "available" {
+			for _, fact := range []struct {
+				label string
+				value *string
+			}{{"Portable template", composition.TemplateDigest}, {"Resolved compiled plan", composition.CompiledPlanDigest}, {"Source commit", composition.SourceCommit}} {
+				if fact.value != nil {
+					lines = append(lines, fact.label+": "+*fact.value)
+				}
+			}
+			for _, pin := range composition.Pins {
+				lines = append(lines, fmt.Sprintf("Pin: step=%s origin=%s port=%s contract=%s revision=%s object=%s digest=%s representation=%s root=%s compiler=%s", pin.Step, pin.Origin, pin.Port, pin.ContractSlug, pin.RevisionSlug, pin.SchemaObjectId, pin.Digest, pin.Representation, pin.RootShape, pin.CompilerId))
+			}
+			for _, operation := range composition.Operations {
+				lines = append(lines, fmt.Sprintf("Saved operation: step=%s role=%s operation=%s revision=%s digest=%s", operation.Step, operation.Role, operation.OperationSlug, operation.Revision, operation.Digest))
+			}
+			for _, target := range composition.Targets {
+				lines = append(lines, fmt.Sprintf("Recorded target: step=%s role=%s logical=%s resolved=%s binding_revision=%s", target.Step, target.Role, target.Reference, target.DataSourceSlug, target.BindingRevision))
+			}
+		}
+	}
+	if run.Timeline.DeploymentResolutionDigest != nil {
+		lines = append(lines, "Deployment resolution: "+*run.Timeline.DeploymentResolutionDigest)
+	} else {
+		lines = append(lines, "Deployment resolution: unavailable")
+	}
+	lines = append(lines, "Structural conformance, delivery acknowledgement, static compatibility and Proof are separate. Quality/freshness: unverified without an evaluator.")
+	if run.Timeline.StructuralChecks == nil || len(*run.Timeline.StructuralChecks) == 0 {
+		lines = append(lines, "Structural checks: no recorded evidence; conformance unverified")
+	} else {
+		for _, check := range *run.Timeline.StructuralChecks {
+			lines = append(lines, fmt.Sprintf("Check %s: step=%s origin=%s phase=%s attempt=%d status=%s reason=%s declaration=%s", check.Id, check.Step, check.Origin, check.Phase, check.AttemptNumber, check.Status, check.ReasonCode, check.Declaration))
+			for _, fact := range []struct {
+				label string
+				value *string
+			}{
+				{"Input", check.Input}, {"Compiled plan", check.CompiledPlanDigest}, {"Deployment resolution", check.DeploymentResolutionDigest}, {"Resolved target", check.Target}, {"Evidence digest", check.EvidenceDigest}, {"Retained output reused from", check.ReusedFromRun},
+			} {
+				if fact.value != nil {
+					lines = append(lines, fact.label+": "+*fact.value)
+				}
+			}
+			lines = append(lines, "Projection: "+check.ProjectionDigest, "Evaluator / policy: "+check.Evaluator+" / "+check.Policy, "Observation scope: "+string(check.Window.Kind)+"; batch only, completeness unknown")
+			if check.Evidence != nil {
+				lines = append(lines, fmt.Sprintf("Observed batch: %d rows; %s", check.Evidence.Rows, check.Evidence.BatchScope))
+			}
+		}
+	}
 	if run.Metadata.Incremental.SourceStepSlug != "" {
 		lines = append(lines, fmt.Sprintf("Source step: %s", run.Metadata.Incremental.SourceStepSlug))
 	}
@@ -1593,6 +1612,25 @@ func apiPipelineRunSourceView(source *api.PipelineRunSourceSummary) pipelineRunS
 			rootRunSlug:     manual.RootRunSlug,
 			retryOfRunSlug:  manual.RetryOfRunSlug,
 		}
+	case "completion":
+		completion, err := source.AsPipelineRunCompletionSourceSummary()
+		if err != nil {
+			return pipelineRunSourceView{}
+		}
+		return pipelineRunSourceView{
+			sourceType:      string(completion.Type),
+			summary:         completion.Summary,
+			entrypoint:      string(completion.Entrypoint),
+			actorType:       string(completion.ActorType),
+			actorSlug:       completion.ActorSlug,
+			requestID:       completion.RequestId,
+			traceID:         completion.TraceId,
+			parameterKeys:   completion.ParameterKeys,
+			sourceEventSlug: completion.SourceEventSlug,
+			attemptNumber:   completion.AttemptNumber,
+			rootRunSlug:     completion.RootRunSlug,
+			retryOfRunSlug:  completion.RetryOfRunSlug,
+		}
 	case "api":
 		apiSource, err := source.AsPipelineRunAPISourceSummary()
 		if err != nil {
@@ -1676,4 +1714,24 @@ func (c *bootstrapPipelineCheckpointsCommand) Run(output *cliOutput, runtime *cl
 		return xerror.Wrapf("write checkpoint bootstrap result: %w", err)
 	}
 	return nil
+}
+
+type refreshPipelineDraftProposalCommand struct {
+	apiPipelineFlags
+	PipelineSlug string `arg:"" name:"pipeline-slug" required:"" help:"Pipeline slug."`
+}
+
+func (c *refreshPipelineDraftProposalCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	if _, err := slug.New(c.PipelineSlug); err != nil {
+		return err
+	}
+	client, project, err := newPipelinePATAPIClient(c.apiPipelineFlags, runtime)
+	if err != nil {
+		return err
+	}
+	result, err := client.refreshPipelineDraftProposal(context.Background(), project, c.PipelineSlug)
+	if err != nil {
+		return err
+	}
+	return writeCLIJSON(output.stdout, result)
 }

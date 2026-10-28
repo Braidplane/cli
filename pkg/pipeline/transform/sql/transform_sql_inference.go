@@ -70,7 +70,7 @@ type transformInputReferenceVisitor struct {
 // prepareTransformTypeContext extends the provided input field types with CTE
 // output fields, returning the relation scope and aliases needed by the final SELECT.
 func prepareTransformTypeContext(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	dataSourceType model.DataSourceType,
 	inputFieldTypes transformInputFieldTypes,
 ) (transformInputFieldTypes, transformInputRelationAliases, transformRelationScope, error) {
@@ -96,7 +96,7 @@ func prepareTransformTypeContext(
 // expandCTEFieldTypes infers each CTE projection in declaration order and
 // adds qualified cte.field entries for downstream CTEs and the final SELECT.
 func expandCTEFieldTypes(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	dataSourceType model.DataSourceType,
 	inputFieldTypes transformInputFieldTypes,
 	relationScope transformRelationScope,
@@ -105,6 +105,7 @@ func expandCTEFieldTypes(
 		return nil
 	}
 
+	selectStmt.typeDetails = make(map[string]transformProjectionTypeDetail)
 	declaredInputRelations := copyRelationSet(relationScope.allowedRelations)
 	for _, cte := range selectStmt.With.CTEs {
 		cteName := cteRelationName(cte)
@@ -120,6 +121,7 @@ func expandCTEFieldTypes(
 			return err
 		}
 
+		cteSelect.typeDetails = selectStmt.typeDetails
 		cteAliases := inputFieldTypes.relationAliases(cteSelect)
 		if err := validateTransformInputReferencesWithRelationScope(
 			cteSelect,
@@ -133,7 +135,7 @@ func expandCTEFieldTypes(
 			return xerror.Wrapf("cte %q projection: %w", cteName, err)
 		}
 
-		projectionWithTypes, err := extractTransformProjectionWithTypes(
+		projectionWithTypes, err := extractTransformProjectionWithTypeDetails(
 			cteSelect,
 			dataSourceType,
 			inputFieldTypes,
@@ -142,8 +144,9 @@ func expandCTEFieldTypes(
 		if err != nil {
 			return xerror.Wrapf("cte %q projection type inference: %w", cteName, err)
 		}
-		for fieldName, fieldType := range projectionWithTypes {
-			inputFieldTypes[cteName+"."+fieldName] = fieldType
+		for fieldName, detail := range projectionWithTypes {
+			inputFieldTypes[cteName+"."+fieldName] = detail.fieldType
+			selectStmt.typeDetails[cteName+"."+fieldName] = detail
 		}
 		relationScope.allowedRelations[cteName] = struct{}{}
 	}
@@ -174,11 +177,20 @@ func copyRelationSet(relations map[string]struct{}) map[string]struct{} {
 // after CTE inference has added CTE relations while preserving legacy unqualified
 // single-input callers that cannot prove declared relation names.
 func validateTransformInputReferencesWithRelationScope(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	inputFieldTypes transformInputFieldTypes,
 	inputAliases transformInputRelationAliases,
 	relationScope transformRelationScope,
 ) error {
+	if selectStmt != nil && len(selectStmt.unionAll) > 0 {
+		for _, branch := range selectStmt.unionAll {
+			if err := validateTransformInputReferencesWithRelationScope(branch, inputFieldTypes, inputFieldTypes.relationAliases(branch), relationScope); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	if selectStmt == nil || len(inputFieldTypes) == 0 {
 		return nil
 	}
@@ -216,6 +228,22 @@ func validateTransformInputReferencesWithRelationScope(
 			if err := validateTransformInputExpressionReferences(item.Expr, inputFieldTypes, inputAliases); err != nil {
 				return err
 			}
+		}
+	}
+
+	if selectStmt.Having != nil {
+		aliases := make(map[string]bool)
+		for _, field := range selectStmt.Fields.Fields {
+			name, err := projectionFieldName(field)
+			if err != nil {
+				return err
+			}
+			aliases[name] = true
+		}
+		visitor := &havingSchemaVisitor{types: inputFieldTypes, aliases: inputAliases, projected: aliases}
+		selectStmt.Having.Expr.Accept(visitor)
+		if visitor.err != nil {
+			return visitor.err
 		}
 	}
 
@@ -421,6 +449,22 @@ func inferTransformRowFieldType(
 ) model.ContractFieldType {
 	if expr == nil {
 		return model.ContractFieldTypeUnknown
+	}
+
+	if parens, ok := expr.(*ast.ParenthesesExpr); ok {
+		return inferTransformRowFieldType(parens.Expr, inputFieldTypes, inputAliases)
+	}
+	if window, ok := expr.(*ast.WindowFuncExpr); ok {
+		items := append([]*ast.ByItem(nil), window.Spec.OrderBy.Items...)
+		if window.Spec.PartitionBy != nil {
+			items = append(items, window.Spec.PartitionBy.Items...)
+		}
+		for _, item := range items {
+			if !supportedWindowKeyType(inferTransformRowFieldType(item.Expr, inputFieldTypes, inputAliases)) {
+				return model.ContractFieldTypeUnknown
+			}
+		}
+		return model.ContractFieldTypeValueInteger
 	}
 
 	if caseExpr, ok := expr.(*ast.CaseExpr); ok {
@@ -685,7 +729,8 @@ func ContractFieldTypeFromNative(
 		default:
 			return contractTypeFromJSONLikeNative(n)
 		}
-	case model.DataSourceTypeFTP,
+	case model.DataSourceTypeS3,
+		model.DataSourceTypeFTP,
 		model.DataSourceTypeGit,
 		model.DataSourceTypeGithub,
 		model.DataSourceTypeGitlab:
@@ -742,7 +787,7 @@ func (inputFieldTypes transformInputFieldTypes) declaredRelationNames() map[stri
 }
 
 func (inputFieldTypes transformInputFieldTypes) relationAliases(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 ) transformInputRelationAliases {
 	if selectStmt == nil || selectStmt.From == nil || selectStmt.From.TableRefs == nil ||
 		len(inputFieldTypes) == 0 {

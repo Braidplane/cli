@@ -177,6 +177,51 @@
           "type": "string"
         }
       },
+      "EventActionFilterParam": {
+        "description": "",
+        "in": "query",
+        "name": "action",
+        "required": false,
+        "schema": {
+          "$ref": "#/components/schemas/EventAction"
+        }
+      },
+      "EventActorSlugFilterParam": {
+        "description": "",
+        "in": "query",
+        "name": "actor_slug",
+        "required": false,
+        "schema": {
+          "$ref": "#/components/schemas/Slug"
+        }
+      },
+      "EventActorTypeFilterParam": {
+        "description": "",
+        "in": "query",
+        "name": "actor_type",
+        "required": false,
+        "schema": {
+          "$ref": "#/components/schemas/EventActorType"
+        }
+      },
+      "EventEntitySlugFilterParam": {
+        "description": "",
+        "in": "query",
+        "name": "entity_slug",
+        "required": false,
+        "schema": {
+          "$ref": "#/components/schemas/Slug"
+        }
+      },
+      "EventEntityTypeFilterParam": {
+        "description": "",
+        "in": "query",
+        "name": "entity_type",
+        "required": false,
+        "schema": {
+          "$ref": "#/components/schemas/EventEntityType"
+        }
+      },
       "EventFieldParam": {
         "description": "",
         "in": "query",
@@ -187,6 +232,37 @@
           "enum": [
             "event_occurred_at"
           ],
+          "type": "string"
+        }
+      },
+      "EventOccurredBeforeFilterParam": {
+        "description": "",
+        "in": "query",
+        "name": "occurred_before",
+        "required": false,
+        "schema": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "EventOccurredFromFilterParam": {
+        "description": "",
+        "in": "query",
+        "name": "occurred_from",
+        "required": false,
+        "schema": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "EventRequestIdFilterParam": {
+        "description": "",
+        "in": "query",
+        "name": "request_id",
+        "required": false,
+        "schema": {
+          "maxLength": 255,
+          "minLength": 1,
           "type": "string"
         }
       },
@@ -262,6 +338,15 @@
             "member_email"
           ],
           "type": "string"
+        }
+      },
+      "NotificationConnectionSlugParam": {
+        "description": "",
+        "in": "path",
+        "name": "notification_connection_slug",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Slug"
         }
       },
       "NotificationFieldParam": {
@@ -580,6 +665,58 @@
           "type": "string"
         }
       },
+      "SecurityAuditEventFieldParam": {
+        "description": "",
+        "in": "query",
+        "name": "sort_by",
+        "required": false,
+        "schema": {
+          "default": "event_occurred_at",
+          "enum": [
+            "event_occurred_at"
+          ],
+          "type": "string",
+          "x-enum-varnames": [
+            "SecurityAuditEventOccurredAt"
+          ]
+        }
+      },
+      "SecurityAuditEventOrderParam": {
+        "description": "",
+        "in": "query",
+        "name": "order",
+        "required": false,
+        "schema": {
+          "default": "desc",
+          "enum": [
+            "asc",
+            "desc"
+          ],
+          "type": "string",
+          "x-enum-varnames": [
+            "SecurityAuditEventOrderAsc",
+            "SecurityAuditEventOrderDesc"
+          ]
+        }
+      },
+      "SecurityAuditEventPageDirectionParam": {
+        "description": "",
+        "in": "query",
+        "name": "direction",
+        "required": false,
+        "schema": {
+          "default": "next",
+          "enum": [
+            "next",
+            "prev"
+          ],
+          "type": "string",
+          "x-enum-varnames": [
+            "SecurityAuditEventPageNext",
+            "SecurityAuditEventPagePrev"
+          ]
+        }
+      },
       "SlugParam": {
         "description": "",
         "in": "path",
@@ -714,6 +851,26 @@
             "type": "object"
           }
         ]
+      },
+      "AbandonProjectRepositorySetupRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "preserve_resources": {
+            "description": "",
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "setup_slug": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "setup_slug",
+          "preserve_resources"
+        ],
+        "type": "object"
       },
       "AlertDeliveryAttempt": {
         "additionalProperties": false,
@@ -884,6 +1041,9 @@
         "oneOf": [
           {
             "$ref": "#/components/schemas/EmailAlertDestinationConfig"
+          },
+          {
+            "$ref": "#/components/schemas/SlackAlertDestinationConfig"
           }
         ]
       },
@@ -979,7 +1139,8 @@
         "description": "",
         "enum": [
           "unknown",
-          "email"
+          "email",
+          "slack"
         ],
         "type": "string"
       },
@@ -1290,6 +1451,13 @@
         "additionalProperties": false,
         "description": "",
         "properties": {
+          "notification_types": {
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/NotificationType"
+            },
+            "type": "array"
+          },
           "source_refs": {
             "items": {
               "$ref": "#/components/schemas/AlertPolicySourceRefOption"
@@ -1304,6 +1472,7 @@
           }
         },
         "required": [
+          "notification_types",
           "sources",
           "source_refs"
         ],
@@ -2048,6 +2217,55 @@
           "type",
           "config",
           "credentials"
+        ],
+        "type": "object"
+      },
+      "CreateProjectRepositoryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "create_private_repository": {
+            "description": "",
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "owner": {
+            "description": "",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "pipeline_dir": {
+            "default": "pipelines",
+            "maxLength": 1024,
+            "minLength": 1,
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "github",
+              "gitlab"
+            ],
+            "type": "string"
+          },
+          "repository_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tracked_branch": {
+            "default": "main",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "owner",
+          "repository_name",
+          "create_private_repository"
         ],
         "type": "object"
       },
@@ -3438,7 +3656,8 @@
           "auto_accept",
           "acknowledge",
           "resolve",
-          "read"
+          "read",
+          "validate"
         ],
         "type": "string"
       },
@@ -4901,6 +5120,68 @@
         ],
         "type": "object"
       },
+      "HTTPAcknowledgement": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "empty_fields": {
+            "description": "",
+            "items": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 8,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "status_codes": {
+            "items": {
+              "maximum": 299,
+              "minimum": 200,
+              "type": "integer"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "success": {
+            "items": {
+              "$ref": "#/components/schemas/HTTPAcknowledgementCheck"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "status_codes",
+          "success"
+        ],
+        "type": "object"
+      },
+      "HTTPAcknowledgementCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "equals": {
+            "description": "",
+            "x-go-type": "json.RawMessage"
+          },
+          "path": {
+            "description": "",
+            "maxLength": 256,
+            "minLength": 1,
+            "pattern": "^[^.*\\[\\]{}]+(\\.[^.*\\[\\]{}]+){0,15}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "equals"
+        ],
+        "type": "object"
+      },
       "HTTPConfig": {
         "additionalProperties": false,
         "description": "",
@@ -4974,6 +5255,18 @@
             "description": "",
             "minLength": 1,
             "type": "string"
+          },
+          "secret_headers": {
+            "additionalProperties": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "description": "",
+            "maxProperties": 8,
+            "minProperties": 1,
+            "type": "object",
+            "writeOnly": true
           },
           "username": {
             "description": "",
@@ -5184,6 +5477,11 @@
                   "required": [
                     "page_number_path"
                   ]
+                },
+                {
+                  "required": [
+                    "next_link_path"
+                  ]
                 }
               ]
             },
@@ -5204,6 +5502,11 @@
                   "required": [
                     "next_cursor_path"
                   ]
+                },
+                {
+                  "required": [
+                    "next_link_path"
+                  ]
                 }
               ]
             },
@@ -5213,6 +5516,50 @@
               "page_size",
               "total_pages_path",
               "page_number_path"
+            ]
+          },
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "cursor_param"
+                  ]
+                },
+                {
+                  "required": [
+                    "next_cursor_path"
+                  ]
+                },
+                {
+                  "required": [
+                    "page_param"
+                  ]
+                },
+                {
+                  "required": [
+                    "page_size_param"
+                  ]
+                },
+                {
+                  "required": [
+                    "page_size"
+                  ]
+                },
+                {
+                  "required": [
+                    "total_pages_path"
+                  ]
+                },
+                {
+                  "required": [
+                    "page_number_path"
+                  ]
+                }
+              ]
+            },
+            "required": [
+              "next_link_path"
             ]
           }
         ],
@@ -5229,6 +5576,11 @@
             "type": "integer"
           },
           "next_cursor_path": {
+            "description": "",
+            "pattern": "^[^.*\\[\\]]+(\\.[^.*\\[\\]]+)*$",
+            "type": "string"
+          },
+          "next_link_path": {
             "description": "",
             "pattern": "^[^.*\\[\\]]+(\\.[^.*\\[\\]]+)*$",
             "type": "string"
@@ -5304,6 +5656,9 @@
       "HTTPStatement": {
         "description": "",
         "properties": {
+          "acknowledgement": {
+            "$ref": "#/components/schemas/HTTPAcknowledgement"
+          },
           "body": {
             "description": ""
           },
@@ -5311,9 +5666,9 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "HTTP headers (supports {{paramName}} placeholders in values)",
+            "description": "Non-secret HTTP headers (supports {{paramName}} placeholders in values); keep authentication values in encrypted data-source credentials.",
             "example": {
-              "Authorization": "Bearer {{token}}"
+              "Content-Type": "application/json"
             },
             "type": "object"
           },
@@ -5348,12 +5703,57 @@
               "http"
             ],
             "type": "string"
+          },
+          "write_retry": {
+            "$ref": "#/components/schemas/HTTPWriteRetry"
           }
         },
         "required": [
           "type",
           "method",
           "path"
+        ],
+        "type": "object"
+      },
+      "HTTPWriteRetry": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "key_header": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "payload_conflict": {
+            "enum": [
+              "reject"
+            ],
+            "type": "string"
+          },
+          "provider_contract_url": {
+            "description": "",
+            "format": "uri",
+            "type": "string"
+          },
+          "retention_seconds": {
+            "description": "",
+            "maximum": 604800,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "verified": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "verified",
+          "provider_contract_url",
+          "key_header",
+          "retention_seconds",
+          "payload_conflict"
         ],
         "type": "object"
       },
@@ -6377,6 +6777,26 @@
         ],
         "type": "object"
       },
+      "NewNotificationConnection": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/NotificationProvider"
+          },
+          "slug": {
+            "$ref": "#/components/schemas/Slug",
+            "description": ""
+          }
+        },
+        "required": [
+          "name",
+          "provider"
+        ],
+        "type": "object"
+      },
       "NewODCSContract": {
         "additionalProperties": false,
         "properties": {
@@ -6391,12 +6811,12 @@
             "type": "string"
           },
           "slug": {
+            "description": "",
             "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
             "type": "string"
           }
         },
         "required": [
-          "slug",
           "name",
           "odcs_id"
         ],
@@ -6412,12 +6832,12 @@
             "x-go-type": "json.RawMessage"
           },
           "slug": {
+            "description": "",
             "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
             "type": "string"
           }
         },
         "required": [
-          "slug",
           "document"
         ],
         "type": "object"
@@ -6500,6 +6920,15 @@
               "$ref": "#/components/schemas/PipelineTriggerWebhookWithoutWebhookConfig"
             },
             {
+              "$ref": "#/components/schemas/PipelineTriggerCompletionWithoutCompletionConfig"
+            },
+            {
+              "$ref": "#/components/schemas/PipelineTriggerCompletionWithOtherConfig"
+            },
+            {
+              "$ref": "#/components/schemas/PipelineTriggerOtherWithCompletionConfig"
+            },
+            {
               "$ref": "#/components/schemas/PipelineTriggerScheduleWithWebhookConfig"
             },
             {
@@ -6508,6 +6937,9 @@
           ]
         },
         "properties": {
+          "completion": {
+            "$ref": "#/components/schemas/PipelineTriggerCompletionConfig"
+          },
           "enabled": {
             "description": "",
             "type": "boolean"
@@ -6661,6 +7093,46 @@
         ],
         "type": "object"
       },
+      "NotificationConnection": {
+        "additionalProperties": false,
+        "properties": {
+          "metadata": {
+            "$ref": "#/components/schemas/NotificationConnectionMetadata"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/NotificationProvider"
+          },
+          "slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CredentialStatus"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "provider",
+          "status",
+          "metadata",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "NotificationConnectionMetadata": {
+        "description": "",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SlackNotificationConnectionMetadata"
+          }
+        ]
+      },
       "NotificationDispatchStatus": {
         "description": "",
         "enum": [
@@ -6740,6 +7212,16 @@
           "has_more"
         ],
         "type": "object"
+      },
+      "NotificationProvider": {
+        "description": "",
+        "enum": [
+          "slack"
+        ],
+        "type": "string",
+        "x-enum-varnames": [
+          "NotificationProviderSlack"
+        ]
       },
       "NotificationRecord": {
         "description": "",
@@ -6871,7 +7353,8 @@
           "pipeline.scheduled_run_delayed",
           "pipeline.scheduled_run_missing",
           "pipeline.freshness_sla_breached",
-          "pipeline.contract_failure"
+          "pipeline.contract_failure",
+          "pipeline.run_succeeded"
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -6881,7 +7364,8 @@
           "NotificationTypePipelineScheduledRunDelayed",
           "NotificationTypePipelineScheduledRunMissing",
           "NotificationTypePipelineFreshnessSLABreached",
-          "NotificationTypePipelineContractFailure"
+          "NotificationTypePipelineContractFailure",
+          "NotificationTypePipelineRunSucceeded"
         ]
       },
       "NullableSlug": {
@@ -7024,10 +7508,7 @@
             "type": "string"
           },
           "port": {
-            "enum": [
-              "input",
-              "output"
-            ],
+            "description": "",
             "type": "string"
           },
           "project_slug": {
@@ -7230,6 +7711,29 @@
         ],
         "type": "object"
       },
+      "ODCSImpactPlanSelection": {
+        "additionalProperties": false,
+        "properties": {
+          "digest": {
+            "pattern": "^sha256:[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "pipeline_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "projection_input": {
+            "description": "",
+            "maximum": 63,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pipeline_slug",
+          "digest"
+        ],
+        "type": "object"
+      },
       "ODCSInspectionDiagnostic": {
         "additionalProperties": false,
         "properties": {
@@ -7265,6 +7769,14 @@
             ],
             "type": "string"
           },
+          "comparison_scope": {
+            "description": "",
+            "enum": [
+              "flat_revision",
+              "selected_projection"
+            ],
+            "type": "string"
+          },
           "diagnostics": {
             "items": {
               "$ref": "#/components/schemas/ODCSImpactDiagnostic"
@@ -7280,6 +7792,195 @@
           "comparison",
           "changes",
           "diagnostics"
+        ],
+        "type": "object"
+      },
+      "ODCSProjectionInputSelection": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "digest": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "mapping": {
+            "$ref": "#/components/schemas/ODCSProjectionMapping"
+          },
+          "revision_slug": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Slug"
+              },
+              {
+                "not": {
+                  "const": "latest"
+                }
+              }
+            ]
+          },
+          "schema_object_id": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "variables": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "revision": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "value": {
+                  "maxLength": 1048576,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value",
+                "revision"
+              ],
+              "type": "object"
+            },
+            "maxProperties": 128,
+            "type": "object"
+          }
+        },
+        "required": [
+          "contract_slug",
+          "revision_slug",
+          "schema_object_id",
+          "digest",
+          "mapping"
+        ],
+        "type": "object"
+      },
+      "ODCSProjectionMapping": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "id": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "physical": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "bits": {
+                  "maximum": 128,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/ODCSStructuralKind"
+                },
+                "logical_type": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "precision": {
+                  "maximum": 1000,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "scale": {
+                  "maximum": 1000,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "logical_type",
+                "kind"
+              ],
+              "type": "object"
+            },
+            "maxProperties": 16384,
+            "type": "object"
+          },
+          "representation": {
+            "enum": [
+              "rows",
+              "json",
+              "csv"
+            ],
+            "type": "string"
+          },
+          "root_shape": {
+            "description": "",
+            "enum": [
+              "array",
+              "object"
+            ],
+            "type": "string"
+          },
+          "types": {
+            "items": {
+              "$ref": "#/components/schemas/ODCSStructuralKind"
+            },
+            "maxItems": 14,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "id",
+          "representation",
+          "types"
+        ],
+        "type": "object"
+      },
+      "ODCSProjectionSelection": {
+        "additionalProperties": false,
+        "properties": {
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/ODCSProjectionInputSelection"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array"
+          },
+          "relationships": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "input": {
+                  "maximum": 63,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "path": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "target": {
+                  "maximum": 63,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "input",
+                "target",
+                "path"
+              ],
+              "type": "object"
+            },
+            "maxItems": 16384,
+            "type": "array"
+          }
+        },
+        "required": [
+          "inputs"
         ],
         "type": "object"
       },
@@ -7323,6 +8024,9 @@
           "from_digest": {
             "type": "string"
           },
+          "from_plan": {
+            "$ref": "#/components/schemas/ODCSImpactPlanSelection"
+          },
           "from_revision_slug": {
             "type": "string"
           },
@@ -7337,6 +8041,9 @@
           },
           "to_digest": {
             "type": "string"
+          },
+          "to_plan": {
+            "$ref": "#/components/schemas/ODCSImpactPlanSelection"
           },
           "to_revision_slug": {
             "type": "string"
@@ -7357,9 +8064,30 @@
       },
       "ODCSRevisionImpactRequest": {
         "additionalProperties": false,
+        "description": "",
+        "not": {
+          "oneOf": [
+            {
+              "required": [
+                "from_plan"
+              ]
+            },
+            {
+              "required": [
+                "to_plan"
+              ]
+            }
+          ]
+        },
         "properties": {
+          "from_plan": {
+            "$ref": "#/components/schemas/ODCSImpactPlanSelection"
+          },
           "from_revision_slug": {
             "$ref": "#/components/schemas/Slug"
+          },
+          "to_plan": {
+            "$ref": "#/components/schemas/ODCSImpactPlanSelection"
           },
           "to_revision_slug": {
             "$ref": "#/components/schemas/Slug"
@@ -7405,6 +8133,14 @@
           },
           "schema_object_id": {
             "type": "string"
+          },
+          "shape": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PipelineSchemaContract"
+              }
+            ],
+            "description": ""
           }
         },
         "required": [
@@ -7514,6 +8250,24 @@
           "name"
         ],
         "type": "object"
+      },
+      "ODCSStructuralKind": {
+        "enum": [
+          "object",
+          "array",
+          "map",
+          "vector",
+          "string",
+          "boolean",
+          "integer",
+          "decimal",
+          "number",
+          "date",
+          "local_time",
+          "local_datetime",
+          "instant"
+        ],
+        "type": "string"
       },
       "ObjectAPIFieldInfo": {
         "description": "",
@@ -7954,6 +8708,16 @@
       },
       "OrganizationEntitlementLimits": {
         "properties": {
+          "active_logical_pipelines": {
+            "description": "",
+            "nullable": true,
+            "type": "integer"
+          },
+          "concurrent_pipeline_runs": {
+            "description": "",
+            "nullable": true,
+            "type": "integer"
+          },
           "data_sources": {
             "nullable": true,
             "type": "integer"
@@ -7980,7 +8744,9 @@
           "projects",
           "data_sources",
           "deployed_pipelines",
-          "pipeline_runs"
+          "pipeline_runs",
+          "active_logical_pipelines",
+          "concurrent_pipeline_runs"
         ],
         "type": "object"
       },
@@ -8415,6 +9181,380 @@
         ],
         "type": "object"
       },
+      "PipelineCompilationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "projection": {
+            "$ref": "#/components/schemas/ODCSProjectionSelection"
+          },
+          "resource_scopes": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineResourceScopeSelection"
+            },
+            "maxItems": 128,
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "PipelineCompiledPlan": {
+        "description": "",
+        "properties": {
+          "admission_enabled": {
+            "type": "boolean"
+          },
+          "compiler_id": {
+            "type": "string"
+          },
+          "digest": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineOperationInspection"
+            },
+            "type": "array"
+          },
+          "pins": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineContractPinInspection"
+            },
+            "type": "array"
+          },
+          "pipeline_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "projections": {
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/PipelineProjectionInspection"
+            },
+            "type": "array"
+          },
+          "source_commit": {
+            "type": "string"
+          },
+          "source_path": {
+            "type": "string"
+          },
+          "spec_hash": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "unsupported"
+            ],
+            "type": "string"
+          },
+          "structural_policy_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "digest",
+          "spec_hash",
+          "pipeline_slug",
+          "status",
+          "admission_enabled",
+          "pins",
+          "operations"
+        ],
+        "type": "object"
+      },
+      "PipelineCompletionAttempt": {
+        "additionalProperties": false,
+        "properties": {
+          "attempt_number": {
+            "type": "integer"
+          },
+          "deployment_revision": {
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "run_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_slug",
+          "attempt_number",
+          "status",
+          "version_hash",
+          "deployment_revision"
+        ],
+        "type": "object"
+      },
+      "PipelineCompletionCondition": {
+        "description": "",
+        "enum": [
+          "success",
+          "final_failure"
+        ],
+        "type": "string",
+        "x-enum-varnames": [
+          "PipelineCompletionConditionSuccess",
+          "PipelineCompletionConditionFinalFailure"
+        ]
+      },
+      "PipelineCompletionDecision": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "child_outcome": {
+            "description": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "child_run_slug": {
+            "$ref": "#/components/schemas/NullableSlug"
+          },
+          "child_status": {
+            "description": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "condition": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PipelineCompletionCondition"
+              }
+            ],
+            "description": "",
+            "nullable": true
+          },
+          "decision_reason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "downstream_pipeline_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "final_attempt_run_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "root_run_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "selected_deployment_revision": {
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "selected_resolution_digest": {
+            "nullable": true,
+            "type": "string"
+          },
+          "selected_version_hash": {
+            "nullable": true,
+            "type": "string"
+          },
+          "state": {
+            "description": "",
+            "type": "string"
+          },
+          "trigger_revision": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "trigger_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "upstream_pipeline_slug": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "trigger_slug",
+          "trigger_revision",
+          "upstream_pipeline_slug",
+          "root_run_slug",
+          "final_attempt_run_slug",
+          "downstream_pipeline_slug",
+          "condition",
+          "state",
+          "decision_reason",
+          "child_run_slug",
+          "child_status",
+          "child_outcome",
+          "selected_version_hash",
+          "selected_deployment_revision",
+          "selected_resolution_digest"
+        ],
+        "type": "object"
+      },
+      "PipelineConnectedRun": {
+        "additionalProperties": false,
+        "properties": {
+          "completion": {
+            "$ref": "#/components/schemas/PipelineRunCompletion"
+          },
+          "pipeline_slug": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "pipeline_slug",
+          "completion"
+        ],
+        "type": "object"
+      },
+      "PipelineContractPinInspection": {
+        "properties": {
+          "compiler_id": {
+            "type": "string"
+          },
+          "contract_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "step",
+              "operation"
+            ],
+            "type": "string"
+          },
+          "port": {
+            "type": "string"
+          },
+          "representation": {
+            "type": "string"
+          },
+          "revision_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "root_shape": {
+            "type": "string"
+          },
+          "schema_object_id": {
+            "type": "string"
+          },
+          "step": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "step",
+          "port",
+          "origin",
+          "contract_slug",
+          "revision_slug",
+          "schema_object_id",
+          "digest",
+          "compiler_id",
+          "representation",
+          "root_shape"
+        ],
+        "type": "object"
+      },
+      "PipelineCreationProposal": {
+        "properties": {
+          "branch_head_sha": {
+            "type": "string"
+          },
+          "branch_name": {
+            "type": "string"
+          },
+          "failure_code": {
+            "type": "string"
+          },
+          "initiating_member": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "pipeline_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "project_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "proposal_provider": {
+            "type": "string"
+          },
+          "proposal_state": {
+            "type": "string"
+          },
+          "proposal_url": {
+            "type": "string"
+          },
+          "slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "source_path": {
+            "type": "string"
+          },
+          "spec": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PipelineSpec"
+              }
+            ],
+            "description": ""
+          },
+          "spec_hash": {
+            "description": "",
+            "type": "string"
+          },
+          "status": {
+            "description": "",
+            "enum": [
+              "publish_queued",
+              "proposal_open",
+              "branch_pushed",
+              "publish_failed"
+            ],
+            "type": "string",
+            "x-enum-varnames": [
+              "CreationPublishQueued",
+              "CreationProposalOpen",
+              "CreationBranchPushed",
+              "CreationPublishFailed"
+            ]
+          }
+        },
+        "required": [
+          "slug",
+          "project_slug",
+          "pipeline_slug",
+          "initiating_member",
+          "source_path",
+          "spec_hash",
+          "spec",
+          "status"
+        ],
+        "type": "object"
+      },
+      "PipelineCreationProposalListResponse": {
+        "properties": {
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "pipeline_creations": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineCreationProposal"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "pipeline_creations",
+          "has_more"
+        ],
+        "type": "object"
+      },
       "PipelineDataSourceRefSyncItem": {
         "description": "",
         "properties": {
@@ -8702,6 +9842,7 @@
               "publish_queued",
               "publish_failed",
               "proposal_open",
+              "branch_pushed",
               "proposal_closed",
               "abandoned"
             ],
@@ -8751,7 +9892,8 @@
             "description": "",
             "enum": [
               "github",
-              "gitlab"
+              "gitlab",
+              "git"
             ],
             "nullable": true,
             "type": "string"
@@ -8794,7 +9936,8 @@
             "description": "",
             "enum": [
               "delegated_user",
-              "organization_service"
+              "organization_service",
+              "repository_credential"
             ],
             "nullable": true,
             "type": "string"
@@ -9191,6 +10334,100 @@
           "contract_slug",
           "revision_slug",
           "schema_object_id"
+        ],
+        "type": "object"
+      },
+      "PipelineOperationInspection": {
+        "properties": {
+          "digest": {
+            "type": "string"
+          },
+          "operation_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "resource_scope": {
+            "$ref": "#/components/schemas/PipelineResourceScopeInspection"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "step": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "step",
+          "role",
+          "operation_slug",
+          "revision",
+          "digest"
+        ],
+        "type": "object"
+      },
+      "PipelineOperationalCapabilities": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "notification_types": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationType"
+            },
+            "type": "array"
+          },
+          "successful_run_recency": {
+            "description": "",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "successful_run_recency",
+          "notification_types"
+        ],
+        "type": "object"
+      },
+      "PipelineProjectionInspection": {
+        "properties": {
+          "contract_slug": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "input": {
+            "type": "integer"
+          },
+          "mapping_id": {
+            "type": "string"
+          },
+          "representation": {
+            "type": "string"
+          },
+          "resolved_digest": {
+            "type": "string"
+          },
+          "revision_slug": {
+            "type": "string"
+          },
+          "root_shape": {
+            "type": "string"
+          },
+          "schema_object_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "input",
+          "contract_slug",
+          "revision_slug",
+          "schema_object_id",
+          "digest",
+          "resolved_digest",
+          "mapping_id",
+          "representation",
+          "root_shape"
         ],
         "type": "object"
       },
@@ -9678,6 +10915,163 @@
         ],
         "type": "object"
       },
+      "PipelineResourceScope": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "contract": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "data_source": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "object_id": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "policy_id": {
+            "enum": [
+              "s3/relative-key/v1"
+            ],
+            "type": "string"
+          },
+          "representation": {
+            "enum": [
+              "rows"
+            ],
+            "type": "string"
+          },
+          "revision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Slug"
+              },
+              {
+                "not": {
+                  "const": "latest"
+                }
+              }
+            ]
+          },
+          "s3": {
+            "additionalProperties": false,
+            "properties": {
+              "bucket": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "dynamic_key": {
+                "type": "boolean",
+                "x-go-type": "*bool"
+              },
+              "endpoint": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "force_path_style": {
+                "type": "boolean",
+                "x-go-type": "*bool"
+              },
+              "prefix": {
+                "maxLength": 4096,
+                "type": "string",
+                "x-go-type": "*string"
+              },
+              "region": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "endpoint",
+              "region",
+              "bucket",
+              "prefix",
+              "dynamic_key",
+              "force_path_style"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "policy_id",
+          "data_source",
+          "operation",
+          "contract",
+          "revision",
+          "object_id",
+          "representation",
+          "s3"
+        ],
+        "type": "object"
+      },
+      "PipelineResourceScopeInspection": {
+        "description": "",
+        "properties": {
+          "contract": {
+            "type": "string"
+          },
+          "data_source": {
+            "type": "string"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "policy_id": {
+            "type": "string"
+          },
+          "representation": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "policy_id",
+          "data_source",
+          "operation",
+          "contract",
+          "revision",
+          "object_id",
+          "representation"
+        ],
+        "type": "object"
+      },
+      "PipelineResourceScopeSelection": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "query",
+              "sink"
+            ],
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/PipelineResourceScope"
+          },
+          "step": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "step",
+          "role",
+          "scope"
+        ],
+        "type": "object"
+      },
       "PipelineRunAPISourceSummary": {
         "additionalProperties": false,
         "description": "",
@@ -9761,6 +11155,82 @@
         ],
         "type": "object"
       },
+      "PipelineRunCheckEvidence": {
+        "properties": {
+          "batch_scope": {
+            "enum": [
+              "observed_batch_completeness_unknown",
+              "truncated_batch"
+            ],
+            "type": "string"
+          },
+          "duration_ms": {
+            "format": "int64",
+            "maximum": 86400000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "empty": {
+            "type": "boolean"
+          },
+          "rows": {
+            "maximum": 1000000000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rows",
+          "duration_ms",
+          "empty",
+          "batch_scope"
+        ],
+        "type": "object"
+      },
+      "PipelineRunCheckWindow": {
+        "description": "",
+        "properties": {
+          "backfill_chunk_index": {
+            "type": "integer"
+          },
+          "backfill_series_slug": {
+            "type": "string"
+          },
+          "has_lower_bound": {
+            "type": "boolean"
+          },
+          "has_upper_bound": {
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "full",
+              "incremental",
+              "backfill"
+            ],
+            "type": "string",
+            "x-enum-varnames": [
+              "PipelineRunCheckWindowFull",
+              "PipelineRunCheckWindowIncremental",
+              "PipelineRunCheckWindowBackfill"
+            ]
+          },
+          "source_steps": {
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/Slug"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "has_lower_bound",
+          "has_upper_bound",
+          "source_steps"
+        ],
+        "type": "object"
+      },
       "PipelineRunCheckpointCommitResult": {
         "description": "",
         "properties": {
@@ -9809,6 +11279,246 @@
         "required": [
           "summary",
           "raw_value_exposed"
+        ],
+        "type": "object"
+      },
+      "PipelineRunCompletion": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineCompletionAttempt"
+            },
+            "type": "array"
+          },
+          "children": {
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/PipelineCompletionDecision"
+            },
+            "type": "array"
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "context_unavailable": {
+            "description": "",
+            "type": "boolean"
+          },
+          "decision_reason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "final_attempt_run_slug": {
+            "$ref": "#/components/schemas/NullableSlug"
+          },
+          "outcome": {
+            "description": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "parent": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PipelineCompletionDecision"
+              }
+            ],
+            "nullable": true
+          },
+          "pipeline_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "root_run_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "truncated": {
+            "description": "",
+            "type": "boolean"
+          },
+          "waiting_for_retry": {
+            "description": "",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "root_run_slug",
+          "closed",
+          "waiting_for_retry",
+          "outcome",
+          "final_attempt_run_slug",
+          "decision_reason",
+          "attempts",
+          "parent",
+          "children"
+        ],
+        "type": "object"
+      },
+      "PipelineRunCompletionSourceSummary": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "actor_slug": {
+            "$ref": "#/components/schemas/NullableSlug"
+          },
+          "actor_type": {
+            "$ref": "#/components/schemas/EventActorType",
+            "description": ""
+          },
+          "attempt_number": {
+            "description": "",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "entrypoint": {
+            "description": "",
+            "enum": [
+              "scheduler"
+            ],
+            "type": "string",
+            "x-enum-varnames": [
+              "PipelineRunCompletionSourceSummaryEntrypointScheduler"
+            ]
+          },
+          "parameter_keys": {
+            "description": "",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "request_id": {
+            "description": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "retry_of_run_slug": {
+            "$ref": "#/components/schemas/NullableSlug"
+          },
+          "root_run_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "source_event_slug": {
+            "$ref": "#/components/schemas/NullableSlug"
+          },
+          "summary": {
+            "description": "",
+            "type": "string"
+          },
+          "trace_id": {
+            "description": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "description": "",
+            "enum": [
+              "completion"
+            ],
+            "type": "string",
+            "x-enum-varnames": [
+              "PipelineRunCompletionSourceSummaryTypeCompletion"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "summary",
+          "entrypoint",
+          "actor_type",
+          "actor_slug",
+          "request_id",
+          "trace_id",
+          "parameter_keys",
+          "source_event_slug",
+          "attempt_number",
+          "root_run_slug",
+          "retry_of_run_slug"
+        ],
+        "type": "object"
+      },
+      "PipelineRunCompositionInspection": {
+        "description": "",
+        "properties": {
+          "admission_enabled": {
+            "description": "",
+            "type": "boolean"
+          },
+          "compiled_plan_digest": {
+            "type": "string"
+          },
+          "deployment_resolution_digest": {
+            "type": "string"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineOperationInspection"
+            },
+            "type": "array"
+          },
+          "pins": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineContractPinInspection"
+            },
+            "type": "array"
+          },
+          "source_commit": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "not_recorded",
+              "unavailable",
+              "unsupported"
+            ],
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineTargetInspection"
+            },
+            "type": "array"
+          },
+          "template_digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "admission_enabled",
+          "pins",
+          "operations",
+          "targets"
+        ],
+        "type": "object"
+      },
+      "PipelineRunConnected": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "context_unavailable": {
+            "type": "boolean"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineConnectedRun"
+            },
+            "maxItems": 40,
+            "type": "array"
+          },
+          "selected_run_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "selected_run_slug",
+          "nodes",
+          "truncated",
+          "context_unavailable"
         ],
         "type": "object"
       },
@@ -9985,7 +11695,11 @@
         "description": "",
         "enum": [
           "data_source_credentials_failed",
+          "data_source_permission_denied",
+          "data_source_connection_failed",
+          "data_source_timeout",
           "source_query_failed",
+          "resource_scope_rejected",
           "source_result_shape_mismatch",
           "transform_runtime_failed",
           "transform_contract_mismatch",
@@ -10434,9 +12148,134 @@
         ],
         "type": "string"
       },
+      "PipelineRunProgress": {
+        "description": "",
+        "properties": {
+          "after_event": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "compiled_plan_digest": {
+            "description": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "completed_steps": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "current_step": {
+            "$ref": "#/components/schemas/NullableSlug"
+          },
+          "deployment_resolution_digest": {
+            "description": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "event_count": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineRunTimelineEvent"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "failed_steps": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "interrupted_steps": {
+            "description": "",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/PipelineRunMetadata"
+          },
+          "next_after_event": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "observed_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            ],
+            "description": "",
+            "nullable": true
+          },
+          "pending_steps": {
+            "description": "",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "description": "",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "server_time": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "worker_liveness": {
+            "description": "",
+            "enum": [
+              "recent",
+              "stale",
+              "unavailable",
+              "terminal"
+            ],
+            "type": "string"
+          },
+          "worker_observed_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            ],
+            "description": "",
+            "nullable": true
+          }
+        },
+        "required": [
+          "metadata",
+          "compiled_plan_digest",
+          "deployment_resolution_digest",
+          "completed_steps",
+          "failed_steps",
+          "pending_steps",
+          "interrupted_steps",
+          "current_step",
+          "revision",
+          "events",
+          "after_event",
+          "next_after_event",
+          "event_count",
+          "has_more",
+          "worker_observed_at",
+          "worker_liveness",
+          "observed_at",
+          "server_time"
+        ],
+        "type": "object"
+      },
       "PipelineRunRecord": {
         "description": "",
         "properties": {
+          "composition": {
+            "$ref": "#/components/schemas/PipelineRunCompositionInspection"
+          },
           "incremental_diagnostics": {
             "$ref": "#/components/schemas/PipelineRunIncrementalDiagnostics"
           },
@@ -10666,6 +12505,7 @@
         "discriminator": {
           "mapping": {
             "api": "#/components/schemas/PipelineRunAPISourceSummary",
+            "completion": "#/components/schemas/PipelineRunCompletionSourceSummary",
             "manual": "#/components/schemas/PipelineRunManualSourceSummary",
             "schedule": "#/components/schemas/PipelineRunScheduleSourceSummary",
             "webhook": "#/components/schemas/PipelineRunWebhookSourceSummary"
@@ -10684,6 +12524,9 @@
           },
           {
             "$ref": "#/components/schemas/PipelineRunWebhookSourceSummary"
+          },
+          {
+            "$ref": "#/components/schemas/PipelineRunCompletionSourceSummary"
           }
         ]
       },
@@ -10935,9 +12778,137 @@
         ],
         "type": "object"
       },
+      "PipelineRunStructuralCheck": {
+        "description": "",
+        "properties": {
+          "attempt_number": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "compiled_plan_digest": {
+            "type": "string"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "contract_failure": {
+            "$ref": "#/components/schemas/PipelineRunContractFailureDiagnostic"
+          },
+          "declaration": {
+            "type": "string"
+          },
+          "deployment_resolution_digest": {
+            "type": "string"
+          },
+          "evaluator": {
+            "type": "string"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/PipelineRunCheckEvidence"
+          },
+          "evidence_digest": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "step",
+              "operation"
+            ],
+            "type": "string"
+          },
+          "phase": {
+            "enum": [
+              "event_admission",
+              "producer_output",
+              "normalized_input",
+              "pre_sink"
+            ],
+            "type": "string"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "projection_digest": {
+            "type": "string"
+          },
+          "reason_code": {
+            "enum": [
+              "not_reached",
+              "evaluating",
+              "conformant",
+              "empty_batch",
+              "contract_violation",
+              "payload_unavailable",
+              "evaluator_unavailable",
+              "evaluation_error",
+              "evaluation_interrupted",
+              "persistence_failed",
+              "downstream_not_reached",
+              "retained_output_reused"
+            ],
+            "type": "string"
+          },
+          "reused_from_run": {
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed",
+              "skipped",
+              "unavailable",
+              "error"
+            ],
+            "type": "string"
+          },
+          "step": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "target": {
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/PipelineRunCheckWindow"
+          }
+        },
+        "required": [
+          "id",
+          "step",
+          "origin",
+          "phase",
+          "declaration",
+          "projection_digest",
+          "attempt_number",
+          "evaluator",
+          "policy",
+          "status",
+          "reason_code",
+          "window"
+        ],
+        "type": "object"
+      },
       "PipelineRunTimeline": {
         "description": "",
         "properties": {
+          "compiled_plan_digest": {
+            "description": "",
+            "type": "string"
+          },
+          "deployment_resolution_digest": {
+            "description": "",
+            "type": "string"
+          },
           "environment_slug": {
             "$ref": "#/components/schemas/Slug"
           },
@@ -10960,6 +12931,12 @@
           },
           "replay_of_run_slug": {
             "$ref": "#/components/schemas/NullableSlug"
+          },
+          "revision": {
+            "description": "",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
           },
           "run_slug": {
             "$ref": "#/components/schemas/Slug"
@@ -10986,6 +12963,16 @@
               "PipelineRunTimelineStatusFailed",
               "PipelineRunTimelineStatusCanceled"
             ]
+          },
+          "structural_checks": {
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/PipelineRunStructuralCheck"
+            },
+            "type": "array"
+          },
+          "worker_observed_at": {
+            "$ref": "#/components/schemas/Timestamp"
           }
         },
         "required": [
@@ -11866,6 +13853,33 @@
         ],
         "type": "string"
       },
+      "PipelineTargetInspection": {
+        "properties": {
+          "binding_revision": {
+            "type": "string"
+          },
+          "data_source_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "reference": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "role": {
+            "type": "string"
+          },
+          "step": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "step",
+          "role",
+          "reference",
+          "data_source_slug",
+          "binding_revision"
+        ],
+        "type": "object"
+      },
       "PipelineTransformSpec": {
         "allOf": [
           {
@@ -11995,10 +14009,22 @@
             },
             {
               "$ref": "#/components/schemas/PipelineTriggerWebhookWithoutWebhookConfig"
+            },
+            {
+              "$ref": "#/components/schemas/PipelineTriggerCompletionWithoutCompletionConfig"
+            },
+            {
+              "$ref": "#/components/schemas/PipelineTriggerCompletionWithOtherConfig"
+            },
+            {
+              "$ref": "#/components/schemas/PipelineTriggerOtherWithCompletionConfig"
             }
           ]
         },
         "properties": {
+          "completion": {
+            "$ref": "#/components/schemas/PipelineTriggerCompletionConfig"
+          },
           "created_at": {
             "$ref": "#/components/schemas/Timestamp"
           },
@@ -12097,6 +14123,74 @@
           "PipelineTriggerBackoffStrategyExponential"
         ]
       },
+      "PipelineTriggerCompletionConfig": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "condition": {
+            "$ref": "#/components/schemas/PipelineCompletionCondition"
+          },
+          "execution_grant_enabled": {
+            "type": "boolean"
+          },
+          "upstream_pipeline_slug": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "upstream_pipeline_slug",
+          "condition",
+          "execution_grant_enabled"
+        ],
+        "type": "object"
+      },
+      "PipelineTriggerCompletionWithOtherConfig": {
+        "anyOf": [
+          {
+            "required": [
+              "schedule"
+            ]
+          },
+          {
+            "required": [
+              "webhook"
+            ]
+          }
+        ],
+        "description": "",
+        "properties": {
+          "type": {
+            "enum": [
+              "completion"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PipelineTriggerCompletionWithoutCompletionConfig": {
+        "description": "",
+        "not": {
+          "required": [
+            "completion"
+          ]
+        },
+        "properties": {
+          "type": {
+            "enum": [
+              "completion"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
       "PipelineTriggerIssuanceResponse": {
         "additionalProperties": false,
         "description": "",
@@ -12158,6 +14252,23 @@
         "required": [
           "pipeline_triggers",
           "has_more"
+        ],
+        "type": "object"
+      },
+      "PipelineTriggerOtherWithCompletionConfig": {
+        "description": "",
+        "properties": {
+          "type": {
+            "enum": [
+              "schedule",
+              "webhook"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "completion"
         ],
         "type": "object"
       },
@@ -12430,12 +14541,14 @@
         "description": "",
         "enum": [
           "schedule",
-          "webhook"
+          "webhook",
+          "completion"
         ],
         "type": "string",
         "x-enum-varnames": [
           "PipelineTriggerTypeSchedule",
-          "PipelineTriggerTypeWebhook"
+          "PipelineTriggerTypeWebhook",
+          "PipelineTriggerTypeCompletion"
         ]
       },
       "PipelineTriggerVersionPolicy": {
@@ -12727,12 +14840,17 @@
           },
           {
             "properties": {
+              "composition_admission_enabled": {
+                "description": "",
+                "type": "boolean"
+              },
               "spec": {
                 "$ref": "#/components/schemas/PipelineSpec"
               }
             },
             "required": [
-              "spec"
+              "spec",
+              "composition_admission_enabled"
             ],
             "type": "object"
           }
@@ -13335,6 +15453,90 @@
         ],
         "type": "object"
       },
+      "ProjectRepositoryGitHubAuthorization": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "type": "string"
+          },
+          "installation_id": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "state": {
+            "maxLength": 256,
+            "minLength": 32,
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "code",
+          "installation_id"
+        ],
+        "type": "object"
+      },
+      "ProjectRepositorySetup": {
+        "properties": {
+          "abandoned_at": {
+            "description": "",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "authorization_url": {
+            "description": "",
+            "type": "string"
+          },
+          "data_source_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "failure_code": {
+            "description": "",
+            "type": "string"
+          },
+          "first_commit_sha": {
+            "description": "",
+            "type": "string"
+          },
+          "project_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "repository_id": {
+            "description": "",
+            "type": "string"
+          },
+          "repository_url": {
+            "type": "string"
+          },
+          "request": {
+            "$ref": "#/components/schemas/CreateProjectRepositoryRequest"
+          },
+          "slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "repository_created",
+              "source_created",
+              "attached"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "project_slug",
+          "request",
+          "status",
+          "data_source_slug"
+        ],
+        "type": "object"
+      },
       "ProofAssessmentTarget": {
         "additionalProperties": false,
         "properties": {
@@ -13596,14 +15798,16 @@
           "static",
           "cached_observed",
           "live_read_only",
-          "bounded_execution"
+          "bounded_execution",
+          "operational"
         ],
         "type": "string",
         "x-enum-varnames": [
           "ProofEvidenceLevelStatic",
           "ProofEvidenceLevelCachedObserved",
           "ProofEvidenceLevelLiveReadOnly",
-          "ProofEvidenceLevelBoundedExecution"
+          "ProofEvidenceLevelBoundedExecution",
+          "ProofEvidenceLevelOperational"
         ]
       },
       "ProofEvidenceReference": {
@@ -13724,6 +15928,157 @@
           "ProofLifecycleLinkKindRun"
         ]
       },
+      "ProofOperationalCapture": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "policy_version": {
+            "type": "string"
+          },
+          "record_digest": {
+            "type": "string"
+          },
+          "selection": {
+            "$ref": "#/components/schemas/ProofOperationalSelection"
+          },
+          "source_receipt_id": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "source_receipt_id",
+          "policy_version",
+          "selection",
+          "record_digest",
+          "expires_at"
+        ],
+        "type": "object"
+      },
+      "ProofOperationalSelection": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "attempt": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/ProofCandidateIdentity"
+          },
+          "candidate_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "check_id": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "compiled_plan_digest": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "declaration": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "deployment_resolution_digest": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "evaluator": {
+            "type": "string"
+          },
+          "evaluator_policy": {
+            "type": "string"
+          },
+          "evidence_digest": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "step",
+              "operation"
+            ],
+            "type": "string"
+          },
+          "phase": {
+            "enum": [
+              "event_admission",
+              "producer_output",
+              "normalized_input",
+              "pre_sink"
+            ],
+            "type": "string"
+          },
+          "pipeline": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "projection_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "run": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "started_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "step": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "target": {
+            "description": "",
+            "maxLength": 100,
+            "pattern": "^$|^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "version_commit": {
+            "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/PipelineRunCheckWindow"
+          }
+        },
+        "required": [
+          "candidate_slug",
+          "candidate",
+          "pipeline",
+          "version_commit",
+          "compiled_plan_digest",
+          "deployment_resolution_digest",
+          "run",
+          "attempt",
+          "check_id",
+          "step",
+          "input",
+          "origin",
+          "phase",
+          "declaration",
+          "projection_digest",
+          "target",
+          "window",
+          "evaluator",
+          "evaluator_policy",
+          "started_at",
+          "completed_at",
+          "evidence_digest"
+        ],
+        "type": "object"
+      },
       "ProofReceipt": {
         "additionalProperties": false,
         "description": "",
@@ -13755,6 +16110,26 @@
             },
             "maxItems": 1000,
             "type": "array"
+          },
+          "operational": {
+            "$ref": "#/components/schemas/ProofOperationalCapture"
+          },
+          "operational_admission_enabled": {
+            "description": "",
+            "type": "boolean"
+          },
+          "operational_current_verdict": {
+            "$ref": "#/components/schemas/ProofVerdict"
+          },
+          "operational_evidence_status": {
+            "description": "",
+            "enum": [
+              "available",
+              "missing",
+              "expired",
+              "changed"
+            ],
+            "type": "string"
           },
           "retain_until": {
             "format": "date-time",
@@ -14067,6 +16442,30 @@
         ],
         "type": "object"
       },
+      "QueryExecutionIdentity": {
+        "description": "",
+        "properties": {
+          "data_source_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "executed_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "execution_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "query_slug": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "execution_slug",
+          "data_source_slug",
+          "query_slug",
+          "executed_at"
+        ],
+        "type": "object"
+      },
       "QueryExecutionListResponse": {
         "description": "",
         "properties": {
@@ -14161,6 +16560,24 @@
             "$ref": "#/components/schemas/WorkspaceFileExecutionResult"
           }
         ]
+      },
+      "QueryExecutionSummary": {
+        "description": "",
+        "properties": {
+          "successful_execution": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QueryExecutionIdentity"
+              }
+            ],
+            "description": "",
+            "nullable": true
+          }
+        },
+        "required": [
+          "successful_execution"
+        ],
+        "type": "object"
       },
       "QueryListResponse": {
         "description": "",
@@ -15009,6 +17426,43 @@
         ],
         "type": "object"
       },
+      "SlackAlertDestinationConfig": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "connection_slug": {
+            "$ref": "#/components/schemas/Slug"
+          }
+        },
+        "required": [
+          "connection_slug"
+        ],
+        "type": "object"
+      },
+      "SlackNotificationConnectionMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "channel_id": {
+            "type": "string"
+          },
+          "channel_name": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          },
+          "workspace_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "workspace_name",
+          "channel_id",
+          "channel_name"
+        ],
+        "type": "object"
+      },
       "Slug": {
         "description": "",
         "maxLength": 100,
@@ -15308,6 +17762,248 @@
           "name",
           "type",
           "config"
+        ],
+        "type": "object"
+      },
+      "SuccessfulRunRecency": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "capability_enabled": {
+            "description": "",
+            "type": "boolean"
+          },
+          "configured": {
+            "type": "boolean"
+          },
+          "deadline_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            ],
+            "nullable": true
+          },
+          "deployed_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            ],
+            "nullable": true
+          },
+          "deployment_revision": {
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "enabled_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            ],
+            "nullable": true
+          },
+          "episodes": {
+            "items": {
+              "$ref": "#/components/schemas/SuccessfulRunRecencyEpisode"
+            },
+            "type": "array"
+          },
+          "evaluated_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "has_more_episodes": {
+            "type": "boolean"
+          },
+          "maximum_age_seconds": {
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "outcome": {
+            "enum": [
+              "grace",
+              "healthy",
+              "breached",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "resolution_digest": {
+            "nullable": true,
+            "type": "string"
+          },
+          "revision": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "succeeded_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            ],
+            "nullable": true
+          },
+          "success_run_slug": {
+            "nullable": true,
+            "type": "string"
+          },
+          "unavailable_reason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "version_spec_hash": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "capability_enabled",
+          "configured",
+          "enabled",
+          "revision",
+          "maximum_age_seconds",
+          "enabled_at",
+          "deployment_revision",
+          "version_spec_hash",
+          "resolution_digest",
+          "deployed_at",
+          "success_run_slug",
+          "succeeded_at",
+          "deadline_at",
+          "evaluated_at",
+          "outcome",
+          "unavailable_reason",
+          "episodes",
+          "has_more_episodes"
+        ],
+        "type": "object"
+      },
+      "SuccessfulRunRecencyEpisode": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "breached_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deadline_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deployed_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deployment_revision": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "enabled_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "expectation_revision": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "last_success_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            ],
+            "nullable": true
+          },
+          "last_success_run_slug": {
+            "nullable": true,
+            "type": "string"
+          },
+          "maximum_age_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "notification_slug": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "recovery_run_slug": {
+            "nullable": true,
+            "type": "string"
+          },
+          "recovery_succeeded_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            ],
+            "nullable": true
+          },
+          "resolution_digest": {
+            "nullable": true,
+            "type": "string"
+          },
+          "resolution_reason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "resolved_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            ],
+            "nullable": true
+          },
+          "version_spec_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "notification_slug",
+          "expectation_revision",
+          "maximum_age_seconds",
+          "enabled_at",
+          "deployment_revision",
+          "version_spec_hash",
+          "resolution_digest",
+          "deployed_at",
+          "deadline_at",
+          "breached_at",
+          "last_success_run_slug",
+          "last_success_at",
+          "resolved_at",
+          "resolution_reason",
+          "recovery_run_slug",
+          "recovery_succeeded_at"
+        ],
+        "type": "object"
+      },
+      "SuccessfulRunRecencyUpdate": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "format": "int64",
+            "maximum": 9223372036854775806,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maximum_age_seconds": {
+            "format": "int64",
+            "maximum": 9223372036,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "maximum_age_seconds",
+          "enabled"
         ],
         "type": "object"
       },
@@ -16050,6 +18746,15 @@
               "$ref": "#/components/schemas/PipelineTriggerWebhookWithoutWebhookConfig"
             },
             {
+              "$ref": "#/components/schemas/PipelineTriggerCompletionWithoutCompletionConfig"
+            },
+            {
+              "$ref": "#/components/schemas/PipelineTriggerCompletionWithOtherConfig"
+            },
+            {
+              "$ref": "#/components/schemas/PipelineTriggerOtherWithCompletionConfig"
+            },
+            {
               "$ref": "#/components/schemas/PipelineTriggerScheduleWithWebhookConfig"
             },
             {
@@ -16058,6 +18763,9 @@
           ]
         },
         "properties": {
+          "completion": {
+            "$ref": "#/components/schemas/PipelineTriggerCompletionConfig"
+          },
           "enabled": {
             "description": "",
             "type": "boolean"
@@ -20763,6 +23471,371 @@
         }
       }
     },
+    "/organizations/{slug}/notification-connections": {
+      "get": {
+        "operationId": "listNotificationConnections",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationConnection"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "createNotificationConnection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewNotificationConnection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationConnection"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/notification-connections/{notification_connection_slug}/connect": {
+      "post": {
+        "operationId": "connectNotificationConnection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/NotificationConnectionSlugParam"
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderConnectorInstall"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/notification-connections/{notification_connection_slug}/disconnect": {
+      "post": {
+        "operationId": "disconnectNotificationConnection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/NotificationConnectionSlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialMetadata"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/organizations/{slug}/notifications": {
       "get": {
         "description": "",
@@ -21092,6 +24165,59 @@
             "description": ""
           },
           "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/pipeline-operational-capabilities": {
+      "get": {
+        "description": "",
+        "operationId": "getPipelineOperationalCapabilities",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineOperationalCapabilities"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
             "content": {
               "application/json": {
                 "schema": {
@@ -23805,6 +26931,148 @@
         }
       }
     },
+    "/organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency": {
+      "get": {
+        "description": "",
+        "operationId": "getSuccessfulRunRecency",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/EnvironmentSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/PipelineSlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessfulRunRecency"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "description": "",
+        "operationId": "updateSuccessfulRunRecency",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/EnvironmentSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/PipelineSlugParam"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuccessfulRunRecencyUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessfulRunRecency"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}:bootstrap-checkpoints": {
       "post": {
         "description": "",
@@ -24370,6 +27638,242 @@
         }
       }
     },
+    "/organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/completion": {
+      "get": {
+        "description": "",
+        "operationId": "getPipelineRunCompletion",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/EnvironmentSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/RunSlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineRunCompletion"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/connected": {
+      "get": {
+        "description": "",
+        "operationId": "getPipelineRunConnected",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/EnvironmentSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/RunSlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineRunConnected"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/progress": {
+      "get": {
+        "description": "",
+        "operationId": "getPipelineRunProgress",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/EnvironmentSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/RunSlugParam"
+          },
+          {
+            "in": "query",
+            "name": "after_event",
+            "schema": {
+              "default": 0,
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineRunProgress"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/trigger-retry-attempts": {
       "get": {
         "description": "",
@@ -24528,6 +28032,179 @@
         }
       }
     },
+    "/organizations/{slug}/projects/{project_slug}/pipeline-creations": {
+      "get": {
+        "description": "",
+        "operationId": "listPipelineCreationProposals",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "$ref": "#/components/schemas/Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineCreationProposalListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "description": "",
+        "operationId": "createPipelineProposal",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PipelineSpec"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineCreationProposal"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/projects/{project_slug}/pipeline-creations/{creation_slug}": {
+      "get": {
+        "operationId": "getPipelineCreationProposal",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "in": "path",
+            "name": "creation_slug",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineCreationProposal"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/organizations/{slug}/projects/{project_slug}/pipelines": {
       "get": {
         "description": "",
@@ -24655,6 +28332,85 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/compiled-plans/{digest}": {
+      "get": {
+        "description": "",
+        "operationId": "getPipelineCompiledPlan",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/PipelineSlugParam"
+          },
+          {
+            "in": "path",
+            "name": "digest",
+            "required": true,
+            "schema": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineCompiledPlan"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "Cache-Control": {
+                "description": "",
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "content": {
@@ -25172,6 +28928,65 @@
         }
       }
     },
+    "/organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/draft:refresh-proposal": {
+      "post": {
+        "description": "",
+        "operationId": "refreshPipelineDraftProposal",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/PipelineSlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pipeline"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/environments/{environment_slug}/data-source-bindings/{data_source_ref_slug}": {
       "delete": {
         "description": "",
@@ -25450,6 +29265,105 @@
         }
       }
     },
+    "/organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash}/compiled-plans": {
+      "post": {
+        "description": "",
+        "operationId": "compilePipelineVersion",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/PipelineSlugParam"
+          },
+          {
+            "description": "",
+            "in": "path",
+            "name": "spec_hash",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "",
+            "in": "query",
+            "name": "environment_slug",
+            "schema": {
+              "$ref": "#/components/schemas/Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PipelineCompilationRequest"
+              }
+            }
+          },
+          "description": "",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineCompiledPlan"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "Cache-Control": {
+                "description": "",
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/organizations/{slug}/projects/{project_slug}/pipelines:reconcile": {
       "post": {
         "description": "",
@@ -25524,6 +29438,303 @@
             "description": ""
           },
           "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/projects/{project_slug}/repository-setup": {
+      "get": {
+        "operationId": "getProjectRepositorySetup",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRepositorySetup"
+                }
+              }
+            },
+            "description": ""
+          },
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "description": "",
+        "operationId": "createProjectRepository",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRepositoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRepositorySetup"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/projects/{project_slug}/repository-setup/abandon": {
+      "post": {
+        "description": "",
+        "operationId": "abandonProjectRepositorySetup",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbandonProjectRepositorySetupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRepositorySetup"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/projects/{project_slug}/repository-setup/github-authorization": {
+      "post": {
+        "description": "",
+        "operationId": "completeProjectRepositoryGitHubAuthorization",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectRepositoryGitHubAuthorization"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRepositorySetup"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/projects/{project_slug}/repository-setups/{setup_slug}": {
+      "get": {
+        "operationId": "getProjectRepositorySetupAttempt",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          },
+          {
+            "in": "path",
+            "name": "setup_slug",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRepositorySetup"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -25668,6 +29879,39 @@
             "description": ""
           },
           "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/query-execution-summary": {
+      "get": {
+        "description": "",
+        "operationId": "getQueryExecutionSummary",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryExecutionSummary"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
             "content": {
               "application/json": {
                 "schema": {
@@ -26043,6 +30287,163 @@
             "description": ""
           },
           "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/security-audit-events": {
+      "get": {
+        "description": "",
+        "operationId": "listSecurityAuditEvents",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/SecurityAuditEventFieldParam"
+          },
+          {
+            "$ref": "#/components/parameters/SecurityAuditEventOrderParam"
+          },
+          {
+            "$ref": "#/components/parameters/SecurityAuditEventPageDirectionParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventActorTypeFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventActorSlugFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventEntityTypeFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventEntitySlugFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventActionFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventRequestIdFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventOccurredFromFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventOccurredBeforeFilterParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/security-audit-events/export": {
+      "get": {
+        "description": "",
+        "operationId": "exportSecurityAuditEvents",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventActorTypeFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventActorSlugFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventEntityTypeFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventEntitySlugFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventActionFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventRequestIdFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventOccurredFromFilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/EventOccurredBeforeFilterParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "Content-Disposition": {
+                "description": "",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
             "content": {
               "application/json": {
                 "schema": {

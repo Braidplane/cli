@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -35,12 +36,15 @@ func TestRunWithArgsODCSContractCommandsUseProjectScopedRequests(t *testing.T) {
 		{"catalog list", []string{"braidplane", "contract", "list", "--project", "data-pipelines", "--limit", "10", "--cursor", "page-2", "--order", "asc", "--direction", "prev"}, http.MethodGet, "/api/organizations/acme/projects/data-pipelines/contracts?limit=10&cursor=page-2&order=asc&direction=prev", http.StatusOK, `{"contracts":[],"has_more":false}`, "", ""},
 		{"catalog get", []string{"braidplane", "contract", "get", "orders", "--project", "data-pipelines"}, http.MethodGet, "/api/organizations/acme/projects/data-pipelines/contracts/orders", http.StatusOK, contract, "", ""},
 		{"catalog create", []string{"braidplane", "contract", "create", "--project", "data-pipelines", "--name", "Orders", "--slug", "orders", "--odcs-id", "acme.orders"}, http.MethodPost, "/api/organizations/acme/projects/data-pipelines/contracts", http.StatusCreated, contract, `{"name":"Orders","slug":"orders","odcs_id":"acme.orders"}`, ""},
+		{"catalog create generated slug", []string{"braidplane", "contract", "create", "--project", "data-pipelines", "--name", "Orders", "--odcs-id", "acme.orders"}, http.MethodPost, "/api/organizations/acme/projects/data-pipelines/contracts", http.StatusCreated, contract, `{"name":"Orders","odcs_id":"acme.orders"}`, ""},
 		{"catalog update", []string{"braidplane", "contract", "update", "orders", "--project", "data-pipelines", "--name", "Orders archive", "--status", "archived"}, http.MethodPut, "/api/organizations/acme/projects/data-pipelines/contracts/orders", http.StatusOK, contract, `{"name":"Orders archive","status":"archived"}`, ""},
 		{"revision list", []string{"braidplane", "contract", "revision", "list", "orders", "--project", "data-pipelines", "--limit", "10", "--cursor", "page-2", "--order", "desc", "--direction", "next"}, http.MethodGet, "/api/organizations/acme/projects/data-pipelines/contracts/orders/revisions?limit=10&cursor=page-2&order=desc&direction=next", http.StatusOK, `{"revisions":[],"has_more":false}`, "", ""},
 		{"revision inspect", []string{"braidplane", "contract", "revision", "inspect", "orders", "v1", "--project", "data-pipelines", "--object", "order"}, http.MethodGet, "/api/organizations/acme/projects/data-pipelines/contracts/orders/revisions/v1/inspection?schema_object_id=order", http.StatusOK, `{"revision":{"slug":"v1","digest":"sha256:abc","document":{"description":"meaning retained"}},"compiler_id":"braidplane/odcs-flat-port/v2","schema_object_id":"order","document_valid":true,"coverage_complete":true,"projection_available":true,"coverage":[{"path":"$.quality","state":"unsupported","reason":"no_runtime_evaluator","applicability":"document"}],"diagnostics":[]}`, "", `"state": "unsupported"`},
 		{"revision get", []string{"braidplane", "contract", "revision", "get", "orders", "v1", "--project", "data-pipelines"}, http.MethodGet, "/api/organizations/acme/projects/data-pipelines/contracts/orders/revisions/v1", http.StatusOK, revision, "", `"digest": "sha256:abc"`},
 		{"revision create", []string{"braidplane", "contract", "revision", "create", "orders", "--project", "data-pipelines", "--slug", "v1", "--file", documentPath}, http.MethodPost, "/api/organizations/acme/projects/data-pipelines/contracts/orders/revisions", http.StatusCreated, revision, `{"slug":"v1","document":{"apiVersion":"v3.2.0","id":"acme.orders"}}`, `"digest": "sha256:abc"`},
+		{"revision create generated slug", []string{"braidplane", "contract", "revision", "create", "orders", "--project", "data-pipelines", "--file", documentPath}, http.MethodPost, "/api/organizations/acme/projects/data-pipelines/contracts/orders/revisions", http.StatusCreated, revision, `{"document":{"apiVersion":"v3.2.0","id":"acme.orders"}}`, `"digest": "sha256:abc"`},
 		{"revision impact", []string{"braidplane", "contract", "revision", "impact", "orders", "--project", "data-pipelines", "--from", "v1", "--to", "v2"}, http.MethodPost, "/api/organizations/acme/projects/data-pipelines/contracts/orders/impact", http.StatusOK, `{"contract_slug":"orders","project_slug":"data-pipelines","from_revision_slug":"v1","to_revision_slug":"v2","from_digest":"sha256:one","to_digest":"sha256:two","objects":[],"consumers":[],"external_consumers":"unknown"}`, `{"from_revision_slug":"v1","to_revision_slug":"v2"}`, `"external_consumers": "unknown"`},
+		{"rich revision impact", []string{"braidplane", "contract", "revision", "impact", "orders", "--project", "data-pipelines", "--from", "v1", "--to", "v2", "--from-pipeline", "sync", "--from-plan", "sha256:old", "--to-pipeline", "sync", "--to-plan", "sha256:new", "--from-projection-input", "0", "--to-projection-input", "1"}, http.MethodPost, "/api/organizations/acme/projects/data-pipelines/contracts/orders/impact", http.StatusOK, `{"contract_slug":"orders","project_slug":"data-pipelines","from_revision_slug":"v1","to_revision_slug":"v2","objects":[{"schema_object_id":"row","comparison":"supported","comparison_scope":"selected_projection","changes":[{"kind":"data_path_changed","severity":"breaking","reason_code":"structural_data_path_changed","path":"$[\"renamed\"]","before":"$[\"id\"]","after":"$[\"renamed\"]"}],"diagnostics":[]}],"consumers":[],"external_consumers":"unknown"}`, `{"from_revision_slug":"v1","to_revision_slug":"v2","from_plan":{"pipeline_slug":"sync","digest":"sha256:old","projection_input":0},"to_plan":{"pipeline_slug":"sync","digest":"sha256:new","projection_input":1}}`, `"comparison_scope": "selected_projection"`},
 	}
 
 	for _, tt := range tests {
@@ -113,6 +117,8 @@ func TestODCSContractCommandsRejectInvalidInputBeforeRequests(t *testing.T) {
 		{"inspection rejects latest", []string{"braidplane", "contract", "revision", "inspect", "orders", "latest", "--project", "data-pipelines", "--server-url", "http://example.invalid", "--org", "acme", "--api-key", "token"}, "select an exact revision"},
 		{"import requires commit", []string{"braidplane", "contract", "import", "--apply", "--project", "data-pipelines", "--server-url", "http://example.invalid", "--org", "acme", "--api-key", "token"}, "--apply requires --expected-commit from preview"},
 		{"contract slug", []string{"braidplane", "contract", "get", "UPPER", "--project", "data-pipelines", "--server-url", "http://example.invalid", "--org", "acme", "--api-key", "token"}, "contract slug must be a valid slug"},
+		{"contract create slug", []string{"braidplane", "contract", "create", "--project", "data-pipelines", "--name", "Orders", "--slug", "bad/slug", "--odcs-id", "acme.orders", "--server-url", "http://example.invalid", "--org", "acme", "--api-key", "token"}, "slug must be a valid slug"},
+		{"revision create slug", []string{"braidplane", "contract", "revision", "create", "orders", "--project", "data-pipelines", "--slug", "bad/slug", "--file", filepath.Join(t.TempDir(), "missing.json"), "--server-url", "http://example.invalid", "--org", "acme", "--api-key", "token"}, "slug must be a valid slug"},
 		{"revision document", []string{"braidplane", "contract", "revision", "create", "orders", "--project", "data-pipelines", "--slug", "v1", "--file", filepath.Join(t.TempDir(), "missing.json"), "--server-url", "http://example.invalid", "--org", "acme", "--api-key", "token"}, "read ODCS JSON document"},
 		{"order", []string{"braidplane", "contract", "list", "--project", "data-pipelines", "--order", "sideways", "--server-url", "http://example.invalid", "--org", "acme", "--api-key", "token"}, "order must be asc or desc"},
 	}
@@ -139,4 +145,32 @@ func TestODCSInspectionDenialDoesNotPrintDocument(t *testing.T) {
 	err := runWithArgs([]string{"braidplane", "contract", "revision", "inspect", "orders", "v1", "--project", "etl", "--server-url", server.URL + "/api", "--org", "acme", "--api-key", "test-token"}, &stdout, &stderr)
 	require.ErrorContains(t, err, "403")
 	require.Empty(t, stdout.String())
+}
+
+func TestODCSInspectionShapeExportPreservesExactConstraints(t *testing.T) {
+	for _, available := range []bool{true, false} {
+		t.Run(fmt.Sprint(available), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "product", r.URL.Query().Get("schema_object_id"))
+				w.Header().Set("Content-Type", "application/json")
+				body := `{"revision":{"slug":"v1","digest":"sha256:exact","document":{}},"projection_available":false}`
+				if available {
+					body = `{"revision":{"slug":"v1","digest":"sha256:exact","document":{}},"schema_object_id":"product","document_valid":true,"projection_available":true,"shape":{"name":"product","fields":[{"name":"price","type":"decimal","precision":20,"scale":2,"required":true,"validations":{"min":9007199254740993.01}}]}}`
+				}
+				_, err := w.Write([]byte(body))
+				assert.NoError(t, err)
+			}))
+			defer server.Close()
+			var stdout, stderr bytes.Buffer
+			err := runWithArgs([]string{"braidplane", "contract", "revision", "inspect", "products", "v1", "--object", "product", "--shape-only", "--project", "catalog", "--server-url", server.URL + "/api", "--org", "acme", "--api-key", "fixture"}, &stdout, &stderr)
+			if available {
+				require.NoError(t, err)
+				require.Contains(t, stdout.String(), "9007199254740993.01")
+				require.NotContains(t, stdout.String(), "revision")
+			} else {
+				require.Error(t, err)
+				require.Empty(t, stdout.String())
+			}
+		})
+	}
 }

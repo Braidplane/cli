@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/Braidplane/cli/pkg/model"
 	"github.com/Braidplane/cli/pkg/pipeline/payload"
 	pipelinespec "github.com/Braidplane/cli/pkg/pipeline/spec"
 )
@@ -360,8 +361,8 @@ func diffOutputContractFields(prefix string, before, after *payload.Contract) []
 		}
 		changes = appendIfChanged(changes,
 			fmt.Sprintf("%s.%s.type", prefix, beforeField.Name),
-			beforeField.Type.String(),
-			afterField.Type.String(),
+			formatOutputContractFieldType(beforeField),
+			formatOutputContractFieldType(afterField),
 		)
 		changes = appendIfChanged(changes,
 			fmt.Sprintf("%s.%s.required", prefix, beforeField.Name),
@@ -440,7 +441,7 @@ func orderedOutputContractFields(contract *payload.Contract) []payload.ContractF
 
 // formatOutputContractField returns a human-readable string representation of a contract field.
 func formatOutputContractField(field payload.ContractField) string {
-	return fmt.Sprintf("%s(required=%v,nullable=%v)", field.Type, field.Required, field.Nullable)
+	return fmt.Sprintf("%s(required=%v,nullable=%v)", formatOutputContractFieldType(field), field.Required, field.Nullable)
 }
 
 // formatPresence returns "<none>" if value is nil, or "present" otherwise, for use in before/after
@@ -468,4 +469,11 @@ func appendIfChanged(changes []FieldChange, field, before, after string) []Field
 		return append(changes, FieldChange{Field: field, Before: before, After: after})
 	}
 	return changes
+}
+
+func formatOutputContractFieldType(field payload.ContractField) string {
+	if field.Type == model.ContractFieldTypeValueDecimal {
+		return fmt.Sprintf("decimal(%s,%s)", formatDynamicValue(field.Precision), formatDynamicValue(field.Scale))
+	}
+	return field.Type.String()
 }

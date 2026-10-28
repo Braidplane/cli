@@ -8,6 +8,20 @@ import (
 	"github.com/Braidplane/cli/pkg/xerror"
 )
 
+func (c *cliAPIClient) queryExecutionSummary(ctx context.Context) (*api.QueryExecutionSummary, error) {
+	resp, err := c.openapi.GetQueryExecutionSummaryWithResponse(ctx, c.organization)
+	if err != nil {
+		return nil, xerror.Wrapf("get query execution summary: %w", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, decodeAPIError(resp.StatusCode(), resp.Body)
+	}
+	if resp.JSON200 == nil {
+		return nil, xerror.Unexpected().Detail("missing query execution summary payload")
+	}
+	return resp.JSON200, nil
+}
+
 // listQueries fetches saved queries for one organization-owned concrete data source.
 func (c *cliAPIClient) listQueries(
 	ctx context.Context,

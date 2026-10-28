@@ -1011,3 +1011,17 @@ func TestCompositionReferenceChangesAreNotSafe(t *testing.T) {
 	after := &pipelinespec.Pipeline{Steps: []pipelinespec.Step{{Slug: "audit", Kind: "transform", Transform: &pipelinespec.TransformSpec{InputContracts: map[string]*pipelinespec.InputContractAttachment{"orders": {Contract: &payload.Contract{Name: "after", Fields: []payload.ContractField{{Name: "id", Type: model.ContractFieldTypeValueInteger}}}}}}}}}
 	require.Equal(t, SeverityWarning, Check(Diff(before, after)).Severity)
 }
+
+func TestDecimalPrecisionAndScaleParticipateInTypeImpact(t *testing.T) {
+	precision, scale := 18, 2
+	before := &payload.Contract{Fields: []payload.ContractField{{Name: "price", Type: model.ContractFieldTypeValueDecimal, Precision: &precision, Scale: &scale}}}
+	for _, tc := range []struct{ precision, scale int }{{20, 2}, {18, 4}} {
+		after := payload.CloneContract(before)
+		after.Fields[0].Precision, after.Fields[0].Scale = &tc.precision, &tc.scale
+		changes := diffOutputContractFields("step[fetch].query.output_contract", before, after)
+		require.Len(t, changes, 1)
+		require.Equal(t, "step[fetch].query.output_contract.price.type", changes[0].Field)
+		require.Equal(t, "decimal(18,2)", changes[0].Before)
+		require.Equal(t, SeverityBreaking, severityForStepChange(changes[0]))
+	}
+}

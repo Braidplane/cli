@@ -115,7 +115,7 @@ func TestDescriptorForDefinesConnectorDomainContract(t *testing.T) {
 				SinkReplayStrategyDeduplicatedByLedger,
 				SinkReplayStrategyUnsafe,
 			},
-			incremental: []model.IncrementalCheckpointKind{model.IncrementalCheckpointKindCursor},
+			incremental: []model.IncrementalCheckpointKind{model.IncrementalCheckpointKindCursor, model.IncrementalCheckpointKindWatermark},
 		},
 		{
 			name:         "mongodb",
@@ -379,10 +379,10 @@ func TestSupportsIncrementalSourceCheckpointKind(t *testing.T) {
 			want:          false,
 		},
 		{
-			name:          "HTTPWatermarkUnsupported",
+			name:          "HTTPWatermarkSupported",
 			operationType: OperationTypeHTTP,
 			kind:          model.IncrementalCheckpointKindWatermark,
-			want:          false,
+			want:          true,
 		},
 	}
 

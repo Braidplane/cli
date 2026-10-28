@@ -41,7 +41,7 @@ const (
 )
 
 // Structure is a resolved, runtime-neutral foundation for inline and ODCS
-// compilers. It is not accepted by pipeline authoring or current execution.
+// compilers and immutable-plan runtime checks. It is not pipeline authoring syntax.
 type Structure struct {
 	Contract, Revision, Object string
 	Representation             model.ContractRepresentation

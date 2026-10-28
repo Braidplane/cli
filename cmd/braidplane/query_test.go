@@ -258,6 +258,18 @@ func TestRunWithArgsQueryReadCommandsUseExpectedRequests(t *testing.T) {
 			target:   "/api/organizations/acme/data-sources/acme-postgres/queries/list-active-users/executions/exec-1",
 			response: executionPayload,
 		},
+		{
+			name:     "QueryExecutionSummary",
+			args:     []string{"braidplane", "query", "execution", "summary"},
+			target:   "/api/organizations/acme/query-execution-summary",
+			response: `{"successful_execution":{"execution_slug":"exec-1","data_source_slug":"warehouse","query_slug":"read-users","executed_at":"2026-06-14T12:01:00Z"}}`,
+		},
+		{
+			name:     "QueryExecutionSummaryWithoutRecordedResult",
+			args:     []string{"braidplane", "query", "execution", "summary"},
+			target:   "/api/organizations/acme/query-execution-summary",
+			response: `{"successful_execution":null}`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -287,7 +299,24 @@ func TestRunWithArgsQueryReadCommandsUseExpectedRequests(t *testing.T) {
 			require.Equal(t, http.MethodGet, gotMethod)
 			require.Equal(t, tt.target, gotTarget)
 			require.Equal(t, "Bearer xto_test_token", gotAuth)
+			if tt.name == "QueryExecutionSummary" || tt.name == "QueryExecutionSummaryWithoutRecordedResult" {
+				require.JSONEq(t, tt.response, stdout)
+			}
 		})
+	}
+}
+
+func TestRunWithArgsQueryExecutionSummaryDoesNotHideUnavailableEvidence(t *testing.T) {
+	for _, status := range []int{http.StatusForbidden, http.StatusServiceUnavailable} {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+			_, _ = w.Write([]byte(`{"error":{"code":"QUERY_SUMMARY_UNAVAILABLE","message":"Cannot inspect query progress"}}`))
+		}))
+		stdout, _, err := runCLIForQueryTest(t, server.URL, []string{"braidplane", "query", "execution", "summary"})
+		server.Close()
+		require.Error(t, err)
+		require.Empty(t, stdout)
 	}
 }
 

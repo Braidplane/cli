@@ -780,3 +780,27 @@ func (c *cliAPIClient) bootstrapPipelineCheckpoints(ctx context.Context, project
 	}
 	return nil
 }
+
+func (c *cliAPIClient) refreshPipelineDraftProposal(
+	ctx context.Context,
+	projectSlug string,
+	pipelineSlug string,
+) (*api.Pipeline, error) {
+	resp, err := c.openapi.RefreshPipelineDraftProposalWithResponse(
+		ctx,
+		c.organization,
+		projectSlug,
+		pipelineSlug,
+	)
+	if err != nil {
+		return nil, xerror.Wrapf("refresh pipeline draft proposal: %w", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, decodeAPIError(resp.StatusCode(), resp.Body)
+	}
+	if resp.JSON200 == nil {
+		return nil, xerror.Unexpected().Detail("unexpected API response: missing pipeline proposal refresh payload")
+	}
+
+	return resp.JSON200, nil
+}

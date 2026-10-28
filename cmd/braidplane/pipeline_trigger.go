@@ -9,6 +9,7 @@ import (
 
 	api "github.com/Braidplane/cli/internal/apiclient"
 	pipelineruntimevars "github.com/Braidplane/cli/pkg/pipeline/runtime"
+	"github.com/Braidplane/cli/pkg/slug"
 	"github.com/Braidplane/cli/pkg/xerror"
 )
 
@@ -205,7 +206,7 @@ type pipelineTriggerPayloadFlags struct {
 	Name                     string   `help:"Pipeline trigger display name." name:"name" required:""`
 	PipelineSlug             string   `help:"Target pipeline slug." name:"pipeline" required:""`
 	Environment              string   `help:"Project environment slug." name:"environment" env:"BRAIDPLANE_ENVIRONMENT"`
-	Type                     string   `help:"Trigger type: schedule or webhook." enum:"schedule,webhook" name:"type" default:"schedule"`
+	Type                     string   `help:"Trigger type: schedule, webhook, or completion." enum:"schedule,webhook,completion" name:"type" default:"schedule"`
 	Enabled                  bool     `help:"Create or update the trigger as enabled." name:"enabled"`
 	Disabled                 bool     `help:"Create or update the trigger as disabled." name:"disabled"`
 	VersionPolicy            string   `help:"Version policy: latest_deployed or pinned." enum:"latest_deployed,pinned" name:"version-policy" required:""`
@@ -215,6 +216,10 @@ type pipelineTriggerPayloadFlags struct {
 	Timezone                 string   `help:"IANA timezone used for schedule evaluation. Schedule triggers only." name:"timezone"`
 	MisfirePolicy            string   `help:"Misfire policy: skip or fire_once. Schedule triggers only." name:"misfire-policy"`
 	WebhookInputMapping      []string `help:"Webhook input mapping as <json-pointer>=<runtime-input-key>. Repeat for multiple mappings. Webhook triggers only." name:"webhook-input-mapping"`
+	UpstreamPipeline         string   `help:"Upstream pipeline slug. Completion triggers only; no payload is transferred." name:"upstream-pipeline"`
+	CompletionCondition      string   `help:"Logical-root outcome: success or final_failure. Completion triggers only." name:"completion-condition"`
+	ExecutionGrantEnabled    bool     `help:"Grant revocable completion execution authority." name:"execution-grant-enabled"`
+	ExecutionGrantDisabled   bool     `help:"Revoke completion execution authority." name:"execution-grant-disabled"`
 	RetryEnabled             bool     `help:"Enable automatic trigger retry orchestration." name:"retry-enabled"`
 	RetryMaxAttempts         int      `help:"Maximum attempts including the first run." name:"retry-max-attempts" default:"1"`
 	RetryBackoff             string   `help:"Retry backoff strategy: none, fixed, or exponential." enum:"none,fixed,exponential" name:"retry-backoff" default:"none"`
@@ -243,6 +248,7 @@ func (f pipelineTriggerPayloadFlags) newPipelineTrigger(rawSlug string) (api.New
 		RetryPolicy:      payload.retryPolicy,
 		Schedule:         payload.schedule,
 		Webhook:          payload.webhook,
+		Completion:       payload.completion,
 	}, nil
 }
 
@@ -263,6 +269,7 @@ func (f pipelineTriggerPayloadFlags) updatePipelineTrigger() (api.UpdatePipeline
 		RetryPolicy:      payload.retryPolicy,
 		Schedule:         payload.schedule,
 		Webhook:          payload.webhook,
+		Completion:       payload.completion,
 	}, nil
 }
 
@@ -276,6 +283,7 @@ type pipelineTriggerAPIPayload struct {
 	triggerType      api.PipelineTriggerType
 	schedule         *api.PipelineTriggerScheduleConfig
 	webhook          *api.PipelineWebhookConfigInput
+	completion       *api.PipelineTriggerCompletionConfig
 }
 
 // apiPayload validates trigger flags and returns the common API payload fields.
@@ -297,6 +305,10 @@ func (f pipelineTriggerPayloadFlags) apiPayload() (pipelineTriggerAPIPayload, er
 		return pipelineTriggerAPIPayload{}, err
 	}
 	triggerType := api.PipelineTriggerType(strings.TrimSpace(f.Type))
+	completion, err := f.completionConfig(triggerType)
+	if err != nil {
+		return pipelineTriggerAPIPayload{}, err
+	}
 	schedule, webhook, err := pipelineTriggerTypeConfig(f, triggerType, runtimeInputKeys)
 	if err != nil {
 		return pipelineTriggerAPIPayload{}, err
@@ -312,6 +324,30 @@ func (f pipelineTriggerPayloadFlags) apiPayload() (pipelineTriggerAPIPayload, er
 		triggerType:      triggerType,
 		schedule:         schedule,
 		webhook:          webhook,
+		completion:       completion,
+	}, nil
+}
+
+func (f pipelineTriggerPayloadFlags) completionConfig(triggerType api.PipelineTriggerType) (*api.PipelineTriggerCompletionConfig, error) {
+	if triggerType != api.PipelineTriggerTypeCompletion {
+		if f.UpstreamPipeline != "" || f.CompletionCondition != "" || f.ExecutionGrantEnabled || f.ExecutionGrantDisabled {
+			return nil, xerror.InvalidInput(xerror.PipelineTrigger).Detail("completion flags require --type completion")
+		}
+		return nil, nil //nolint:nilnil // Schedule and webhook payloads must omit completion configuration.
+	}
+	upstream, err := slug.New(strings.TrimSpace(f.UpstreamPipeline))
+	if err != nil {
+		return nil, xerror.InvalidInput(xerror.PipelineTrigger).Detail("completion triggers require a valid --upstream-pipeline slug")
+	}
+	condition := api.PipelineCompletionCondition(strings.TrimSpace(f.CompletionCondition))
+	if condition != api.PipelineCompletionConditionSuccess && condition != api.PipelineCompletionConditionFinalFailure {
+		return nil, xerror.InvalidInput(xerror.PipelineTrigger).Detail("completion triggers require --completion-condition success or final_failure")
+	}
+	if f.ExecutionGrantEnabled == f.ExecutionGrantDisabled {
+		return nil, xerror.InvalidInput(xerror.PipelineTrigger).Detail("set exactly one of --execution-grant-enabled or --execution-grant-disabled")
+	}
+	return &api.PipelineTriggerCompletionConfig{
+		UpstreamPipelineSlug: upstream.String(), Condition: condition, ExecutionGrantEnabled: f.ExecutionGrantEnabled,
 	}, nil
 }
 
@@ -321,6 +357,11 @@ func pipelineTriggerTypeConfig(
 	runtimeInputKeys []string,
 ) (*api.PipelineTriggerScheduleConfig, *api.PipelineWebhookConfigInput, error) {
 	switch triggerType {
+	case api.PipelineTriggerTypeCompletion:
+		if strings.TrimSpace(f.Cron) != "" || strings.TrimSpace(f.Timezone) != "" || strings.TrimSpace(f.MisfirePolicy) != "" || len(f.WebhookInputMapping) > 0 {
+			return nil, nil, xerror.InvalidInput(xerror.PipelineTrigger).Detail("completion triggers must not set schedule or webhook flags")
+		}
+		return nil, nil, nil
 	case api.PipelineTriggerTypeSchedule:
 		if len(f.WebhookInputMapping) > 0 {
 			return nil, nil, xerror.InvalidInput(xerror.PipelineTrigger).
@@ -352,7 +393,7 @@ func pipelineTriggerTypeConfig(
 		return nil, &api.PipelineWebhookConfigInput{InputMappings: mappings}, nil
 	default:
 		return nil, nil, xerror.InvalidInput(xerror.PipelineTrigger).
-			Detail("type must be schedule or webhook")
+			Detail("type must be schedule, webhook, or completion")
 	}
 }
 

@@ -77,6 +77,23 @@ func TestFieldPathExistsRequiresCompletePathInAtLeastOneRow(t *testing.T) {
 	require.False(t, payload.FieldPathExists(rows, "profile.phone"))
 }
 
+func TestResolveFieldPathValuesEmptyArrayRetainsRequiredPath(t *testing.T) {
+	for _, row := range []map[string]any{
+		{"items": []any{}},
+		{"items": []any{map[string]any{"children": []any{}}}},
+	} {
+		values, exists, missing, err := payload.ResolveFieldPathValues(row, "items[].children[].updated_at")
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.False(t, missing)
+		require.Empty(t, values)
+	}
+	_, exists, missing, err := payload.ResolveFieldPathValues(map[string]any{"items": []any{map[string]any{}}}, "items[].updated_at")
+	require.NoError(t, err)
+	require.False(t, exists)
+	require.True(t, missing)
+}
+
 func TestInferFieldTypeMapsRuntimeValues(t *testing.T) {
 	t.Parallel()
 

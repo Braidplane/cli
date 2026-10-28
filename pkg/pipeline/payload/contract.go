@@ -94,6 +94,10 @@ func ResolveFieldPathValues(
 		if !segmentFound {
 			return nil, false, hasMissing, nil
 		}
+		// An empty selected array has no records whose descendant fields can be missing.
+		if len(next) == 0 {
+			return next, pathExists, hasMissing, nil
+		}
 		current = next
 	}
 

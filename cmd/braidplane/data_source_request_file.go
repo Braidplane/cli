@@ -41,15 +41,17 @@ type snowflakeCredentialFile struct {
 }
 
 type httpCredentialFile struct {
-	APIKey          string                   `json:"api_key"`
-	APIKeyFile      string                   `json:"api_key_file"`
-	APIKeyHeader    string                   `json:"api_key_header"`
-	OAuth           *httpOAuthCredentialFile `json:"oauth"`
-	BearerToken     string                   `json:"bearer_token"`
-	BearerTokenFile string                   `json:"bearer_token_file"`
-	Username        string                   `json:"username"`
-	Password        string                   `json:"password"`
-	PasswordFile    string                   `json:"password_file"`
+	SecretHeaders     map[string]string        `json:"secret_headers"`
+	SecretHeaderFiles map[string]string        `json:"secret_header_files"`
+	APIKey            string                   `json:"api_key"`
+	APIKeyFile        string                   `json:"api_key_file"`
+	APIKeyHeader      string                   `json:"api_key_header"`
+	OAuth             *httpOAuthCredentialFile `json:"oauth"`
+	BearerToken       string                   `json:"bearer_token"`
+	BearerTokenFile   string                   `json:"bearer_token_file"`
+	Username          string                   `json:"username"`
+	Password          string                   `json:"password"`
+	PasswordFile      string                   `json:"password_file"`
 }
 
 type httpOAuthCredentialFile struct {
@@ -468,7 +470,7 @@ func decodeDataSourceCredentialsFile(
 			return nil, err
 		}
 		if credentials.OAuth != nil {
-			if credentials.APIKey != "" || credentials.APIKeyFile != "" || credentials.APIKeyHeader != "" || credentials.BearerToken != "" || credentials.BearerTokenFile != "" || credentials.Username != "" || credentials.Password != "" || credentials.PasswordFile != "" {
+			if len(credentials.SecretHeaders) > 0 || len(credentials.SecretHeaderFiles) > 0 || credentials.APIKey != "" || credentials.APIKeyFile != "" || credentials.APIKeyHeader != "" || credentials.BearerToken != "" || credentials.BearerTokenFile != "" || credentials.Username != "" || credentials.Password != "" || credentials.PasswordFile != "" {
 				return nil, xerror.InvalidInput(xerror.DataSource).Detail("HTTP OAuth settings cannot be combined with other credentials")
 			}
 			oauth := credentials.OAuth
@@ -484,6 +486,23 @@ func decodeDataSourceCredentialsFile(
 			flags.HTTPOAuth = &oauth.HTTPOAuthCredentials
 			flags.HTTPOAuthSecrets = secrets
 			return secrets, nil
+		}
+		flags.SecretHeaders = make(map[string]string)
+		var headerSecrets []string
+		for name, value := range credentials.SecretHeaders {
+			flags.SecretHeaders[name] = value
+			headerSecrets = append(headerSecrets, value)
+		}
+		for name, path := range credentials.SecretHeaderFiles {
+			value, secrets, err := readSecretFileValue("secret header", flags.SecretHeaders[name], path, baseDir, true)
+			if err != nil {
+				return nil, err
+			}
+			if strings.ContainsAny(value, "\r\n") {
+				return nil, xerror.InvalidInput(xerror.DataSource).Detail("secret header files must contain the exact header value without line breaks; remove any trailing newline")
+			}
+			flags.SecretHeaders[name] = value
+			headerSecrets = append(headerSecrets, secrets...)
 		}
 		key, keySecrets, err := readSecretFileValue("API key", credentials.APIKey, credentials.APIKeyFile, baseDir, false)
 		if err != nil {
@@ -501,7 +520,7 @@ func decodeDataSourceCredentialsFile(
 		flags.BearerToken = bearer
 		flags.Username = credentials.Username
 		flags.Password = password
-		return append(append(keySecrets, bearerSecrets...), passwordSecrets...), nil
+		return append(headerSecrets, append(append(keySecrets, bearerSecrets...), passwordSecrets...)...), nil
 	case api.DataSourceTypeHubspot:
 		var credentials hubSpotCredentialFile
 		if err := decodeStrictJSON(raw, &credentials, "hubspot credentials"); err != nil {

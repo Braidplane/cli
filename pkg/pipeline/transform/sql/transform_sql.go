@@ -272,7 +272,7 @@ func InferOutputContractWithInputSchema(
 		fields = append(fields, pipepayload.ContractField{
 			Name:      fieldName,
 			Type:      fieldType,
-			Nullable:  true,
+			Nullable:  !detail.nonNull,
 			Precision: detail.precision,
 			Scale:     detail.scale,
 		})
@@ -307,7 +307,7 @@ func outputKindContractFacets(
 func parseAndValidateOutputContractStructure(
 	sql string,
 	contract *pipepayload.Contract,
-) (*ast.SelectStmt, error) {
+) (*transformSelect, error) {
 	selectStmt, _, err := parseTransformSelect(sql)
 	if err != nil {
 		return nil, err
@@ -320,7 +320,7 @@ func parseAndValidateOutputContractStructure(
 }
 
 func validateOutputContractPresence(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	contract *pipepayload.Contract,
 ) error {
 	projectionFields, err := extractProjectionFieldNames(selectStmt)
@@ -359,6 +359,7 @@ func validateOutputContractPresence(
 type transformProjectionTypeDetail struct {
 	fieldType       model.ContractFieldType
 	constructedJSON bool
+	nonNull         bool
 	precision       *int
 	scale           *int
 }
@@ -379,44 +380,18 @@ func (d transformProjectionTypeDetail) typeForOutputKind(
 	return d.fieldType
 }
 
-// extractTransformProjectionWithTypes extracts field names and inferred types from
-// the SELECT projection during post-load validation.
-// Types are inferred using the provided dataSourceType with datasource-specific rules.
-// Unknown means the type cannot be proven in this phase and is treated as contract failure by
-// ValidateOutputContractTypes.
-// Returns a map of field_name -> ContractFieldType. Unknown types map to ContractFieldTypeUnknown.
-func extractTransformProjectionWithTypes(
-	selectStmt *ast.SelectStmt,
-	dataSourceType model.DataSourceType,
-	inputFieldTypes transformInputFieldTypes,
-	inputAliases transformInputRelationAliases,
-) (map[string]model.ContractFieldType, error) {
-	details, err := extractTransformProjectionWithTypeDetails(
-		selectStmt,
-		dataSourceType,
-		inputFieldTypes,
-		inputAliases,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make(map[string]model.ContractFieldType)
-	for fieldName, detail := range details {
-		result[fieldName] = detail.fieldType
-	}
-
-	return result, nil
-}
-
 // extractTransformProjectionWithTypeDetails extracts field names, inferred
 // types, and SQL-helper provenance from the SELECT projection.
 func extractTransformProjectionWithTypeDetails(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	dataSourceType model.DataSourceType,
 	inputFieldTypes transformInputFieldTypes,
 	inputAliases transformInputRelationAliases,
 ) (map[string]transformProjectionTypeDetail, error) {
+	if len(selectStmt.unionAll) > 0 {
+		return inferUnionAllProjection(selectStmt, dataSourceType, inputFieldTypes)
+	}
+
 	result := make(map[string]transformProjectionTypeDetail)
 
 	if selectStmt.Fields == nil || len(selectStmt.Fields.Fields) == 0 {
@@ -434,14 +409,38 @@ func extractTransformProjectionWithTypeDetails(
 			inputFieldTypes,
 			inputAliases,
 		)
+		_, nonNull := field.Expr.(*ast.WindowFuncExpr)
 		var precision, scale *int
 		if fieldType == model.ContractFieldTypeValueDecimal {
 			precision, scale = decimalProjectionDeclaration(field.Expr)
+			if precision == nil {
+				if column, ok := field.Expr.(*ast.ColumnNameExpr); ok {
+					for alias, relation := range inputAliases {
+						if column.Name.Table.L != "" && column.Name.Table.L != alias {
+							continue
+						}
+						if detail, ok := selectStmt.typeDetails[relation+"."+column.Name.Name.L]; ok {
+							precision, scale = detail.precision, detail.scale
+						}
+					}
+				}
+			}
+		}
+		if column, ok := field.Expr.(*ast.ColumnNameExpr); ok && selectStmt.From.TableRefs.Right == nil {
+			for alias, relation := range inputAliases {
+				if column.Name.Table.L != "" && column.Name.Table.L != alias {
+					continue
+				}
+				if detail, ok := selectStmt.typeDetails[relation+"."+column.Name.Name.L]; ok {
+					nonNull = detail.nonNull
+				}
+			}
 		}
 		result[fieldName] = transformProjectionTypeDetail{
 			precision: precision, scale: scale,
 			fieldType:       fieldType,
 			constructedJSON: isJSONConstructionProjectionExpr(field.Expr),
+			nonNull:         nonNull,
 		}
 	}
 
@@ -483,7 +482,7 @@ func contractFieldRootSegment(fieldName string) string {
 // extractTransformNestedJSONProjectionWithTypeDetails derives nested contract
 // paths for constructed JSON projections without changing row/CTE inference.
 func extractTransformNestedJSONProjectionWithTypeDetails(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	dataSourceType model.DataSourceType,
 	inputFieldTypes transformInputFieldTypes,
 	inputAliases transformInputRelationAliases,
@@ -706,7 +705,7 @@ func isJSONConstructionProjectionExpr(expr ast.ExprNode) bool {
 // parseTransformSelect parses SQL text as a SELECT statement and validates it against
 // the sql_v1 MVP surface. Returns the parsed AST, parser warnings (as hints), and any
 // errors.
-func parseTransformSelect(sql string) (*ast.SelectStmt, []string, error) {
+func parseTransformSelect(sql string) (*transformSelect, []string, error) {
 	trimmed := strings.TrimSpace(sql)
 	if trimmed == "" {
 		return nil, nil, ErrRequired
@@ -730,9 +729,9 @@ func parseTransformSelect(sql string) (*ast.SelectStmt, []string, error) {
 		return nil, hints, ErrMultiStatement
 	}
 
-	selectStmt, ok := statements[0].(*ast.SelectStmt)
-	if !ok {
-		return nil, hints, ErrNotSelect
+	selectStmt, err := transformSelectStatement(statements[0])
+	if err != nil {
+		return nil, hints, err
 	}
 
 	// TiDB parses FULL JOIN as an implicit alias followed by an inner join.
@@ -769,7 +768,7 @@ func normalizeTransformSQLShorthand(sql string) string {
 
 // extractProjectionFieldNames extracts the names of all projected fields from a SELECT statement.
 // Validates that projections have explicit aliases (either AS name or column reference).
-func extractProjectionFieldNames(selectStmt *ast.SelectStmt) (map[string]struct{}, error) {
+func extractProjectionFieldNames(selectStmt *transformSelect) (map[string]struct{}, error) {
 	if selectStmt.Fields == nil {
 		return nil, ErrContractInvalid.Detail("select projection is required")
 	}
@@ -818,7 +817,7 @@ func projectionFieldName(field *ast.SelectField) (string, error) {
 }
 
 // validateSelectSubset rejects SQL features outside the MVP sql_v1 surface.
-func validateSelectSubset(selectStmt *ast.SelectStmt) error {
+func validateSelectSubset(selectStmt *transformSelect) error {
 	if err := validateWithCTESubset(selectStmt.With); err != nil {
 		return err
 	}
@@ -828,19 +827,24 @@ func validateSelectSubset(selectStmt *ast.SelectStmt) error {
 
 // validateSelectBodySubset applies the normal SELECT subset rules to one SELECT
 // body, optionally detaching a top-level WITH before the generic AST visitor runs.
-func validateSelectBodySubset(selectStmt *ast.SelectStmt, allowTopLevelWith bool) error {
+func validateSelectBodySubset(selectStmt *transformSelect, allowTopLevelWith bool) error {
 	if selectStmt == nil {
 		return ErrFeatureNotAllowed.Detail("select statement is required")
 	}
 	if selectStmt.With != nil && !allowTopLevelWith {
 		return ErrFeatureNotAllowed.Detail("nested with clauses are not allowed")
 	}
-	if selectStmt.Distinct {
-		return ErrFeatureNotAllowed.Detail("SELECT DISTINCT is not supported")
+	if len(selectStmt.unionAll) > 0 {
+		for _, branch := range selectStmt.unionAll {
+			if err := validateSelectBodySubset(branch, false); err != nil {
+				return err
+			}
+		}
+		return validateTransformOrdering(selectStmt)
 	}
 
-	if selectStmt.Having != nil {
-		return ErrFeatureNotAllowed.Detail("having is not allowed")
+	if selectStmt.Distinct {
+		return ErrFeatureNotAllowed.Detail("SELECT DISTINCT is not supported")
 	}
 
 	if len(selectStmt.WindowSpecs) > 0 {
@@ -881,6 +885,29 @@ func validateSelectBodySubset(selectStmt *ast.SelectStmt, allowTopLevelWith bool
 			return projectionVisitor.err
 		}
 	}
+	if err := validateTransformOrdering(selectStmt); err != nil {
+		return err
+	}
+
+	for _, field := range selectStmt.Fields.Fields {
+		if _, ok := field.Expr.(*ast.WindowFuncExpr); ok {
+			if selectStmt.GroupBy != nil || selectStmt.Having != nil {
+				return ErrFeatureNotAllowed.Detail("ROW_NUMBER must run in a separate transform or CTE after grouping")
+			}
+		}
+	}
+	if err := validateWindowPlacement(selectStmt); err != nil {
+		return err
+	}
+
+	if err := validateGroupBySubset(selectStmt); err != nil {
+		return err
+	}
+
+	return validateHavingSubset(selectStmt)
+}
+
+func validateTransformOrdering(selectStmt *transformSelect) error {
 	if selectStmt.OrderBy != nil {
 		projectionVisitor := &disallowedNodeVisitor{projection: true}
 		selectStmt.OrderBy.Accept(projectionVisitor)
@@ -903,10 +930,6 @@ func validateSelectBodySubset(selectStmt *ast.SelectStmt, allowTopLevelWith bool
 				return xerror.Wrapf("ORDER BY can reference only unqualified projected fields: %w", err)
 			}
 		}
-	}
-
-	if err := validateGroupBySubset(selectStmt); err != nil {
-		return err
 	}
 
 	return nil
@@ -985,27 +1008,27 @@ func cteRelationName(cte *ast.CommonTableExpression) string {
 
 // cteSelectStatement unwraps a CTE body and rejects non-SELECT bodies such as
 // set operations or TABLE statements before runtime materialization can see them.
-func cteSelectStatement(cte *ast.CommonTableExpression) (*ast.SelectStmt, error) {
+func cteSelectStatement(cte *ast.CommonTableExpression) (*transformSelect, error) {
 	if cte == nil || cte.Query == nil || cte.Query.Query == nil {
 		return nil, ErrFeatureNotAllowed.Detail("cte body must be a single SELECT")
 	}
 
-	selectStmt, ok := cte.Query.Query.(*ast.SelectStmt)
-	if !ok {
-		return nil, ErrFeatureNotAllowed.Detail("cte body must be a single SELECT")
-	}
-
-	return selectStmt, nil
+	return transformSelectStatement(cte.Query.Query)
 }
 
 // validateCTEDependencyOrder rejects recursive, cyclic, and forward CTE
 // references while leaving non-CTE relation names for input validation/runtime.
 func validateCTEDependencyOrder(
 	cteName string,
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	allCTENames map[string]struct{},
 	availableCTENames map[string]struct{},
 ) error {
+	for _, branch := range selectStmt.unionAll {
+		if err := validateCTEDependencyOrder(cteName, branch, allCTENames, availableCTENames); err != nil {
+			return err
+		}
+	}
 	referencedRelations := collectTransformRelationNames(selectStmt.From)
 	for relationName := range referencedRelations {
 		if _, isCTE := allCTENames[relationName]; !isCTE {
@@ -1064,7 +1087,7 @@ func collectTransformRelationNamesFromNode(
 	}
 }
 
-func validateGroupBySubset(selectStmt *ast.SelectStmt) error {
+func validateGroupBySubset(selectStmt *transformSelect) error {
 	if selectStmt == nil || selectStmt.GroupBy == nil {
 		return nil
 	}
@@ -1214,8 +1237,8 @@ func (v *disallowedNodeVisitor) Enter(n ast.Node) (ast.Node, bool) {
 			return n, true
 		}
 	case *ast.WindowFuncExpr:
-		v.err = ErrFeatureNotAllowed.Detail("window functions are not allowed")
-		return n, true
+		v.err = validateRowNumber(node)
+		return n, v.err != nil
 	case *ast.SetOprStmt:
 		v.err = ErrFeatureNotAllowed.Detail("set operations are not allowed")
 		return n, true

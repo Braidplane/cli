@@ -19,6 +19,21 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AbandonProjectRepositorySetupRequestPreserveResources.
+const (
+	AbandonProjectRepositorySetupRequestPreserveResourcesTrue AbandonProjectRepositorySetupRequestPreserveResources = true
+)
+
+// Valid indicates whether the value is a known member of the AbandonProjectRepositorySetupRequestPreserveResources enum.
+func (e AbandonProjectRepositorySetupRequestPreserveResources) Valid() bool {
+	switch e {
+	case AbandonProjectRepositorySetupRequestPreserveResourcesTrue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AlertDeliveryAttemptStatus.
 const (
 	AlertDeliveryAttemptStatusFailed  AlertDeliveryAttemptStatus = "failed"
@@ -46,6 +61,7 @@ func (e AlertDeliveryAttemptStatus) Valid() bool {
 // Defines values for AlertDestinationType.
 const (
 	AlertDestinationTypeEmail   AlertDestinationType = "email"
+	AlertDestinationTypeSlack   AlertDestinationType = "slack"
 	AlertDestinationTypeUnknown AlertDestinationType = "unknown"
 )
 
@@ -53,6 +69,8 @@ const (
 func (e AlertDestinationType) Valid() bool {
 	switch e {
 	case AlertDestinationTypeEmail:
+		return true
+	case AlertDestinationTypeSlack:
 		return true
 	case AlertDestinationTypeUnknown:
 		return true
@@ -382,6 +400,39 @@ const (
 func (e CreatePostgresDataSourceRequestType) Valid() bool {
 	switch e {
 	case CreatePostgresDataSourceRequestTypePostgres:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateProjectRepositoryRequestCreatePrivateRepository.
+const (
+	CreateProjectRepositoryRequestCreatePrivateRepositoryTrue CreateProjectRepositoryRequestCreatePrivateRepository = true
+)
+
+// Valid indicates whether the value is a known member of the CreateProjectRepositoryRequestCreatePrivateRepository enum.
+func (e CreateProjectRepositoryRequestCreatePrivateRepository) Valid() bool {
+	switch e {
+	case CreateProjectRepositoryRequestCreatePrivateRepositoryTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateProjectRepositoryRequestProvider.
+const (
+	CreateProjectRepositoryRequestProviderGithub CreateProjectRepositoryRequestProvider = "github"
+	CreateProjectRepositoryRequestProviderGitlab CreateProjectRepositoryRequestProvider = "gitlab"
+)
+
+// Valid indicates whether the value is a known member of the CreateProjectRepositoryRequestProvider enum.
+func (e CreateProjectRepositoryRequestProvider) Valid() bool {
+	switch e {
+	case CreateProjectRepositoryRequestProviderGithub:
+		return true
+	case CreateProjectRepositoryRequestProviderGitlab:
 		return true
 	default:
 		return false
@@ -746,6 +797,7 @@ const (
 	EventActionTestConnection EventAction = "test_connection"
 	EventActionUnknown        EventAction = "unknown"
 	EventActionUpdate         EventAction = "update"
+	EventActionValidate       EventAction = "validate"
 )
 
 // Valid indicates whether the value is a known member of the EventAction enum.
@@ -796,6 +848,8 @@ func (e EventAction) Valid() bool {
 	case EventActionUnknown:
 		return true
 	case EventActionUpdate:
+		return true
+	case EventActionValidate:
 		return true
 	default:
 		return false
@@ -1549,6 +1603,36 @@ func (e HTTPStatementType) Valid() bool {
 	}
 }
 
+// Defines values for HTTPWriteRetryPayloadConflict.
+const (
+	HTTPWriteRetryPayloadConflictReject HTTPWriteRetryPayloadConflict = "reject"
+)
+
+// Valid indicates whether the value is a known member of the HTTPWriteRetryPayloadConflict enum.
+func (e HTTPWriteRetryPayloadConflict) Valid() bool {
+	switch e {
+	case HTTPWriteRetryPayloadConflictReject:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HTTPWriteRetryVerified.
+const (
+	HTTPWriteRetryVerifiedTrue HTTPWriteRetryVerified = true
+)
+
+// Valid indicates whether the value is a known member of the HTTPWriteRetryVerified enum.
+func (e HTTPWriteRetryVerified) Valid() bool {
+	switch e {
+	case HTTPWriteRetryVerifiedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HubSpotFilterOperator.
 const (
 	BETWEEN        HubSpotFilterOperator = "BETWEEN"
@@ -1909,6 +1993,21 @@ func (e NotificationLifecycleState) Valid() bool {
 	}
 }
 
+// Defines values for NotificationProvider.
+const (
+	NotificationProviderSlack NotificationProvider = "slack"
+)
+
+// Valid indicates whether the value is a known member of the NotificationProvider enum.
+func (e NotificationProvider) Valid() bool {
+	switch e {
+	case NotificationProviderSlack:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NotificationSeverity.
 const (
 	NotificationSeverityCritical NotificationSeverity = "critical"
@@ -1939,6 +2038,7 @@ const (
 	NotificationTypePipelineFreshnessSLABreached NotificationType = "pipeline.freshness_sla_breached"
 	NotificationTypePipelineRetryExhausted       NotificationType = "pipeline.retry_exhausted"
 	NotificationTypePipelineRunFailed            NotificationType = "pipeline.run_failed"
+	NotificationTypePipelineRunSucceeded         NotificationType = "pipeline.run_succeeded"
 	NotificationTypePipelineScheduledRunDelayed  NotificationType = "pipeline.scheduled_run_delayed"
 	NotificationTypePipelineScheduledRunMissing  NotificationType = "pipeline.scheduled_run_missing"
 	NotificationTypeUnknown                      NotificationType = "unknown"
@@ -1954,6 +2054,8 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypePipelineRetryExhausted:
 		return true
 	case NotificationTypePipelineRunFailed:
+		return true
+	case NotificationTypePipelineRunSucceeded:
 		return true
 	case NotificationTypePipelineScheduledRunDelayed:
 		return true
@@ -2020,24 +2122,6 @@ func (e ODCSConsumerImpactOrigin) Valid() bool {
 	case Deployed:
 		return true
 	case Draft:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ODCSConsumerImpactPort.
-const (
-	ODCSConsumerImpactPortInput  ODCSConsumerImpactPort = "input"
-	ODCSConsumerImpactPortOutput ODCSConsumerImpactPort = "output"
-)
-
-// Valid indicates whether the value is a known member of the ODCSConsumerImpactPort enum.
-func (e ODCSConsumerImpactPort) Valid() bool {
-	switch e {
-	case ODCSConsumerImpactPortInput:
-		return true
-	case ODCSConsumerImpactPortOutput:
 		return true
 	default:
 		return false
@@ -2125,6 +2209,63 @@ func (e ODCSObjectImpactComparison) Valid() bool {
 	}
 }
 
+// Defines values for ODCSObjectImpactComparisonScope.
+const (
+	FlatRevision       ODCSObjectImpactComparisonScope = "flat_revision"
+	SelectedProjection ODCSObjectImpactComparisonScope = "selected_projection"
+)
+
+// Valid indicates whether the value is a known member of the ODCSObjectImpactComparisonScope enum.
+func (e ODCSObjectImpactComparisonScope) Valid() bool {
+	switch e {
+	case FlatRevision:
+		return true
+	case SelectedProjection:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ODCSProjectionMappingRepresentation.
+const (
+	ODCSProjectionMappingRepresentationCsv  ODCSProjectionMappingRepresentation = "csv"
+	ODCSProjectionMappingRepresentationJson ODCSProjectionMappingRepresentation = "json"
+	ODCSProjectionMappingRepresentationRows ODCSProjectionMappingRepresentation = "rows"
+)
+
+// Valid indicates whether the value is a known member of the ODCSProjectionMappingRepresentation enum.
+func (e ODCSProjectionMappingRepresentation) Valid() bool {
+	switch e {
+	case ODCSProjectionMappingRepresentationCsv:
+		return true
+	case ODCSProjectionMappingRepresentationJson:
+		return true
+	case ODCSProjectionMappingRepresentationRows:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ODCSProjectionMappingRootShape.
+const (
+	ODCSProjectionMappingRootShapeArray  ODCSProjectionMappingRootShape = "array"
+	ODCSProjectionMappingRootShapeObject ODCSProjectionMappingRootShape = "object"
+)
+
+// Valid indicates whether the value is a known member of the ODCSProjectionMappingRootShape enum.
+func (e ODCSProjectionMappingRootShape) Valid() bool {
+	switch e {
+	case ODCSProjectionMappingRootShapeArray:
+		return true
+	case ODCSProjectionMappingRootShapeObject:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ODCSRevisionOdcsVersion.
 const (
 	ODCSRevisionOdcsVersionV320 ODCSRevisionOdcsVersion = "v3.2.0"
@@ -2194,6 +2335,57 @@ const (
 func (e ODCSRevisionMetadataStatus) Valid() bool {
 	switch e {
 	case ODCSRevisionMetadataStatusRecorded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ODCSStructuralKind.
+const (
+	ODCSStructuralKindArray         ODCSStructuralKind = "array"
+	ODCSStructuralKindBoolean       ODCSStructuralKind = "boolean"
+	ODCSStructuralKindDate          ODCSStructuralKind = "date"
+	ODCSStructuralKindDecimal       ODCSStructuralKind = "decimal"
+	ODCSStructuralKindInstant       ODCSStructuralKind = "instant"
+	ODCSStructuralKindInteger       ODCSStructuralKind = "integer"
+	ODCSStructuralKindLocalDatetime ODCSStructuralKind = "local_datetime"
+	ODCSStructuralKindLocalTime     ODCSStructuralKind = "local_time"
+	ODCSStructuralKindMap           ODCSStructuralKind = "map"
+	ODCSStructuralKindNumber        ODCSStructuralKind = "number"
+	ODCSStructuralKindObject        ODCSStructuralKind = "object"
+	ODCSStructuralKindString        ODCSStructuralKind = "string"
+	ODCSStructuralKindVector        ODCSStructuralKind = "vector"
+)
+
+// Valid indicates whether the value is a known member of the ODCSStructuralKind enum.
+func (e ODCSStructuralKind) Valid() bool {
+	switch e {
+	case ODCSStructuralKindArray:
+		return true
+	case ODCSStructuralKindBoolean:
+		return true
+	case ODCSStructuralKindDate:
+		return true
+	case ODCSStructuralKindDecimal:
+		return true
+	case ODCSStructuralKindInstant:
+		return true
+	case ODCSStructuralKindInteger:
+		return true
+	case ODCSStructuralKindLocalDatetime:
+		return true
+	case ODCSStructuralKindLocalTime:
+		return true
+	case ODCSStructuralKindMap:
+		return true
+	case ODCSStructuralKindNumber:
+		return true
+	case ODCSStructuralKindObject:
+		return true
+	case ODCSStructuralKindString:
+		return true
+	case ODCSStructuralKindVector:
 		return true
 	default:
 		return false
@@ -2410,6 +2602,84 @@ func (e PermissionAction) Valid() bool {
 	}
 }
 
+// Defines values for PipelineCompiledPlanStatus.
+const (
+	PipelineCompiledPlanStatusAvailable   PipelineCompiledPlanStatus = "available"
+	PipelineCompiledPlanStatusUnsupported PipelineCompiledPlanStatus = "unsupported"
+)
+
+// Valid indicates whether the value is a known member of the PipelineCompiledPlanStatus enum.
+func (e PipelineCompiledPlanStatus) Valid() bool {
+	switch e {
+	case PipelineCompiledPlanStatusAvailable:
+		return true
+	case PipelineCompiledPlanStatusUnsupported:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineCompletionCondition.
+const (
+	PipelineCompletionConditionFinalFailure PipelineCompletionCondition = "final_failure"
+	PipelineCompletionConditionSuccess      PipelineCompletionCondition = "success"
+)
+
+// Valid indicates whether the value is a known member of the PipelineCompletionCondition enum.
+func (e PipelineCompletionCondition) Valid() bool {
+	switch e {
+	case PipelineCompletionConditionFinalFailure:
+		return true
+	case PipelineCompletionConditionSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineContractPinInspectionOrigin.
+const (
+	PipelineContractPinInspectionOriginOperation PipelineContractPinInspectionOrigin = "operation"
+	PipelineContractPinInspectionOriginStep      PipelineContractPinInspectionOrigin = "step"
+)
+
+// Valid indicates whether the value is a known member of the PipelineContractPinInspectionOrigin enum.
+func (e PipelineContractPinInspectionOrigin) Valid() bool {
+	switch e {
+	case PipelineContractPinInspectionOriginOperation:
+		return true
+	case PipelineContractPinInspectionOriginStep:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineCreationProposalStatus.
+const (
+	CreationBranchPushed  PipelineCreationProposalStatus = "branch_pushed"
+	CreationProposalOpen  PipelineCreationProposalStatus = "proposal_open"
+	CreationPublishFailed PipelineCreationProposalStatus = "publish_failed"
+	CreationPublishQueued PipelineCreationProposalStatus = "publish_queued"
+)
+
+// Valid indicates whether the value is a known member of the PipelineCreationProposalStatus enum.
+func (e PipelineCreationProposalStatus) Valid() bool {
+	switch e {
+	case CreationBranchPushed:
+		return true
+	case CreationProposalOpen:
+		return true
+	case CreationPublishFailed:
+		return true
+	case CreationPublishQueued:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PipelineDataSourceRefSyncStatus.
 const (
 	PipelineDataSourceRefSyncStatusCreated   PipelineDataSourceRefSyncStatus = "created"
@@ -2434,6 +2704,7 @@ func (e PipelineDataSourceRefSyncStatus) Valid() bool {
 // Defines values for PipelineDraftDraftState.
 const (
 	Abandoned      PipelineDraftDraftState = "abandoned"
+	BranchPushed   PipelineDraftDraftState = "branch_pushed"
 	Editing        PipelineDraftDraftState = "editing"
 	ProposalClosed PipelineDraftDraftState = "proposal_closed"
 	ProposalOpen   PipelineDraftDraftState = "proposal_open"
@@ -2445,6 +2716,8 @@ const (
 func (e PipelineDraftDraftState) Valid() bool {
 	switch e {
 	case Abandoned:
+		return true
+	case BranchPushed:
 		return true
 	case Editing:
 		return true
@@ -2463,6 +2736,7 @@ func (e PipelineDraftDraftState) Valid() bool {
 
 // Defines values for PipelineDraftProposalProvider.
 const (
+	PipelineDraftProposalProviderGit    PipelineDraftProposalProvider = "git"
 	PipelineDraftProposalProviderGithub PipelineDraftProposalProvider = "github"
 	PipelineDraftProposalProviderGitlab PipelineDraftProposalProvider = "gitlab"
 )
@@ -2470,6 +2744,8 @@ const (
 // Valid indicates whether the value is a known member of the PipelineDraftProposalProvider enum.
 func (e PipelineDraftProposalProvider) Valid() bool {
 	switch e {
+	case PipelineDraftProposalProviderGit:
+		return true
 	case PipelineDraftProposalProviderGithub:
 		return true
 	case PipelineDraftProposalProviderGitlab:
@@ -2502,8 +2778,9 @@ func (e PipelineDraftProposalState) Valid() bool {
 
 // Defines values for PipelineDraftPublicationMode.
 const (
-	DelegatedUser       PipelineDraftPublicationMode = "delegated_user"
-	OrganizationService PipelineDraftPublicationMode = "organization_service"
+	DelegatedUser        PipelineDraftPublicationMode = "delegated_user"
+	OrganizationService  PipelineDraftPublicationMode = "organization_service"
+	RepositoryCredential PipelineDraftPublicationMode = "repository_credential"
 )
 
 // Valid indicates whether the value is a known member of the PipelineDraftPublicationMode enum.
@@ -2512,6 +2789,8 @@ func (e PipelineDraftPublicationMode) Valid() bool {
 	case DelegatedUser:
 		return true
 	case OrganizationService:
+		return true
+	case RepositoryCredential:
 		return true
 	default:
 		return false
@@ -2809,6 +3088,54 @@ func (e PipelineReconcileSkippedReason) Valid() bool {
 	}
 }
 
+// Defines values for PipelineResourceScopePolicyId.
+const (
+	S3relativeKeyv1 PipelineResourceScopePolicyId = "s3/relative-key/v1"
+)
+
+// Valid indicates whether the value is a known member of the PipelineResourceScopePolicyId enum.
+func (e PipelineResourceScopePolicyId) Valid() bool {
+	switch e {
+	case S3relativeKeyv1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineResourceScopeRepresentation.
+const (
+	PipelineResourceScopeRepresentationRows PipelineResourceScopeRepresentation = "rows"
+)
+
+// Valid indicates whether the value is a known member of the PipelineResourceScopeRepresentation enum.
+func (e PipelineResourceScopeRepresentation) Valid() bool {
+	switch e {
+	case PipelineResourceScopeRepresentationRows:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineResourceScopeSelectionRole.
+const (
+	PipelineResourceScopeSelectionRoleQuery PipelineResourceScopeSelectionRole = "query"
+	PipelineResourceScopeSelectionRoleSink  PipelineResourceScopeSelectionRole = "sink"
+)
+
+// Valid indicates whether the value is a known member of the PipelineResourceScopeSelectionRole enum.
+func (e PipelineResourceScopeSelectionRole) Valid() bool {
+	switch e {
+	case PipelineResourceScopeSelectionRoleQuery:
+		return true
+	case PipelineResourceScopeSelectionRoleSink:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PipelineRunAPISourceSummaryEntrypoint.
 const (
 	PipelineRunAPISourceSummaryEntrypointApi PipelineRunAPISourceSummaryEntrypoint = "api"
@@ -2839,6 +3166,45 @@ func (e PipelineRunAPISourceSummaryType) Valid() bool {
 	}
 }
 
+// Defines values for PipelineRunCheckEvidenceBatchScope.
+const (
+	ObservedBatchCompletenessUnknown PipelineRunCheckEvidenceBatchScope = "observed_batch_completeness_unknown"
+	TruncatedBatch                   PipelineRunCheckEvidenceBatchScope = "truncated_batch"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunCheckEvidenceBatchScope enum.
+func (e PipelineRunCheckEvidenceBatchScope) Valid() bool {
+	switch e {
+	case ObservedBatchCompletenessUnknown:
+		return true
+	case TruncatedBatch:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineRunCheckWindowKind.
+const (
+	PipelineRunCheckWindowBackfill    PipelineRunCheckWindowKind = "backfill"
+	PipelineRunCheckWindowFull        PipelineRunCheckWindowKind = "full"
+	PipelineRunCheckWindowIncremental PipelineRunCheckWindowKind = "incremental"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunCheckWindowKind enum.
+func (e PipelineRunCheckWindowKind) Valid() bool {
+	switch e {
+	case PipelineRunCheckWindowBackfill:
+		return true
+	case PipelineRunCheckWindowFull:
+		return true
+	case PipelineRunCheckWindowIncremental:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PipelineRunCheckpointStatus.
 const (
 	PipelineRunCheckpointStatusBlocked       PipelineRunCheckpointStatus = "blocked"
@@ -2860,6 +3226,60 @@ func (e PipelineRunCheckpointStatus) Valid() bool {
 	case PipelineRunCheckpointStatusSkipped:
 		return true
 	case PipelineRunCheckpointStatusUnchanged:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineRunCompletionSourceSummaryEntrypoint.
+const (
+	PipelineRunCompletionSourceSummaryEntrypointScheduler PipelineRunCompletionSourceSummaryEntrypoint = "scheduler"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunCompletionSourceSummaryEntrypoint enum.
+func (e PipelineRunCompletionSourceSummaryEntrypoint) Valid() bool {
+	switch e {
+	case PipelineRunCompletionSourceSummaryEntrypointScheduler:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineRunCompletionSourceSummaryType.
+const (
+	PipelineRunCompletionSourceSummaryTypeCompletion PipelineRunCompletionSourceSummaryType = "completion"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunCompletionSourceSummaryType enum.
+func (e PipelineRunCompletionSourceSummaryType) Valid() bool {
+	switch e {
+	case PipelineRunCompletionSourceSummaryTypeCompletion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineRunCompositionInspectionStatus.
+const (
+	PipelineRunCompositionInspectionStatusAvailable   PipelineRunCompositionInspectionStatus = "available"
+	PipelineRunCompositionInspectionStatusNotRecorded PipelineRunCompositionInspectionStatus = "not_recorded"
+	PipelineRunCompositionInspectionStatusUnavailable PipelineRunCompositionInspectionStatus = "unavailable"
+	PipelineRunCompositionInspectionStatusUnsupported PipelineRunCompositionInspectionStatus = "unsupported"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunCompositionInspectionStatus enum.
+func (e PipelineRunCompositionInspectionStatus) Valid() bool {
+	switch e {
+	case PipelineRunCompositionInspectionStatusAvailable:
+		return true
+	case PipelineRunCompositionInspectionStatusNotRecorded:
+		return true
+	case PipelineRunCompositionInspectionStatusUnavailable:
+		return true
+	case PipelineRunCompositionInspectionStatusUnsupported:
 		return true
 	default:
 		return false
@@ -2931,7 +3351,11 @@ func (e PipelineRunFailureKind) Valid() bool {
 
 // Defines values for PipelineRunFailureReasonCode.
 const (
+	DataSourceConnectionFailed  PipelineRunFailureReasonCode = "data_source_connection_failed"
 	DataSourceCredentialsFailed PipelineRunFailureReasonCode = "data_source_credentials_failed"
+	DataSourcePermissionDenied  PipelineRunFailureReasonCode = "data_source_permission_denied"
+	DataSourceTimeout           PipelineRunFailureReasonCode = "data_source_timeout"
+	ResourceScopeRejected       PipelineRunFailureReasonCode = "resource_scope_rejected"
 	S3ObjectWriteFailed         PipelineRunFailureReasonCode = "s3_object_write_failed"
 	SinkContractMismatch        PipelineRunFailureReasonCode = "sink_contract_mismatch"
 	SourceQueryFailed           PipelineRunFailureReasonCode = "source_query_failed"
@@ -2943,7 +3367,15 @@ const (
 // Valid indicates whether the value is a known member of the PipelineRunFailureReasonCode enum.
 func (e PipelineRunFailureReasonCode) Valid() bool {
 	switch e {
+	case DataSourceConnectionFailed:
+		return true
 	case DataSourceCredentialsFailed:
+		return true
+	case DataSourcePermissionDenied:
+		return true
+	case DataSourceTimeout:
+		return true
+	case ResourceScopeRejected:
 		return true
 	case S3ObjectWriteFailed:
 		return true
@@ -3109,6 +3541,30 @@ func (e PipelineRunMode) Valid() bool {
 	}
 }
 
+// Defines values for PipelineRunProgressWorkerLiveness.
+const (
+	PipelineRunProgressWorkerLivenessRecent      PipelineRunProgressWorkerLiveness = "recent"
+	PipelineRunProgressWorkerLivenessStale       PipelineRunProgressWorkerLiveness = "stale"
+	PipelineRunProgressWorkerLivenessTerminal    PipelineRunProgressWorkerLiveness = "terminal"
+	PipelineRunProgressWorkerLivenessUnavailable PipelineRunProgressWorkerLiveness = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunProgressWorkerLiveness enum.
+func (e PipelineRunProgressWorkerLiveness) Valid() bool {
+	switch e {
+	case PipelineRunProgressWorkerLivenessRecent:
+		return true
+	case PipelineRunProgressWorkerLivenessStale:
+		return true
+	case PipelineRunProgressWorkerLivenessTerminal:
+		return true
+	case PipelineRunProgressWorkerLivenessUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PipelineRunReplaySafetyStatus.
 const (
 	PipelineRunReplaySafetyStatusBlocked PipelineRunReplaySafetyStatus = "blocked"
@@ -3265,6 +3721,123 @@ func (e PipelineRunStepInputSnapshotSinkReplayStrategy) Valid() bool {
 	case PipelineRunStepInputSnapshotSinkReplayStrategyNaturallyIdempotent:
 		return true
 	case PipelineRunStepInputSnapshotSinkReplayStrategyUnsafe:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineRunStructuralCheckOrigin.
+const (
+	PipelineRunStructuralCheckOriginOperation PipelineRunStructuralCheckOrigin = "operation"
+	PipelineRunStructuralCheckOriginStep      PipelineRunStructuralCheckOrigin = "step"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunStructuralCheckOrigin enum.
+func (e PipelineRunStructuralCheckOrigin) Valid() bool {
+	switch e {
+	case PipelineRunStructuralCheckOriginOperation:
+		return true
+	case PipelineRunStructuralCheckOriginStep:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineRunStructuralCheckPhase.
+const (
+	PipelineRunStructuralCheckPhaseEventAdmission  PipelineRunStructuralCheckPhase = "event_admission"
+	PipelineRunStructuralCheckPhaseNormalizedInput PipelineRunStructuralCheckPhase = "normalized_input"
+	PipelineRunStructuralCheckPhasePreSink         PipelineRunStructuralCheckPhase = "pre_sink"
+	PipelineRunStructuralCheckPhaseProducerOutput  PipelineRunStructuralCheckPhase = "producer_output"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunStructuralCheckPhase enum.
+func (e PipelineRunStructuralCheckPhase) Valid() bool {
+	switch e {
+	case PipelineRunStructuralCheckPhaseEventAdmission:
+		return true
+	case PipelineRunStructuralCheckPhaseNormalizedInput:
+		return true
+	case PipelineRunStructuralCheckPhasePreSink:
+		return true
+	case PipelineRunStructuralCheckPhaseProducerOutput:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineRunStructuralCheckReasonCode.
+const (
+	Conformant            PipelineRunStructuralCheckReasonCode = "conformant"
+	ContractViolation     PipelineRunStructuralCheckReasonCode = "contract_violation"
+	DownstreamNotReached  PipelineRunStructuralCheckReasonCode = "downstream_not_reached"
+	EmptyBatch            PipelineRunStructuralCheckReasonCode = "empty_batch"
+	Evaluating            PipelineRunStructuralCheckReasonCode = "evaluating"
+	EvaluationError       PipelineRunStructuralCheckReasonCode = "evaluation_error"
+	EvaluationInterrupted PipelineRunStructuralCheckReasonCode = "evaluation_interrupted"
+	EvaluatorUnavailable  PipelineRunStructuralCheckReasonCode = "evaluator_unavailable"
+	NotReached            PipelineRunStructuralCheckReasonCode = "not_reached"
+	PayloadUnavailable    PipelineRunStructuralCheckReasonCode = "payload_unavailable"
+	PersistenceFailed     PipelineRunStructuralCheckReasonCode = "persistence_failed"
+	RetainedOutputReused  PipelineRunStructuralCheckReasonCode = "retained_output_reused"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunStructuralCheckReasonCode enum.
+func (e PipelineRunStructuralCheckReasonCode) Valid() bool {
+	switch e {
+	case Conformant:
+		return true
+	case ContractViolation:
+		return true
+	case DownstreamNotReached:
+		return true
+	case EmptyBatch:
+		return true
+	case Evaluating:
+		return true
+	case EvaluationError:
+		return true
+	case EvaluationInterrupted:
+		return true
+	case EvaluatorUnavailable:
+		return true
+	case NotReached:
+		return true
+	case PayloadUnavailable:
+		return true
+	case PersistenceFailed:
+		return true
+	case RetainedOutputReused:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineRunStructuralCheckStatus.
+const (
+	PipelineRunStructuralCheckStatusError       PipelineRunStructuralCheckStatus = "error"
+	PipelineRunStructuralCheckStatusFailed      PipelineRunStructuralCheckStatus = "failed"
+	PipelineRunStructuralCheckStatusPassed      PipelineRunStructuralCheckStatus = "passed"
+	PipelineRunStructuralCheckStatusSkipped     PipelineRunStructuralCheckStatus = "skipped"
+	PipelineRunStructuralCheckStatusUnavailable PipelineRunStructuralCheckStatus = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunStructuralCheckStatus enum.
+func (e PipelineRunStructuralCheckStatus) Valid() bool {
+	switch e {
+	case PipelineRunStructuralCheckStatusError:
+		return true
+	case PipelineRunStructuralCheckStatusFailed:
+		return true
+	case PipelineRunStructuralCheckStatusPassed:
+		return true
+	case PipelineRunStructuralCheckStatusSkipped:
+		return true
+	case PipelineRunStructuralCheckStatusUnavailable:
 		return true
 	default:
 		return false
@@ -3495,16 +4068,16 @@ func (e PipelineSchemaContractFieldValidationsFormat) Valid() bool {
 
 // Defines values for PipelineSinkSpecEmptyInputPolicy.
 const (
-	Reject PipelineSinkSpecEmptyInputPolicy = "reject"
-	Skip   PipelineSinkSpecEmptyInputPolicy = "skip"
+	PipelineSinkSpecEmptyInputPolicyReject PipelineSinkSpecEmptyInputPolicy = "reject"
+	PipelineSinkSpecEmptyInputPolicySkip   PipelineSinkSpecEmptyInputPolicy = "skip"
 )
 
 // Valid indicates whether the value is a known member of the PipelineSinkSpecEmptyInputPolicy enum.
 func (e PipelineSinkSpecEmptyInputPolicy) Valid() bool {
 	switch e {
-	case Reject:
+	case PipelineSinkSpecEmptyInputPolicyReject:
 		return true
-	case Skip:
+	case PipelineSinkSpecEmptyInputPolicySkip:
 		return true
 	default:
 		return false
@@ -3742,6 +4315,36 @@ func (e PipelineTriggerBackoffStrategy) Valid() bool {
 	}
 }
 
+// Defines values for PipelineTriggerCompletionWithOtherConfigType.
+const (
+	PipelineTriggerCompletionWithOtherConfigTypeCompletion PipelineTriggerCompletionWithOtherConfigType = "completion"
+)
+
+// Valid indicates whether the value is a known member of the PipelineTriggerCompletionWithOtherConfigType enum.
+func (e PipelineTriggerCompletionWithOtherConfigType) Valid() bool {
+	switch e {
+	case PipelineTriggerCompletionWithOtherConfigTypeCompletion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineTriggerCompletionWithoutCompletionConfigType.
+const (
+	PipelineTriggerCompletionWithoutCompletionConfigTypeCompletion PipelineTriggerCompletionWithoutCompletionConfigType = "completion"
+)
+
+// Valid indicates whether the value is a known member of the PipelineTriggerCompletionWithoutCompletionConfigType enum.
+func (e PipelineTriggerCompletionWithoutCompletionConfigType) Valid() bool {
+	switch e {
+	case PipelineTriggerCompletionWithoutCompletionConfigTypeCompletion:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PipelineTriggerLatestDeployedVersionPolicyWithPinnedHashMode.
 const (
 	PipelineTriggerLatestDeployedVersionPolicyWithPinnedHashModeLatestDeployed PipelineTriggerLatestDeployedVersionPolicyWithPinnedHashMode = "latest_deployed"
@@ -3751,6 +4354,24 @@ const (
 func (e PipelineTriggerLatestDeployedVersionPolicyWithPinnedHashMode) Valid() bool {
 	switch e {
 	case PipelineTriggerLatestDeployedVersionPolicyWithPinnedHashModeLatestDeployed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineTriggerOtherWithCompletionConfigType.
+const (
+	PipelineTriggerOtherWithCompletionConfigTypeSchedule PipelineTriggerOtherWithCompletionConfigType = "schedule"
+	PipelineTriggerOtherWithCompletionConfigTypeWebhook  PipelineTriggerOtherWithCompletionConfigType = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the PipelineTriggerOtherWithCompletionConfigType enum.
+func (e PipelineTriggerOtherWithCompletionConfigType) Valid() bool {
+	switch e {
+	case PipelineTriggerOtherWithCompletionConfigTypeSchedule:
+		return true
+	case PipelineTriggerOtherWithCompletionConfigTypeWebhook:
 		return true
 	default:
 		return false
@@ -3870,13 +4491,13 @@ func (e PipelineTriggerScheduleMisfirePolicy) Valid() bool {
 
 // Defines values for PipelineTriggerScheduleWithWebhookConfigType.
 const (
-	Schedule PipelineTriggerScheduleWithWebhookConfigType = "schedule"
+	PipelineTriggerScheduleWithWebhookConfigTypeSchedule PipelineTriggerScheduleWithWebhookConfigType = "schedule"
 )
 
 // Valid indicates whether the value is a known member of the PipelineTriggerScheduleWithWebhookConfigType enum.
 func (e PipelineTriggerScheduleWithWebhookConfigType) Valid() bool {
 	switch e {
-	case Schedule:
+	case PipelineTriggerScheduleWithWebhookConfigTypeSchedule:
 		return true
 	default:
 		return false
@@ -3900,13 +4521,16 @@ func (e PipelineTriggerScheduleWithoutScheduleConfigType) Valid() bool {
 
 // Defines values for PipelineTriggerType.
 const (
-	PipelineTriggerTypeSchedule PipelineTriggerType = "schedule"
-	PipelineTriggerTypeWebhook  PipelineTriggerType = "webhook"
+	PipelineTriggerTypeCompletion PipelineTriggerType = "completion"
+	PipelineTriggerTypeSchedule   PipelineTriggerType = "schedule"
+	PipelineTriggerTypeWebhook    PipelineTriggerType = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the PipelineTriggerType enum.
 func (e PipelineTriggerType) Valid() bool {
 	switch e {
+	case PipelineTriggerTypeCompletion:
+		return true
 	case PipelineTriggerTypeSchedule:
 		return true
 	case PipelineTriggerTypeWebhook:
@@ -3936,13 +4560,13 @@ func (e PipelineTriggerVersionPolicyMode) Valid() bool {
 
 // Defines values for PipelineTriggerWebhookWithScheduleConfigType.
 const (
-	Webhook PipelineTriggerWebhookWithScheduleConfigType = "webhook"
+	PipelineTriggerWebhookWithScheduleConfigTypeWebhook PipelineTriggerWebhookWithScheduleConfigType = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the PipelineTriggerWebhookWithScheduleConfigType enum.
 func (e PipelineTriggerWebhookWithScheduleConfigType) Valid() bool {
 	switch e {
-	case Webhook:
+	case PipelineTriggerWebhookWithScheduleConfigTypeWebhook:
 		return true
 	default:
 		return false
@@ -4111,6 +4735,30 @@ func (e PostgresStatementType) Valid() bool {
 	}
 }
 
+// Defines values for ProjectRepositorySetupStatus.
+const (
+	ProjectRepositorySetupStatusAttached          ProjectRepositorySetupStatus = "attached"
+	ProjectRepositorySetupStatusPending           ProjectRepositorySetupStatus = "pending"
+	ProjectRepositorySetupStatusRepositoryCreated ProjectRepositorySetupStatus = "repository_created"
+	ProjectRepositorySetupStatusSourceCreated     ProjectRepositorySetupStatus = "source_created"
+)
+
+// Valid indicates whether the value is a known member of the ProjectRepositorySetupStatus enum.
+func (e ProjectRepositorySetupStatus) Valid() bool {
+	switch e {
+	case ProjectRepositorySetupStatusAttached:
+		return true
+	case ProjectRepositorySetupStatusPending:
+		return true
+	case ProjectRepositorySetupStatusRepositoryCreated:
+		return true
+	case ProjectRepositorySetupStatusSourceCreated:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProofClaimFamily.
 const (
 	ProofClaimFamilyAccessCapability    ProofClaimFamily = "access_capability"
@@ -4161,6 +4809,7 @@ const (
 	ProofEvidenceLevelBoundedExecution ProofEvidenceLevel = "bounded_execution"
 	ProofEvidenceLevelCachedObserved   ProofEvidenceLevel = "cached_observed"
 	ProofEvidenceLevelLiveReadOnly     ProofEvidenceLevel = "live_read_only"
+	ProofEvidenceLevelOperational      ProofEvidenceLevel = "operational"
 	ProofEvidenceLevelStatic           ProofEvidenceLevel = "static"
 )
 
@@ -4172,6 +4821,8 @@ func (e ProofEvidenceLevel) Valid() bool {
 	case ProofEvidenceLevelCachedObserved:
 		return true
 	case ProofEvidenceLevelLiveReadOnly:
+		return true
+	case ProofEvidenceLevelOperational:
 		return true
 	case ProofEvidenceLevelStatic:
 		return true
@@ -4240,6 +4891,72 @@ func (e ProofLifecycleLinkKind) Valid() bool {
 	case ProofLifecycleLinkKindDeployment:
 		return true
 	case ProofLifecycleLinkKindRun:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProofOperationalSelectionOrigin.
+const (
+	ProofOperationalSelectionOriginOperation ProofOperationalSelectionOrigin = "operation"
+	ProofOperationalSelectionOriginStep      ProofOperationalSelectionOrigin = "step"
+)
+
+// Valid indicates whether the value is a known member of the ProofOperationalSelectionOrigin enum.
+func (e ProofOperationalSelectionOrigin) Valid() bool {
+	switch e {
+	case ProofOperationalSelectionOriginOperation:
+		return true
+	case ProofOperationalSelectionOriginStep:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProofOperationalSelectionPhase.
+const (
+	ProofOperationalSelectionPhaseEventAdmission  ProofOperationalSelectionPhase = "event_admission"
+	ProofOperationalSelectionPhaseNormalizedInput ProofOperationalSelectionPhase = "normalized_input"
+	ProofOperationalSelectionPhasePreSink         ProofOperationalSelectionPhase = "pre_sink"
+	ProofOperationalSelectionPhaseProducerOutput  ProofOperationalSelectionPhase = "producer_output"
+)
+
+// Valid indicates whether the value is a known member of the ProofOperationalSelectionPhase enum.
+func (e ProofOperationalSelectionPhase) Valid() bool {
+	switch e {
+	case ProofOperationalSelectionPhaseEventAdmission:
+		return true
+	case ProofOperationalSelectionPhaseNormalizedInput:
+		return true
+	case ProofOperationalSelectionPhasePreSink:
+		return true
+	case ProofOperationalSelectionPhaseProducerOutput:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProofReceiptOperationalEvidenceStatus.
+const (
+	ProofReceiptOperationalEvidenceStatusAvailable ProofReceiptOperationalEvidenceStatus = "available"
+	ProofReceiptOperationalEvidenceStatusChanged   ProofReceiptOperationalEvidenceStatus = "changed"
+	ProofReceiptOperationalEvidenceStatusExpired   ProofReceiptOperationalEvidenceStatus = "expired"
+	ProofReceiptOperationalEvidenceStatusMissing   ProofReceiptOperationalEvidenceStatus = "missing"
+)
+
+// Valid indicates whether the value is a known member of the ProofReceiptOperationalEvidenceStatus enum.
+func (e ProofReceiptOperationalEvidenceStatus) Valid() bool {
+	switch e {
+	case ProofReceiptOperationalEvidenceStatusAvailable:
+		return true
+	case ProofReceiptOperationalEvidenceStatusChanged:
+		return true
+	case ProofReceiptOperationalEvidenceStatusExpired:
+		return true
+	case ProofReceiptOperationalEvidenceStatusMissing:
 		return true
 	default:
 		return false
@@ -4786,15 +5503,39 @@ func (e StartProviderDataSourceInstallRequestType) Valid() bool {
 	}
 }
 
+// Defines values for SuccessfulRunRecencyOutcome.
+const (
+	SuccessfulRunRecencyOutcomeBreached    SuccessfulRunRecencyOutcome = "breached"
+	SuccessfulRunRecencyOutcomeGrace       SuccessfulRunRecencyOutcome = "grace"
+	SuccessfulRunRecencyOutcomeHealthy     SuccessfulRunRecencyOutcome = "healthy"
+	SuccessfulRunRecencyOutcomeUnavailable SuccessfulRunRecencyOutcome = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the SuccessfulRunRecencyOutcome enum.
+func (e SuccessfulRunRecencyOutcome) Valid() bool {
+	switch e {
+	case SuccessfulRunRecencyOutcomeBreached:
+		return true
+	case SuccessfulRunRecencyOutcomeGrace:
+		return true
+	case SuccessfulRunRecencyOutcomeHealthy:
+		return true
+	case SuccessfulRunRecencyOutcomeUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TermsAcceptanceRequestTermsAccepted.
 const (
-	True TermsAcceptanceRequestTermsAccepted = true
+	TermsAcceptanceRequestTermsAcceptedTrue TermsAcceptanceRequestTermsAccepted = true
 )
 
 // Valid indicates whether the value is a known member of the TermsAcceptanceRequestTermsAccepted enum.
 func (e TermsAcceptanceRequestTermsAccepted) Valid() bool {
 	switch e {
-	case True:
+	case TermsAcceptanceRequestTermsAcceptedTrue:
 		return true
 	default:
 		return false
@@ -5428,6 +6169,57 @@ const (
 func (e RunFieldParam) Valid() bool {
 	switch e {
 	case RunFieldParamRunCreatedAt:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityAuditEventFieldParam.
+const (
+	SecurityAuditEventFieldParamSecurityAuditEventOccurredAt SecurityAuditEventFieldParam = "event_occurred_at"
+)
+
+// Valid indicates whether the value is a known member of the SecurityAuditEventFieldParam enum.
+func (e SecurityAuditEventFieldParam) Valid() bool {
+	switch e {
+	case SecurityAuditEventFieldParamSecurityAuditEventOccurredAt:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityAuditEventOrderParam.
+const (
+	SecurityAuditEventOrderParamSecurityAuditEventOrderAsc  SecurityAuditEventOrderParam = "asc"
+	SecurityAuditEventOrderParamSecurityAuditEventOrderDesc SecurityAuditEventOrderParam = "desc"
+)
+
+// Valid indicates whether the value is a known member of the SecurityAuditEventOrderParam enum.
+func (e SecurityAuditEventOrderParam) Valid() bool {
+	switch e {
+	case SecurityAuditEventOrderParamSecurityAuditEventOrderAsc:
+		return true
+	case SecurityAuditEventOrderParamSecurityAuditEventOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityAuditEventPageDirectionParam.
+const (
+	SecurityAuditEventPageDirectionParamSecurityAuditEventPageNext SecurityAuditEventPageDirectionParam = "next"
+	SecurityAuditEventPageDirectionParamSecurityAuditEventPagePrev SecurityAuditEventPageDirectionParam = "prev"
+)
+
+// Valid indicates whether the value is a known member of the SecurityAuditEventPageDirectionParam enum.
+func (e SecurityAuditEventPageDirectionParam) Valid() bool {
+	switch e {
+	case SecurityAuditEventPageDirectionParamSecurityAuditEventPageNext:
+		return true
+	case SecurityAuditEventPageDirectionParamSecurityAuditEventPagePrev:
 		return true
 	default:
 		return false
@@ -6649,6 +7441,57 @@ func (e ListRolesParamsDirection) Valid() bool {
 	}
 }
 
+// Defines values for ListSecurityAuditEventsParamsSortBy.
+const (
+	ListSecurityAuditEventsParamsSortBySecurityAuditEventOccurredAt ListSecurityAuditEventsParamsSortBy = "event_occurred_at"
+)
+
+// Valid indicates whether the value is a known member of the ListSecurityAuditEventsParamsSortBy enum.
+func (e ListSecurityAuditEventsParamsSortBy) Valid() bool {
+	switch e {
+	case ListSecurityAuditEventsParamsSortBySecurityAuditEventOccurredAt:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListSecurityAuditEventsParamsOrder.
+const (
+	ListSecurityAuditEventsParamsOrderSecurityAuditEventOrderAsc  ListSecurityAuditEventsParamsOrder = "asc"
+	ListSecurityAuditEventsParamsOrderSecurityAuditEventOrderDesc ListSecurityAuditEventsParamsOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the ListSecurityAuditEventsParamsOrder enum.
+func (e ListSecurityAuditEventsParamsOrder) Valid() bool {
+	switch e {
+	case ListSecurityAuditEventsParamsOrderSecurityAuditEventOrderAsc:
+		return true
+	case ListSecurityAuditEventsParamsOrderSecurityAuditEventOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListSecurityAuditEventsParamsDirection.
+const (
+	ListSecurityAuditEventsParamsDirectionSecurityAuditEventPageNext ListSecurityAuditEventsParamsDirection = "next"
+	ListSecurityAuditEventsParamsDirectionSecurityAuditEventPagePrev ListSecurityAuditEventsParamsDirection = "prev"
+)
+
+// Valid indicates whether the value is a known member of the ListSecurityAuditEventsParamsDirection enum.
+func (e ListSecurityAuditEventsParamsDirection) Valid() bool {
+	switch e {
+	case ListSecurityAuditEventsParamsDirectionSecurityAuditEventPageNext:
+		return true
+	case ListSecurityAuditEventsParamsDirectionSecurityAuditEventPagePrev:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListPersonalAccessTokensParamsSortBy.
 const (
 	ListPersonalAccessTokensParamsSortByPersonalAccessTokenCreatedAt ListPersonalAccessTokensParamsSortBy = "personal_access_token_created_at"
@@ -6746,6 +7589,15 @@ type APIKeyWithToken struct {
 	TokenPrefix       string             `json:"token_prefix"`
 	UpdatedAt         Timestamp          `json:"updated_at"`
 }
+
+// AbandonProjectRepositorySetupRequest defines model for AbandonProjectRepositorySetupRequest.
+type AbandonProjectRepositorySetupRequest struct {
+	PreserveResources AbandonProjectRepositorySetupRequestPreserveResources `json:"preserve_resources"`
+	SetupSlug         Slug                                                  `json:"setup_slug"`
+}
+
+// AbandonProjectRepositorySetupRequestPreserveResources defines model for AbandonProjectRepositorySetupRequest.PreserveResources.
+type AbandonProjectRepositorySetupRequestPreserveResources bool
 
 // AlertDeliveryAttempt defines model for AlertDeliveryAttempt.
 type AlertDeliveryAttempt struct {
@@ -6923,8 +7775,9 @@ type AlertPolicySourceMetadata struct {
 
 // AlertPolicySourceMetadataResponse defines model for AlertPolicySourceMetadataResponse.
 type AlertPolicySourceMetadataResponse struct {
-	SourceRefs []AlertPolicySourceRefOption `json:"source_refs"`
-	Sources    []AlertPolicySourceMetadata  `json:"sources"`
+	NotificationTypes []NotificationType           `json:"notification_types"`
+	SourceRefs        []AlertPolicySourceRefOption `json:"source_refs"`
+	Sources           []AlertPolicySourceMetadata  `json:"sources"`
 }
 
 // AlertPolicySourceRef defines model for AlertPolicySourceRef.
@@ -7162,6 +8015,22 @@ type CreatePostgresDataSourceRequest struct {
 
 // CreatePostgresDataSourceRequestType defines model for CreatePostgresDataSourceRequest.Type.
 type CreatePostgresDataSourceRequestType string
+
+// CreateProjectRepositoryRequest defines model for CreateProjectRepositoryRequest.
+type CreateProjectRepositoryRequest struct {
+	CreatePrivateRepository CreateProjectRepositoryRequestCreatePrivateRepository `json:"create_private_repository"`
+	Owner                   string                                                `json:"owner"`
+	PipelineDir             *string                                               `json:"pipeline_dir,omitempty"`
+	Provider                CreateProjectRepositoryRequestProvider                `json:"provider"`
+	RepositoryName          string                                                `json:"repository_name"`
+	TrackedBranch           *string                                               `json:"tracked_branch,omitempty"`
+}
+
+// CreateProjectRepositoryRequestCreatePrivateRepository defines model for CreateProjectRepositoryRequest.CreatePrivateRepository.
+type CreateProjectRepositoryRequestCreatePrivateRepository bool
+
+// CreateProjectRepositoryRequestProvider defines model for CreateProjectRepositoryRequest.Provider.
+type CreateProjectRepositoryRequestProvider string
 
 // CreateS3DataSourceRequest defines model for CreateS3DataSourceRequest.
 type CreateS3DataSourceRequest struct {
@@ -8026,6 +8895,19 @@ type GoogleWorkspaceWorksheet struct {
 	WorksheetId int    `json:"worksheet_id"`
 }
 
+// HTTPAcknowledgement defines model for HTTPAcknowledgement.
+type HTTPAcknowledgement struct {
+	EmptyFields *[]string                  `json:"empty_fields,omitempty"`
+	StatusCodes []int                      `json:"status_codes"`
+	Success     []HTTPAcknowledgementCheck `json:"success"`
+}
+
+// HTTPAcknowledgementCheck defines model for HTTPAcknowledgementCheck.
+type HTTPAcknowledgementCheck struct {
+	Equals json.RawMessage `json:"equals"`
+	Path   string          `json:"path"`
+}
+
 // HTTPConfig defines model for HTTPConfig.
 type HTTPConfig struct {
 	AllowPrivateHosts          *bool   `json:"allow_private_hosts,omitempty"`
@@ -8038,12 +8920,13 @@ type HTTPConfig struct {
 
 // HTTPCredentials defines model for HTTPCredentials.
 type HTTPCredentials struct {
-	ApiKey       *string                      `json:"api_key,omitempty"`
-	ApiKeyHeader *HTTPCredentialsApiKeyHeader `json:"api_key_header,omitempty"`
-	BearerToken  *string                      `json:"bearer_token,omitempty"`
-	Oauth        *HTTPOAuthCredentials        `json:"oauth,omitempty"`
-	Password     *string                      `json:"password,omitempty"`
-	Username     *string                      `json:"username,omitempty"`
+	ApiKey        *string                      `json:"api_key,omitempty"`
+	ApiKeyHeader  *HTTPCredentialsApiKeyHeader `json:"api_key_header,omitempty"`
+	BearerToken   *string                      `json:"bearer_token,omitempty"`
+	Oauth         *HTTPOAuthCredentials        `json:"oauth,omitempty"`
+	Password      *string                      `json:"password,omitempty"`
+	SecretHeaders *map[string]string           `json:"secret_headers,omitempty"`
+	Username      *string                      `json:"username,omitempty"`
 }
 
 // HTTPCredentialsApiKeyHeader defines model for HTTPCredentials.ApiKeyHeader.
@@ -8104,6 +8987,7 @@ type HTTPPagination struct {
 	CursorParam    *string `json:"cursor_param,omitempty"`
 	MaxPages       int     `json:"max_pages"`
 	NextCursorPath *string `json:"next_cursor_path,omitempty"`
+	NextLinkPath   *string `json:"next_link_path,omitempty"`
 	PageNumberPath *string `json:"page_number_path,omitempty"`
 	PageParam      *string `json:"page_param,omitempty"`
 	PageSize       *int    `json:"page_size,omitempty"`
@@ -8120,6 +9004,9 @@ type HTTPPagination0 = interface{}
 // HTTPPagination1 defines model for HTTPPagination.1.
 type HTTPPagination1 = interface{}
 
+// HTTPPagination2 defines model for HTTPPagination.2.
+type HTTPPagination2 = interface{}
+
 // HTTPSchemaResponse defines model for HTTPSchemaResponse.
 type HTTPSchemaResponse struct {
 	Operations []OperationInfo              `json:"operations"`
@@ -8131,17 +9018,19 @@ type HTTPSchemaResponseSchemaType string
 
 // HTTPStatement defines model for HTTPStatement.
 type HTTPStatement struct {
-	Body interface{} `json:"body,omitempty"`
+	Acknowledgement *HTTPAcknowledgement `json:"acknowledgement,omitempty"`
+	Body            interface{}          `json:"body,omitempty"`
 
-	// Headers HTTP headers (supports {{paramName}} placeholders in values)
+	// Headers Non-secret HTTP headers (supports {{paramName}} placeholders in values); keep authentication values in encrypted data-source credentials.
 	//
-	// Example: {"Authorization":"Bearer {{token}}"}
+	// Example: {"Content-Type":"application/json"}
 	Headers     *map[string]string      `json:"headers,omitempty"`
 	Method      HTTPStatementMethod     `json:"method"`
 	Pagination  *HTTPPagination         `json:"pagination,omitempty"`
 	Path        string                  `json:"path"`
 	QueryParams *map[string]interface{} `json:"query_params,omitempty"`
 	Type        HTTPStatementType       `json:"type"`
+	WriteRetry  *HTTPWriteRetry         `json:"write_retry,omitempty"`
 }
 
 // HTTPStatementMethod defines model for HTTPStatement.Method.
@@ -8149,6 +9038,21 @@ type HTTPStatementMethod string
 
 // HTTPStatementType defines model for HTTPStatement.Type.
 type HTTPStatementType string
+
+// HTTPWriteRetry defines model for HTTPWriteRetry.
+type HTTPWriteRetry struct {
+	KeyHeader           string                        `json:"key_header"`
+	PayloadConflict     HTTPWriteRetryPayloadConflict `json:"payload_conflict"`
+	ProviderContractUrl string                        `json:"provider_contract_url"`
+	RetentionSeconds    int                           `json:"retention_seconds"`
+	Verified            HTTPWriteRetryVerified        `json:"verified"`
+}
+
+// HTTPWriteRetryPayloadConflict defines model for HTTPWriteRetry.PayloadConflict.
+type HTTPWriteRetryPayloadConflict string
+
+// HTTPWriteRetryVerified defines model for HTTPWriteRetry.Verified.
+type HTTPWriteRetryVerified bool
 
 // HubSpotConfig defines model for HubSpotConfig.
 type HubSpotConfig struct {
@@ -8451,17 +9355,24 @@ type NewMemberInvitation struct {
 	Role  MemberRole `json:"role"`
 }
 
+// NewNotificationConnection defines model for NewNotificationConnection.
+type NewNotificationConnection struct {
+	Name     Name                 `json:"name"`
+	Provider NotificationProvider `json:"provider"`
+	Slug     *Slug                `json:"slug,omitempty"`
+}
+
 // NewODCSContract defines model for NewODCSContract.
 type NewODCSContract struct {
-	Name   string `json:"name"`
-	OdcsId string `json:"odcs_id"`
-	Slug   string `json:"slug"`
+	Name   string  `json:"name"`
+	OdcsId string  `json:"odcs_id"`
+	Slug   *string `json:"slug,omitempty"`
 }
 
 // NewODCSRevision defines model for NewODCSRevision.
 type NewODCSRevision struct {
 	Document json.RawMessage `json:"document"`
-	Slug     string          `json:"slug"`
+	Slug     *string         `json:"slug,omitempty"`
 }
 
 // NewOrgRole defines model for NewOrgRole.
@@ -8488,16 +9399,17 @@ type NewPersonalAccessToken struct {
 
 // NewPipelineTrigger defines model for NewPipelineTrigger.
 type NewPipelineTrigger struct {
-	Enabled          bool                           `json:"enabled"`
-	Name             Name                           `json:"name"`
-	PipelineSlug     Slug                           `json:"pipeline_slug"`
-	RetryPolicy      PipelineTriggerRetryPolicy     `json:"retry_policy"`
-	RuntimeInputKeys []string                       `json:"runtime_input_keys"`
-	Schedule         *PipelineTriggerScheduleConfig `json:"schedule,omitempty"`
-	Slug             *Slug                          `json:"slug,omitempty"`
-	Type             PipelineTriggerType            `json:"type"`
-	VersionPolicy    PipelineTriggerVersionPolicy   `json:"version_policy"`
-	Webhook          *PipelineWebhookConfigInput    `json:"webhook,omitempty"`
+	Completion       *PipelineTriggerCompletionConfig `json:"completion,omitempty"`
+	Enabled          bool                             `json:"enabled"`
+	Name             Name                             `json:"name"`
+	PipelineSlug     Slug                             `json:"pipeline_slug"`
+	RetryPolicy      PipelineTriggerRetryPolicy       `json:"retry_policy"`
+	RuntimeInputKeys []string                         `json:"runtime_input_keys"`
+	Schedule         *PipelineTriggerScheduleConfig   `json:"schedule,omitempty"`
+	Slug             *Slug                            `json:"slug,omitempty"`
+	Type             PipelineTriggerType              `json:"type"`
+	VersionPolicy    PipelineTriggerVersionPolicy     `json:"version_policy"`
+	Webhook          *PipelineWebhookConfigInput      `json:"webhook,omitempty"`
 }
 
 // NewProject defines model for NewProject.
@@ -8521,6 +9433,21 @@ type NewQuery struct {
 	TimeoutSeconds           *int                     `json:"timeout_seconds,omitempty"`
 }
 
+// NotificationConnection defines model for NotificationConnection.
+type NotificationConnection struct {
+	Metadata  NotificationConnectionMetadata `json:"metadata"`
+	Name      Name                           `json:"name"`
+	Provider  NotificationProvider           `json:"provider"`
+	Slug      Slug                           `json:"slug"`
+	Status    CredentialStatus               `json:"status"`
+	UpdatedAt Timestamp                      `json:"updated_at"`
+}
+
+// NotificationConnectionMetadata defines model for NotificationConnectionMetadata.
+type NotificationConnectionMetadata struct {
+	union json.RawMessage
+}
+
 // NotificationDispatchStatus defines model for NotificationDispatchStatus.
 type NotificationDispatchStatus string
 
@@ -8541,6 +9468,9 @@ type NotificationListResponse struct {
 	Notifications []NotificationRecord `json:"notifications"`
 	PrevCursor    *string              `json:"prev_cursor,omitempty"`
 }
+
+// NotificationProvider defines model for NotificationProvider.
+type NotificationProvider string
 
 // NotificationRecord defines model for NotificationRecord.
 type NotificationRecord struct {
@@ -8615,7 +9545,7 @@ type ODCSConsumerImpact struct {
 	Impact          *DriftImpactReportPreview    `json:"impact,omitempty"`
 	Origin          ODCSConsumerImpactOrigin     `json:"origin"`
 	PipelineSlug    string                       `json:"pipeline_slug"`
-	Port            ODCSConsumerImpactPort       `json:"port"`
+	Port            string                       `json:"port"`
 	ProjectSlug     string                       `json:"project_slug"`
 	RevisionSlug    string                       `json:"revision_slug"`
 	SchemaObjectId  string                       `json:"schema_object_id"`
@@ -8628,9 +9558,6 @@ type ODCSConsumerImpactComparison string
 
 // ODCSConsumerImpactOrigin defines model for ODCSConsumerImpact.Origin.
 type ODCSConsumerImpactOrigin string
-
-// ODCSConsumerImpactPort defines model for ODCSConsumerImpact.Port.
-type ODCSConsumerImpactPort string
 
 // ODCSContract defines model for ODCSContract.
 type ODCSContract struct {
@@ -8689,6 +9616,13 @@ type ODCSImpactDiagnostic struct {
 	RevisionSlug string  `json:"revision_slug"`
 }
 
+// ODCSImpactPlanSelection defines model for ODCSImpactPlanSelection.
+type ODCSImpactPlanSelection struct {
+	Digest          string `json:"digest"`
+	PipelineSlug    Slug   `json:"pipeline_slug"`
+	ProjectionInput *int   `json:"projection_input,omitempty"`
+}
+
 // ODCSInspectionDiagnostic defines model for ODCSInspectionDiagnostic.
 type ODCSInspectionDiagnostic struct {
 	Code    string `json:"code"`
@@ -8698,14 +9632,62 @@ type ODCSInspectionDiagnostic struct {
 
 // ODCSObjectImpact defines model for ODCSObjectImpact.
 type ODCSObjectImpact struct {
-	Changes        []ODCSImpactChange         `json:"changes"`
-	Comparison     ODCSObjectImpactComparison `json:"comparison"`
-	Diagnostics    []ODCSImpactDiagnostic     `json:"diagnostics"`
-	SchemaObjectId string                     `json:"schema_object_id"`
+	Changes         []ODCSImpactChange               `json:"changes"`
+	Comparison      ODCSObjectImpactComparison       `json:"comparison"`
+	ComparisonScope *ODCSObjectImpactComparisonScope `json:"comparison_scope,omitempty"`
+	Diagnostics     []ODCSImpactDiagnostic           `json:"diagnostics"`
+	SchemaObjectId  string                           `json:"schema_object_id"`
 }
 
 // ODCSObjectImpactComparison defines model for ODCSObjectImpact.Comparison.
 type ODCSObjectImpactComparison string
+
+// ODCSObjectImpactComparisonScope defines model for ODCSObjectImpact.ComparisonScope.
+type ODCSObjectImpactComparisonScope string
+
+// ODCSProjectionInputSelection defines model for ODCSProjectionInputSelection.
+type ODCSProjectionInputSelection struct {
+	ContractSlug   Slug                  `json:"contract_slug"`
+	Digest         string                `json:"digest"`
+	Mapping        ODCSProjectionMapping `json:"mapping"`
+	RevisionSlug   string                `json:"revision_slug"`
+	SchemaObjectId string                `json:"schema_object_id"`
+	Variables      *map[string]struct {
+		Revision string `json:"revision"`
+		Value    string `json:"value"`
+	} `json:"variables,omitempty"`
+}
+
+// ODCSProjectionMapping defines model for ODCSProjectionMapping.
+type ODCSProjectionMapping struct {
+	Id       string `json:"id"`
+	Physical *map[string]struct {
+		Bits        *int               `json:"bits,omitempty"`
+		Kind        ODCSStructuralKind `json:"kind"`
+		LogicalType string             `json:"logical_type"`
+		Precision   *int               `json:"precision,omitempty"`
+		Scale       *int               `json:"scale,omitempty"`
+	} `json:"physical,omitempty"`
+	Representation ODCSProjectionMappingRepresentation `json:"representation"`
+	RootShape      *ODCSProjectionMappingRootShape     `json:"root_shape,omitempty"`
+	Types          []ODCSStructuralKind                `json:"types"`
+}
+
+// ODCSProjectionMappingRepresentation defines model for ODCSProjectionMapping.Representation.
+type ODCSProjectionMappingRepresentation string
+
+// ODCSProjectionMappingRootShape defines model for ODCSProjectionMapping.RootShape.
+type ODCSProjectionMappingRootShape string
+
+// ODCSProjectionSelection defines model for ODCSProjectionSelection.
+type ODCSProjectionSelection struct {
+	Inputs        []ODCSProjectionInputSelection `json:"inputs"`
+	Relationships *[]struct {
+		Input  int    `json:"input"`
+		Path   string `json:"path"`
+		Target int    `json:"target"`
+	} `json:"relationships,omitempty"`
+}
 
 // ODCSRevision defines model for ODCSRevision.
 type ODCSRevision struct {
@@ -8732,10 +9714,12 @@ type ODCSRevisionImpact struct {
 	ContractSlug      string                              `json:"contract_slug"`
 	ExternalConsumers ODCSRevisionImpactExternalConsumers `json:"external_consumers"`
 	FromDigest        string                              `json:"from_digest"`
+	FromPlan          *ODCSImpactPlanSelection            `json:"from_plan,omitempty"`
 	FromRevisionSlug  string                              `json:"from_revision_slug"`
 	Objects           []ODCSObjectImpact                  `json:"objects"`
 	ProjectSlug       string                              `json:"project_slug"`
 	ToDigest          string                              `json:"to_digest"`
+	ToPlan            *ODCSImpactPlanSelection            `json:"to_plan,omitempty"`
 	ToRevisionSlug    string                              `json:"to_revision_slug"`
 }
 
@@ -8744,8 +9728,10 @@ type ODCSRevisionImpactExternalConsumers string
 
 // ODCSRevisionImpactRequest defines model for ODCSRevisionImpactRequest.
 type ODCSRevisionImpactRequest struct {
-	FromRevisionSlug Slug `json:"from_revision_slug"`
-	ToRevisionSlug   Slug `json:"to_revision_slug"`
+	FromPlan         *ODCSImpactPlanSelection `json:"from_plan,omitempty"`
+	FromRevisionSlug Slug                     `json:"from_revision_slug"`
+	ToPlan           *ODCSImpactPlanSelection `json:"to_plan,omitempty"`
+	ToRevisionSlug   Slug                     `json:"to_revision_slug"`
 }
 
 // ODCSRevisionInspection defines model for ODCSRevisionInspection.
@@ -8758,6 +9744,7 @@ type ODCSRevisionInspection struct {
 	ProjectionAvailable bool                       `json:"projection_available"`
 	Revision            ODCSRevision               `json:"revision"`
 	SchemaObjectId      string                     `json:"schema_object_id"`
+	Shape               *PipelineSchemaContract    `json:"shape,omitempty"`
 }
 
 // ODCSRevisionListResponse defines model for ODCSRevisionListResponse.
@@ -8791,6 +9778,9 @@ type ODCSSchemaObject struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 }
+
+// ODCSStructuralKind defines model for ODCSStructuralKind.
+type ODCSStructuralKind string
 
 // ObjectAPIFieldInfo defines model for ObjectAPIFieldInfo.
 type ObjectAPIFieldInfo struct {
@@ -8920,11 +9910,13 @@ type OrganizationEntitlementStatus string
 
 // OrganizationEntitlementLimits defines model for OrganizationEntitlementLimits.
 type OrganizationEntitlementLimits struct {
-	DataSources       *int `json:"data_sources"`
-	DeployedPipelines *int `json:"deployed_pipelines"`
-	Members           *int `json:"members"`
-	PipelineRuns      *int `json:"pipeline_runs"`
-	Projects          *int `json:"projects"`
+	ActiveLogicalPipelines *int `json:"active_logical_pipelines"`
+	ConcurrentPipelineRuns *int `json:"concurrent_pipeline_runs"`
+	DataSources            *int `json:"data_sources"`
+	DeployedPipelines      *int `json:"deployed_pipelines"`
+	Members                *int `json:"members"`
+	PipelineRuns           *int `json:"pipeline_runs"`
+	Projects               *int `json:"projects"`
 }
 
 // OrganizationListResponse defines model for OrganizationListResponse.
@@ -9071,6 +10063,113 @@ type PipelineBackfillRequest struct {
 type PipelineBackfillWindow struct {
 	LowerBound json.RawMessage `json:"lower_bound"`
 	UpperBound json.RawMessage `json:"upper_bound"`
+}
+
+// PipelineCompilationRequest defines model for PipelineCompilationRequest.
+type PipelineCompilationRequest struct {
+	Projection     *ODCSProjectionSelection          `json:"projection,omitempty"`
+	ResourceScopes *[]PipelineResourceScopeSelection `json:"resource_scopes,omitempty"`
+}
+
+// PipelineCompiledPlan defines model for PipelineCompiledPlan.
+type PipelineCompiledPlan struct {
+	AdmissionEnabled   bool                            `json:"admission_enabled"`
+	CompilerId         *string                         `json:"compiler_id,omitempty"`
+	Digest             string                          `json:"digest"`
+	Operations         []PipelineOperationInspection   `json:"operations"`
+	Pins               []PipelineContractPinInspection `json:"pins"`
+	PipelineSlug       Slug                            `json:"pipeline_slug"`
+	Projections        *[]PipelineProjectionInspection `json:"projections,omitempty"`
+	SourceCommit       *string                         `json:"source_commit,omitempty"`
+	SourcePath         *string                         `json:"source_path,omitempty"`
+	SpecHash           string                          `json:"spec_hash"`
+	Status             PipelineCompiledPlanStatus      `json:"status"`
+	StructuralPolicyId *string                         `json:"structural_policy_id,omitempty"`
+}
+
+// PipelineCompiledPlanStatus defines model for PipelineCompiledPlan.Status.
+type PipelineCompiledPlanStatus string
+
+// PipelineCompletionAttempt defines model for PipelineCompletionAttempt.
+type PipelineCompletionAttempt struct {
+	AttemptNumber      int    `json:"attempt_number"`
+	DeploymentRevision *int64 `json:"deployment_revision"`
+	RunSlug            Slug   `json:"run_slug"`
+	Status             string `json:"status"`
+	VersionHash        string `json:"version_hash"`
+}
+
+// PipelineCompletionCondition defines model for PipelineCompletionCondition.
+type PipelineCompletionCondition string
+
+// PipelineCompletionDecision defines model for PipelineCompletionDecision.
+type PipelineCompletionDecision struct {
+	ChildOutcome               *string                      `json:"child_outcome"`
+	ChildRunSlug               *NullableSlug                `json:"child_run_slug"`
+	ChildStatus                *string                      `json:"child_status"`
+	Condition                  *PipelineCompletionCondition `json:"condition"`
+	DecisionReason             *string                      `json:"decision_reason"`
+	DownstreamPipelineSlug     Slug                         `json:"downstream_pipeline_slug"`
+	FinalAttemptRunSlug        Slug                         `json:"final_attempt_run_slug"`
+	RootRunSlug                Slug                         `json:"root_run_slug"`
+	SelectedDeploymentRevision *int64                       `json:"selected_deployment_revision"`
+	SelectedResolutionDigest   *string                      `json:"selected_resolution_digest"`
+	SelectedVersionHash        *string                      `json:"selected_version_hash"`
+	State                      string                       `json:"state"`
+	TriggerRevision            int64                        `json:"trigger_revision"`
+	TriggerSlug                Slug                         `json:"trigger_slug"`
+	UpstreamPipelineSlug       Slug                         `json:"upstream_pipeline_slug"`
+}
+
+// PipelineConnectedRun defines model for PipelineConnectedRun.
+type PipelineConnectedRun struct {
+	Completion   PipelineRunCompletion `json:"completion"`
+	PipelineSlug Slug                  `json:"pipeline_slug"`
+}
+
+// PipelineContractPinInspection defines model for PipelineContractPinInspection.
+type PipelineContractPinInspection struct {
+	CompilerId     string                              `json:"compiler_id"`
+	ContractSlug   Slug                                `json:"contract_slug"`
+	Digest         string                              `json:"digest"`
+	Origin         PipelineContractPinInspectionOrigin `json:"origin"`
+	Port           string                              `json:"port"`
+	Representation string                              `json:"representation"`
+	RevisionSlug   Slug                                `json:"revision_slug"`
+	RootShape      string                              `json:"root_shape"`
+	SchemaObjectId string                              `json:"schema_object_id"`
+	Step           Slug                                `json:"step"`
+}
+
+// PipelineContractPinInspectionOrigin defines model for PipelineContractPinInspection.Origin.
+type PipelineContractPinInspectionOrigin string
+
+// PipelineCreationProposal defines model for PipelineCreationProposal.
+type PipelineCreationProposal struct {
+	BranchHeadSha    *string                        `json:"branch_head_sha,omitempty"`
+	BranchName       *string                        `json:"branch_name,omitempty"`
+	FailureCode      *string                        `json:"failure_code,omitempty"`
+	InitiatingMember Slug                           `json:"initiating_member"`
+	PipelineSlug     Slug                           `json:"pipeline_slug"`
+	ProjectSlug      Slug                           `json:"project_slug"`
+	ProposalProvider *string                        `json:"proposal_provider,omitempty"`
+	ProposalState    *string                        `json:"proposal_state,omitempty"`
+	ProposalUrl      *string                        `json:"proposal_url,omitempty"`
+	Slug             Slug                           `json:"slug"`
+	SourcePath       string                         `json:"source_path"`
+	Spec             PipelineSpec                   `json:"spec"`
+	SpecHash         string                         `json:"spec_hash"`
+	Status           PipelineCreationProposalStatus `json:"status"`
+}
+
+// PipelineCreationProposalStatus defines model for PipelineCreationProposal.Status.
+type PipelineCreationProposalStatus string
+
+// PipelineCreationProposalListResponse defines model for PipelineCreationProposalListResponse.
+type PipelineCreationProposalListResponse struct {
+	HasMore           bool                       `json:"has_more"`
+	NextCursor        *Slug                      `json:"next_cursor,omitempty"`
+	PipelineCreations []PipelineCreationProposal `json:"pipeline_creations"`
 }
 
 // PipelineDataSourceRefSyncItem defines model for PipelineDataSourceRefSyncItem.
@@ -9314,6 +10413,35 @@ type PipelineODCSContractRefRepresentation string
 // PipelineODCSContractRefRootShape defines model for PipelineODCSContractRef.RootShape.
 type PipelineODCSContractRefRootShape string
 
+// PipelineOperationInspection defines model for PipelineOperationInspection.
+type PipelineOperationInspection struct {
+	Digest        string                           `json:"digest"`
+	OperationSlug Slug                             `json:"operation_slug"`
+	ResourceScope *PipelineResourceScopeInspection `json:"resource_scope,omitempty"`
+	Revision      string                           `json:"revision"`
+	Role          string                           `json:"role"`
+	Step          Slug                             `json:"step"`
+}
+
+// PipelineOperationalCapabilities defines model for PipelineOperationalCapabilities.
+type PipelineOperationalCapabilities struct {
+	NotificationTypes    []NotificationType `json:"notification_types"`
+	SuccessfulRunRecency bool               `json:"successful_run_recency"`
+}
+
+// PipelineProjectionInspection defines model for PipelineProjectionInspection.
+type PipelineProjectionInspection struct {
+	ContractSlug   string `json:"contract_slug"`
+	Digest         string `json:"digest"`
+	Input          int    `json:"input"`
+	MappingId      string `json:"mapping_id"`
+	Representation string `json:"representation"`
+	ResolvedDigest string `json:"resolved_digest"`
+	RevisionSlug   string `json:"revision_slug"`
+	RootShape      string `json:"root_shape"`
+	SchemaObjectId string `json:"schema_object_id"`
+}
+
 // PipelineQueryRef defines model for PipelineQueryRef.
 type PipelineQueryRef struct {
 	DataSourceRef     Slug                               `json:"data_source_ref"`
@@ -9444,6 +10572,52 @@ type PipelineRef struct {
 	UpdatedAt              Timestamp          `json:"updated_at"`
 }
 
+// PipelineResourceScope defines model for PipelineResourceScope.
+type PipelineResourceScope struct {
+	Contract       Slug                                `json:"contract"`
+	DataSource     Slug                                `json:"data_source"`
+	ObjectId       string                              `json:"object_id"`
+	Operation      Slug                                `json:"operation"`
+	PolicyId       PipelineResourceScopePolicyId       `json:"policy_id"`
+	Representation PipelineResourceScopeRepresentation `json:"representation"`
+	Revision       string                              `json:"revision"`
+	S3             struct {
+		Bucket         string  `json:"bucket"`
+		DynamicKey     *bool   `json:"dynamic_key"`
+		Endpoint       string  `json:"endpoint"`
+		ForcePathStyle *bool   `json:"force_path_style"`
+		Prefix         *string `json:"prefix"`
+		Region         string  `json:"region"`
+	} `json:"s3"`
+}
+
+// PipelineResourceScopePolicyId defines model for PipelineResourceScope.PolicyId.
+type PipelineResourceScopePolicyId string
+
+// PipelineResourceScopeRepresentation defines model for PipelineResourceScope.Representation.
+type PipelineResourceScopeRepresentation string
+
+// PipelineResourceScopeInspection defines model for PipelineResourceScopeInspection.
+type PipelineResourceScopeInspection struct {
+	Contract       string `json:"contract"`
+	DataSource     string `json:"data_source"`
+	ObjectId       string `json:"object_id"`
+	Operation      string `json:"operation"`
+	PolicyId       string `json:"policy_id"`
+	Representation string `json:"representation"`
+	Revision       string `json:"revision"`
+}
+
+// PipelineResourceScopeSelection defines model for PipelineResourceScopeSelection.
+type PipelineResourceScopeSelection struct {
+	Role  PipelineResourceScopeSelectionRole `json:"role"`
+	Scope PipelineResourceScope              `json:"scope"`
+	Step  Slug                               `json:"step"`
+}
+
+// PipelineResourceScopeSelectionRole defines model for PipelineResourceScopeSelection.Role.
+type PipelineResourceScopeSelectionRole string
+
 // PipelineRunAPISourceSummary defines model for PipelineRunAPISourceSummary.
 type PipelineRunAPISourceSummary struct {
 	ActorSlug       *NullableSlug                         `json:"actor_slug"`
@@ -9466,6 +10640,30 @@ type PipelineRunAPISourceSummaryEntrypoint string
 // PipelineRunAPISourceSummaryType defines model for PipelineRunAPISourceSummary.Type.
 type PipelineRunAPISourceSummaryType string
 
+// PipelineRunCheckEvidence defines model for PipelineRunCheckEvidence.
+type PipelineRunCheckEvidence struct {
+	BatchScope PipelineRunCheckEvidenceBatchScope `json:"batch_scope"`
+	DurationMs int64                              `json:"duration_ms"`
+	Empty      bool                               `json:"empty"`
+	Rows       int                                `json:"rows"`
+}
+
+// PipelineRunCheckEvidenceBatchScope defines model for PipelineRunCheckEvidence.BatchScope.
+type PipelineRunCheckEvidenceBatchScope string
+
+// PipelineRunCheckWindow defines model for PipelineRunCheckWindow.
+type PipelineRunCheckWindow struct {
+	BackfillChunkIndex *int                       `json:"backfill_chunk_index,omitempty"`
+	BackfillSeriesSlug *string                    `json:"backfill_series_slug,omitempty"`
+	HasLowerBound      bool                       `json:"has_lower_bound"`
+	HasUpperBound      bool                       `json:"has_upper_bound"`
+	Kind               PipelineRunCheckWindowKind `json:"kind"`
+	SourceSteps        []Slug                     `json:"source_steps"`
+}
+
+// PipelineRunCheckWindowKind defines model for PipelineRunCheckWindow.Kind.
+type PipelineRunCheckWindowKind string
+
 // PipelineRunCheckpointCommitResult defines model for PipelineRunCheckpointCommitResult.
 type PipelineRunCheckpointCommitResult struct {
 	BlockedByStep string                      `json:"blocked_by_step"`
@@ -9481,6 +10679,68 @@ type PipelineRunCheckpointSummary struct {
 	DisplayMetadata *map[string]interface{} `json:"display_metadata,omitempty"`
 	RawValueExposed bool                    `json:"raw_value_exposed"`
 	Summary         string                  `json:"summary"`
+}
+
+// PipelineRunCompletion defines model for PipelineRunCompletion.
+type PipelineRunCompletion struct {
+	Attempts            []PipelineCompletionAttempt  `json:"attempts"`
+	Children            []PipelineCompletionDecision `json:"children"`
+	Closed              bool                         `json:"closed"`
+	ContextUnavailable  *bool                        `json:"context_unavailable,omitempty"`
+	DecisionReason      *string                      `json:"decision_reason"`
+	FinalAttemptRunSlug *NullableSlug                `json:"final_attempt_run_slug"`
+	Outcome             *string                      `json:"outcome"`
+	Parent              *PipelineCompletionDecision  `json:"parent"`
+	PipelineSlug        *Slug                        `json:"pipeline_slug,omitempty"`
+	RootRunSlug         Slug                         `json:"root_run_slug"`
+	Truncated           *bool                        `json:"truncated,omitempty"`
+	WaitingForRetry     bool                         `json:"waiting_for_retry"`
+}
+
+// PipelineRunCompletionSourceSummary defines model for PipelineRunCompletionSourceSummary.
+type PipelineRunCompletionSourceSummary struct {
+	ActorSlug       *NullableSlug                                `json:"actor_slug"`
+	ActorType       EventActorType                               `json:"actor_type"`
+	AttemptNumber   int                                          `json:"attempt_number"`
+	Entrypoint      PipelineRunCompletionSourceSummaryEntrypoint `json:"entrypoint"`
+	ParameterKeys   []string                                     `json:"parameter_keys"`
+	RequestId       *string                                      `json:"request_id"`
+	RetryOfRunSlug  *NullableSlug                                `json:"retry_of_run_slug"`
+	RootRunSlug     Slug                                         `json:"root_run_slug"`
+	SourceEventSlug *NullableSlug                                `json:"source_event_slug"`
+	Summary         string                                       `json:"summary"`
+	TraceId         *string                                      `json:"trace_id"`
+	Type            PipelineRunCompletionSourceSummaryType       `json:"type"`
+}
+
+// PipelineRunCompletionSourceSummaryEntrypoint defines model for PipelineRunCompletionSourceSummary.Entrypoint.
+type PipelineRunCompletionSourceSummaryEntrypoint string
+
+// PipelineRunCompletionSourceSummaryType defines model for PipelineRunCompletionSourceSummary.Type.
+type PipelineRunCompletionSourceSummaryType string
+
+// PipelineRunCompositionInspection defines model for PipelineRunCompositionInspection.
+type PipelineRunCompositionInspection struct {
+	AdmissionEnabled           bool                                   `json:"admission_enabled"`
+	CompiledPlanDigest         *string                                `json:"compiled_plan_digest,omitempty"`
+	DeploymentResolutionDigest *string                                `json:"deployment_resolution_digest,omitempty"`
+	Operations                 []PipelineOperationInspection          `json:"operations"`
+	Pins                       []PipelineContractPinInspection        `json:"pins"`
+	SourceCommit               *string                                `json:"source_commit,omitempty"`
+	Status                     PipelineRunCompositionInspectionStatus `json:"status"`
+	Targets                    []PipelineTargetInspection             `json:"targets"`
+	TemplateDigest             *string                                `json:"template_digest,omitempty"`
+}
+
+// PipelineRunCompositionInspectionStatus defines model for PipelineRunCompositionInspection.Status.
+type PipelineRunCompositionInspectionStatus string
+
+// PipelineRunConnected defines model for PipelineRunConnected.
+type PipelineRunConnected struct {
+	ContextUnavailable bool                   `json:"context_unavailable"`
+	Nodes              []PipelineConnectedRun `json:"nodes"`
+	SelectedRunSlug    Slug                   `json:"selected_run_slug"`
+	Truncated          bool                   `json:"truncated"`
 }
 
 // PipelineRunContractFailureDiagnostic defines model for PipelineRunContractFailureDiagnostic.
@@ -9659,8 +10919,34 @@ type PipelineRunMetadataStatus string
 // PipelineRunMode defines model for PipelineRunMode.
 type PipelineRunMode string
 
+// PipelineRunProgress defines model for PipelineRunProgress.
+type PipelineRunProgress struct {
+	AfterEvent                 int64                             `json:"after_event"`
+	CompiledPlanDigest         *string                           `json:"compiled_plan_digest"`
+	CompletedSteps             int                               `json:"completed_steps"`
+	CurrentStep                *NullableSlug                     `json:"current_step"`
+	DeploymentResolutionDigest *string                           `json:"deployment_resolution_digest"`
+	EventCount                 int64                             `json:"event_count"`
+	Events                     []PipelineRunTimelineEvent        `json:"events"`
+	FailedSteps                int                               `json:"failed_steps"`
+	HasMore                    bool                              `json:"has_more"`
+	InterruptedSteps           int                               `json:"interrupted_steps"`
+	Metadata                   PipelineRunMetadata               `json:"metadata"`
+	NextAfterEvent             int64                             `json:"next_after_event"`
+	ObservedAt                 *Timestamp                        `json:"observed_at"`
+	PendingSteps               int                               `json:"pending_steps"`
+	Revision                   int64                             `json:"revision"`
+	ServerTime                 Timestamp                         `json:"server_time"`
+	WorkerLiveness             PipelineRunProgressWorkerLiveness `json:"worker_liveness"`
+	WorkerObservedAt           *Timestamp                        `json:"worker_observed_at"`
+}
+
+// PipelineRunProgressWorkerLiveness defines model for PipelineRunProgress.WorkerLiveness.
+type PipelineRunProgressWorkerLiveness string
+
 // PipelineRunRecord defines model for PipelineRunRecord.
 type PipelineRunRecord struct {
+	Composition            *PipelineRunCompositionInspection `json:"composition,omitempty"`
 	IncrementalDiagnostics PipelineRunIncrementalDiagnostics `json:"incremental_diagnostics"`
 	Metadata               PipelineRunMetadata               `json:"metadata"`
 	ProofLink              *ProofLifecycleLink               `json:"proof_link"`
@@ -9800,16 +11086,59 @@ type PipelineRunStepSnapshot struct {
 	Step   Slug                           `json:"step"`
 }
 
+// PipelineRunStructuralCheck defines model for PipelineRunStructuralCheck.
+type PipelineRunStructuralCheck struct {
+	AttemptNumber              int                                   `json:"attempt_number"`
+	CompiledPlanDigest         *string                               `json:"compiled_plan_digest,omitempty"`
+	CompletedAt                *time.Time                            `json:"completed_at,omitempty"`
+	ContractFailure            *PipelineRunContractFailureDiagnostic `json:"contract_failure,omitempty"`
+	Declaration                string                                `json:"declaration"`
+	DeploymentResolutionDigest *string                               `json:"deployment_resolution_digest,omitempty"`
+	Evaluator                  string                                `json:"evaluator"`
+	Evidence                   *PipelineRunCheckEvidence             `json:"evidence,omitempty"`
+	EvidenceDigest             *string                               `json:"evidence_digest,omitempty"`
+	Id                         string                                `json:"id"`
+	Input                      *string                               `json:"input,omitempty"`
+	Origin                     PipelineRunStructuralCheckOrigin      `json:"origin"`
+	Phase                      PipelineRunStructuralCheckPhase       `json:"phase"`
+	Policy                     string                                `json:"policy"`
+	ProjectionDigest           string                                `json:"projection_digest"`
+	ReasonCode                 PipelineRunStructuralCheckReasonCode  `json:"reason_code"`
+	ReusedFromRun              *string                               `json:"reused_from_run,omitempty"`
+	StartedAt                  *time.Time                            `json:"started_at,omitempty"`
+	Status                     PipelineRunStructuralCheckStatus      `json:"status"`
+	Step                       Slug                                  `json:"step"`
+	Target                     *string                               `json:"target,omitempty"`
+	Window                     PipelineRunCheckWindow                `json:"window"`
+}
+
+// PipelineRunStructuralCheckOrigin defines model for PipelineRunStructuralCheck.Origin.
+type PipelineRunStructuralCheckOrigin string
+
+// PipelineRunStructuralCheckPhase defines model for PipelineRunStructuralCheck.Phase.
+type PipelineRunStructuralCheckPhase string
+
+// PipelineRunStructuralCheckReasonCode defines model for PipelineRunStructuralCheck.ReasonCode.
+type PipelineRunStructuralCheckReasonCode string
+
+// PipelineRunStructuralCheckStatus defines model for PipelineRunStructuralCheck.Status.
+type PipelineRunStructuralCheckStatus string
+
 // PipelineRunTimeline defines model for PipelineRunTimeline.
 type PipelineRunTimeline struct {
-	EnvironmentSlug Slug                       `json:"environment_slug"`
-	Events          []PipelineRunTimelineEvent `json:"events"`
-	Failure         *PipelineRunFailureContext `json:"failure"`
-	PipelineSlug    Slug                       `json:"pipeline_slug"`
-	ReplayOfRunSlug *NullableSlug              `json:"replay_of_run_slug"`
-	RunSlug         Slug                       `json:"run_slug"`
-	Snapshots       []PipelineRunStepSnapshot  `json:"snapshots"`
-	Status          PipelineRunTimelineStatus  `json:"status"`
+	CompiledPlanDigest         *string                       `json:"compiled_plan_digest,omitempty"`
+	DeploymentResolutionDigest *string                       `json:"deployment_resolution_digest,omitempty"`
+	EnvironmentSlug            Slug                          `json:"environment_slug"`
+	Events                     []PipelineRunTimelineEvent    `json:"events"`
+	Failure                    *PipelineRunFailureContext    `json:"failure"`
+	PipelineSlug               Slug                          `json:"pipeline_slug"`
+	ReplayOfRunSlug            *NullableSlug                 `json:"replay_of_run_slug"`
+	Revision                   *int64                        `json:"revision,omitempty"`
+	RunSlug                    Slug                          `json:"run_slug"`
+	Snapshots                  []PipelineRunStepSnapshot     `json:"snapshots"`
+	Status                     PipelineRunTimelineStatus     `json:"status"`
+	StructuralChecks           *[]PipelineRunStructuralCheck `json:"structural_checks,omitempty"`
+	WorkerObservedAt           *Timestamp                    `json:"worker_observed_at,omitempty"`
 }
 
 // PipelineRunTimelineStatus defines model for PipelineRunTimeline.Status.
@@ -10081,6 +11410,15 @@ type PipelineStepKind string
 // PipelineSyncStatus defines model for PipelineSyncStatus.
 type PipelineSyncStatus string
 
+// PipelineTargetInspection defines model for PipelineTargetInspection.
+type PipelineTargetInspection struct {
+	BindingRevision string `json:"binding_revision"`
+	DataSourceSlug  Slug   `json:"data_source_slug"`
+	Reference       Slug   `json:"reference"`
+	Role            string `json:"role"`
+	Step            Slug   `json:"step"`
+}
+
 // PipelineTransformSpec defines model for PipelineTransformSpec.
 type PipelineTransformSpec struct {
 	InputContract     *PipelineSchemaContract                     `json:"input_contract,omitempty"`
@@ -10109,6 +11447,7 @@ type PipelineTransformStepKind string
 
 // PipelineTrigger defines model for PipelineTrigger.
 type PipelineTrigger struct {
+	Completion         *PipelineTriggerCompletionConfig     `json:"completion,omitempty"`
 	CreatedAt          Timestamp                            `json:"created_at"`
 	CreatedByActorSlug *NullableSlug                        `json:"created_by_actor_slug,omitempty"`
 	CreatedByActorType EventActorType                       `json:"created_by_actor_type"`
@@ -10133,6 +11472,36 @@ type PipelineTrigger struct {
 // PipelineTriggerBackoffStrategy defines model for PipelineTriggerBackoffStrategy.
 type PipelineTriggerBackoffStrategy string
 
+// PipelineTriggerCompletionConfig defines model for PipelineTriggerCompletionConfig.
+type PipelineTriggerCompletionConfig struct {
+	Condition             PipelineCompletionCondition `json:"condition"`
+	ExecutionGrantEnabled bool                        `json:"execution_grant_enabled"`
+	UpstreamPipelineSlug  Slug                        `json:"upstream_pipeline_slug"`
+}
+
+// PipelineTriggerCompletionWithOtherConfig defines model for PipelineTriggerCompletionWithOtherConfig.
+type PipelineTriggerCompletionWithOtherConfig struct {
+	Type  PipelineTriggerCompletionWithOtherConfigType `json:"type"`
+	union json.RawMessage
+}
+
+// PipelineTriggerCompletionWithOtherConfigType defines model for PipelineTriggerCompletionWithOtherConfig.Type.
+type PipelineTriggerCompletionWithOtherConfigType string
+
+// PipelineTriggerCompletionWithOtherConfig0 defines model for PipelineTriggerCompletionWithOtherConfig.0.
+type PipelineTriggerCompletionWithOtherConfig0 = interface{}
+
+// PipelineTriggerCompletionWithOtherConfig1 defines model for PipelineTriggerCompletionWithOtherConfig.1.
+type PipelineTriggerCompletionWithOtherConfig1 = interface{}
+
+// PipelineTriggerCompletionWithoutCompletionConfig defines model for PipelineTriggerCompletionWithoutCompletionConfig.
+type PipelineTriggerCompletionWithoutCompletionConfig struct {
+	Type PipelineTriggerCompletionWithoutCompletionConfigType `json:"type"`
+}
+
+// PipelineTriggerCompletionWithoutCompletionConfigType defines model for PipelineTriggerCompletionWithoutCompletionConfig.Type.
+type PipelineTriggerCompletionWithoutCompletionConfigType string
+
 // PipelineTriggerIssuanceResponse defines model for PipelineTriggerIssuanceResponse.
 type PipelineTriggerIssuanceResponse struct {
 	PipelineTrigger PipelineTrigger                `json:"pipeline_trigger"`
@@ -10154,6 +11523,14 @@ type PipelineTriggerListResponse struct {
 	PipelineTriggers []PipelineTrigger `json:"pipeline_triggers"`
 	PrevCursor       *string           `json:"prev_cursor,omitempty"`
 }
+
+// PipelineTriggerOtherWithCompletionConfig defines model for PipelineTriggerOtherWithCompletionConfig.
+type PipelineTriggerOtherWithCompletionConfig struct {
+	Type PipelineTriggerOtherWithCompletionConfigType `json:"type"`
+}
+
+// PipelineTriggerOtherWithCompletionConfigType defines model for PipelineTriggerOtherWithCompletionConfig.Type.
+type PipelineTriggerOtherWithCompletionConfigType string
 
 // PipelineTriggerPinnedVersionPolicyWithoutHash defines model for PipelineTriggerPinnedVersionPolicyWithoutHash.
 type PipelineTriggerPinnedVersionPolicyWithoutHash struct {
@@ -10316,12 +11693,13 @@ type PipelineValidationResultSource string
 
 // PipelineVersion defines model for PipelineVersion.
 type PipelineVersion struct {
-	CreatedAt     Timestamp    `json:"created_at"`
-	GitCommitSha  *string      `json:"git_commit_sha,omitempty"`
-	PipelineSlug  Slug         `json:"pipeline_slug"`
-	ShortSpecHash string       `json:"short_spec_hash"`
-	Spec          PipelineSpec `json:"spec"`
-	SpecHash      string       `json:"spec_hash"`
+	CompositionAdmissionEnabled bool         `json:"composition_admission_enabled"`
+	CreatedAt                   Timestamp    `json:"created_at"`
+	GitCommitSha                *string      `json:"git_commit_sha,omitempty"`
+	PipelineSlug                Slug         `json:"pipeline_slug"`
+	ShortSpecHash               string       `json:"short_spec_hash"`
+	Spec                        PipelineSpec `json:"spec"`
+	SpecHash                    string       `json:"spec_hash"`
 }
 
 // PipelineVersionListResponse defines model for PipelineVersionListResponse.
@@ -10481,6 +11859,31 @@ type ProjectPipelineBackend struct {
 	TrackedBranch  string  `json:"tracked_branch"`
 }
 
+// ProjectRepositoryGitHubAuthorization defines model for ProjectRepositoryGitHubAuthorization.
+type ProjectRepositoryGitHubAuthorization struct {
+	Code           string `json:"code"`
+	InstallationId int64  `json:"installation_id"`
+	State          string `json:"state"`
+}
+
+// ProjectRepositorySetup defines model for ProjectRepositorySetup.
+type ProjectRepositorySetup struct {
+	AbandonedAt      *time.Time                     `json:"abandoned_at,omitempty"`
+	AuthorizationUrl *string                        `json:"authorization_url,omitempty"`
+	DataSourceSlug   Slug                           `json:"data_source_slug"`
+	FailureCode      *string                        `json:"failure_code,omitempty"`
+	FirstCommitSha   *string                        `json:"first_commit_sha,omitempty"`
+	ProjectSlug      Slug                           `json:"project_slug"`
+	RepositoryId     *string                        `json:"repository_id,omitempty"`
+	RepositoryUrl    *string                        `json:"repository_url,omitempty"`
+	Request          CreateProjectRepositoryRequest `json:"request"`
+	Slug             Slug                           `json:"slug"`
+	Status           ProjectRepositorySetupStatus   `json:"status"`
+}
+
+// ProjectRepositorySetupStatus defines model for ProjectRepositorySetup.Status.
+type ProjectRepositorySetupStatus string
+
 // ProofAssessmentTarget defines model for ProofAssessmentTarget.
 type ProofAssessmentTarget struct {
 	EnvironmentSlug Slug   `json:"environment_slug"`
@@ -10569,18 +11972,66 @@ type ProofLifecycleLinkStatus string
 // ProofLifecycleLinkKind defines model for ProofLifecycleLinkKind.
 type ProofLifecycleLinkKind string
 
+// ProofOperationalCapture defines model for ProofOperationalCapture.
+type ProofOperationalCapture struct {
+	ExpiresAt       time.Time                 `json:"expires_at"`
+	PolicyVersion   string                    `json:"policy_version"`
+	RecordDigest    string                    `json:"record_digest"`
+	Selection       ProofOperationalSelection `json:"selection"`
+	SourceReceiptId Slug                      `json:"source_receipt_id"`
+}
+
+// ProofOperationalSelection defines model for ProofOperationalSelection.
+type ProofOperationalSelection struct {
+	Attempt                    int                             `json:"attempt"`
+	Candidate                  ProofCandidateIdentity          `json:"candidate"`
+	CandidateSlug              Slug                            `json:"candidate_slug"`
+	CheckId                    string                          `json:"check_id"`
+	CompiledPlanDigest         string                          `json:"compiled_plan_digest"`
+	CompletedAt                *time.Time                      `json:"completed_at"`
+	Declaration                string                          `json:"declaration"`
+	DeploymentResolutionDigest string                          `json:"deployment_resolution_digest"`
+	Evaluator                  string                          `json:"evaluator"`
+	EvaluatorPolicy            string                          `json:"evaluator_policy"`
+	EvidenceDigest             string                          `json:"evidence_digest"`
+	Input                      string                          `json:"input"`
+	Origin                     ProofOperationalSelectionOrigin `json:"origin"`
+	Phase                      ProofOperationalSelectionPhase  `json:"phase"`
+	Pipeline                   Slug                            `json:"pipeline"`
+	ProjectionDigest           string                          `json:"projection_digest"`
+	Run                        Slug                            `json:"run"`
+	StartedAt                  *time.Time                      `json:"started_at"`
+	Step                       Slug                            `json:"step"`
+	Target                     string                          `json:"target"`
+	VersionCommit              string                          `json:"version_commit"`
+	Window                     PipelineRunCheckWindow          `json:"window"`
+}
+
+// ProofOperationalSelectionOrigin defines model for ProofOperationalSelection.Origin.
+type ProofOperationalSelectionOrigin string
+
+// ProofOperationalSelectionPhase defines model for ProofOperationalSelection.Phase.
+type ProofOperationalSelectionPhase string
+
 // ProofReceipt defines model for ProofReceipt.
 type ProofReceipt struct {
-	AggregateVerdict    ProofVerdict              `json:"aggregate_verdict"`
-	Candidate           ProofCandidateIdentity    `json:"candidate"`
-	Claims              []ProofClaim              `json:"claims"`
-	CreatedAt           time.Time                 `json:"created_at"`
-	Id                  Slug                      `json:"id"`
-	LifecycleLinks      []ProofLifecycleLink      `json:"lifecycle_links"`
-	RetainUntil         time.Time                 `json:"retain_until"`
-	SchemaVersion       ProofReceiptSchemaVersion `json:"schema_version"`
-	SupersedesReceiptId *Slug                     `json:"supersedes_receipt_id"`
+	AggregateVerdict            ProofVerdict                           `json:"aggregate_verdict"`
+	Candidate                   ProofCandidateIdentity                 `json:"candidate"`
+	Claims                      []ProofClaim                           `json:"claims"`
+	CreatedAt                   time.Time                              `json:"created_at"`
+	Id                          Slug                                   `json:"id"`
+	LifecycleLinks              []ProofLifecycleLink                   `json:"lifecycle_links"`
+	Operational                 *ProofOperationalCapture               `json:"operational,omitempty"`
+	OperationalAdmissionEnabled *bool                                  `json:"operational_admission_enabled,omitempty"`
+	OperationalCurrentVerdict   *ProofVerdict                          `json:"operational_current_verdict,omitempty"`
+	OperationalEvidenceStatus   *ProofReceiptOperationalEvidenceStatus `json:"operational_evidence_status,omitempty"`
+	RetainUntil                 time.Time                              `json:"retain_until"`
+	SchemaVersion               ProofReceiptSchemaVersion              `json:"schema_version"`
+	SupersedesReceiptId         *Slug                                  `json:"supersedes_receipt_id"`
 }
+
+// ProofReceiptOperationalEvidenceStatus defines model for ProofReceipt.OperationalEvidenceStatus.
+type ProofReceiptOperationalEvidenceStatus string
 
 // ProofReceiptSchemaVersion defines model for ProofReceipt.SchemaVersion.
 type ProofReceiptSchemaVersion int
@@ -10658,6 +12109,14 @@ type Query struct {
 	UpdatedAt                Timestamp                `json:"updated_at"`
 }
 
+// QueryExecutionIdentity defines model for QueryExecutionIdentity.
+type QueryExecutionIdentity struct {
+	DataSourceSlug Slug      `json:"data_source_slug"`
+	ExecutedAt     Timestamp `json:"executed_at"`
+	ExecutionSlug  Slug      `json:"execution_slug"`
+	QuerySlug      Slug      `json:"query_slug"`
+}
+
 // QueryExecutionListResponse defines model for QueryExecutionListResponse.
 type QueryExecutionListResponse struct {
 	Executions []QueryExecutionRecord `json:"executions"`
@@ -10677,6 +12136,11 @@ type QueryExecutionRecord struct {
 // QueryExecutionResult defines model for QueryExecutionResult.
 type QueryExecutionResult struct {
 	union json.RawMessage
+}
+
+// QueryExecutionSummary defines model for QueryExecutionSummary.
+type QueryExecutionSummary struct {
+	SuccessfulExecution *QueryExecutionIdentity `json:"successful_execution"`
 }
 
 // QueryListResponse defines model for QueryListResponse.
@@ -10923,6 +12387,19 @@ type SetProjectPipelineBackendRequest struct {
 // SetProjectPipelineBackendRequestMode defines model for SetProjectPipelineBackendRequest.Mode.
 type SetProjectPipelineBackendRequestMode string
 
+// SlackAlertDestinationConfig defines model for SlackAlertDestinationConfig.
+type SlackAlertDestinationConfig struct {
+	ConnectionSlug Slug `json:"connection_slug"`
+}
+
+// SlackNotificationConnectionMetadata defines model for SlackNotificationConnectionMetadata.
+type SlackNotificationConnectionMetadata struct {
+	ChannelId     string `json:"channel_id"`
+	ChannelName   string `json:"channel_name"`
+	WorkspaceId   string `json:"workspace_id"`
+	WorkspaceName string `json:"workspace_name"`
+}
+
 // Slug defines model for Slug.
 type Slug = string
 
@@ -11015,6 +12492,58 @@ type StartProviderDataSourceInstallRequest_Config struct {
 
 // StartProviderDataSourceInstallRequestType defines model for StartProviderDataSourceInstallRequest.Type.
 type StartProviderDataSourceInstallRequestType string
+
+// SuccessfulRunRecency defines model for SuccessfulRunRecency.
+type SuccessfulRunRecency struct {
+	CapabilityEnabled  bool                          `json:"capability_enabled"`
+	Configured         bool                          `json:"configured"`
+	DeadlineAt         *Timestamp                    `json:"deadline_at"`
+	DeployedAt         *Timestamp                    `json:"deployed_at"`
+	DeploymentRevision *int64                        `json:"deployment_revision"`
+	Enabled            bool                          `json:"enabled"`
+	EnabledAt          *Timestamp                    `json:"enabled_at"`
+	Episodes           []SuccessfulRunRecencyEpisode `json:"episodes"`
+	EvaluatedAt        Timestamp                     `json:"evaluated_at"`
+	HasMoreEpisodes    bool                          `json:"has_more_episodes"`
+	MaximumAgeSeconds  *int64                        `json:"maximum_age_seconds"`
+	Outcome            SuccessfulRunRecencyOutcome   `json:"outcome"`
+	ResolutionDigest   *string                       `json:"resolution_digest"`
+	Revision           int64                         `json:"revision"`
+	SucceededAt        *Timestamp                    `json:"succeeded_at"`
+	SuccessRunSlug     *string                       `json:"success_run_slug"`
+	UnavailableReason  *string                       `json:"unavailable_reason"`
+	VersionSpecHash    *string                       `json:"version_spec_hash"`
+}
+
+// SuccessfulRunRecencyOutcome defines model for SuccessfulRunRecency.Outcome.
+type SuccessfulRunRecencyOutcome string
+
+// SuccessfulRunRecencyEpisode defines model for SuccessfulRunRecencyEpisode.
+type SuccessfulRunRecencyEpisode struct {
+	BreachedAt          Timestamp  `json:"breached_at"`
+	DeadlineAt          Timestamp  `json:"deadline_at"`
+	DeployedAt          Timestamp  `json:"deployed_at"`
+	DeploymentRevision  int64      `json:"deployment_revision"`
+	EnabledAt           Timestamp  `json:"enabled_at"`
+	ExpectationRevision int64      `json:"expectation_revision"`
+	LastSuccessAt       *Timestamp `json:"last_success_at"`
+	LastSuccessRunSlug  *string    `json:"last_success_run_slug"`
+	MaximumAgeSeconds   int64      `json:"maximum_age_seconds"`
+	NotificationSlug    Slug       `json:"notification_slug"`
+	RecoveryRunSlug     *string    `json:"recovery_run_slug"`
+	RecoverySucceededAt *Timestamp `json:"recovery_succeeded_at"`
+	ResolutionDigest    *string    `json:"resolution_digest"`
+	ResolutionReason    *string    `json:"resolution_reason"`
+	ResolvedAt          *Timestamp `json:"resolved_at"`
+	VersionSpecHash     string     `json:"version_spec_hash"`
+}
+
+// SuccessfulRunRecencyUpdate defines model for SuccessfulRunRecencyUpdate.
+type SuccessfulRunRecencyUpdate struct {
+	Enabled           bool  `json:"enabled"`
+	ExpectedRevision  int64 `json:"expected_revision"`
+	MaximumAgeSeconds int64 `json:"maximum_age_seconds"`
+}
 
 // TableInfo defines model for TableInfo.
 type TableInfo struct {
@@ -11259,15 +12788,16 @@ type UpdatePipeline struct {
 
 // UpdatePipelineTrigger defines model for UpdatePipelineTrigger.
 type UpdatePipelineTrigger struct {
-	Enabled          bool                           `json:"enabled"`
-	Name             Name                           `json:"name"`
-	PipelineSlug     Slug                           `json:"pipeline_slug"`
-	RetryPolicy      PipelineTriggerRetryPolicy     `json:"retry_policy"`
-	RuntimeInputKeys []string                       `json:"runtime_input_keys"`
-	Schedule         *PipelineTriggerScheduleConfig `json:"schedule,omitempty"`
-	Type             PipelineTriggerType            `json:"type"`
-	VersionPolicy    PipelineTriggerVersionPolicy   `json:"version_policy"`
-	Webhook          *PipelineWebhookConfigInput    `json:"webhook,omitempty"`
+	Completion       *PipelineTriggerCompletionConfig `json:"completion,omitempty"`
+	Enabled          bool                             `json:"enabled"`
+	Name             Name                             `json:"name"`
+	PipelineSlug     Slug                             `json:"pipeline_slug"`
+	RetryPolicy      PipelineTriggerRetryPolicy       `json:"retry_policy"`
+	RuntimeInputKeys []string                         `json:"runtime_input_keys"`
+	Schedule         *PipelineTriggerScheduleConfig   `json:"schedule,omitempty"`
+	Type             PipelineTriggerType              `json:"type"`
+	VersionPolicy    PipelineTriggerVersionPolicy     `json:"version_policy"`
+	Webhook          *PipelineWebhookConfigInput      `json:"webhook,omitempty"`
 }
 
 // UpdateProject defines model for UpdateProject.
@@ -11430,8 +12960,32 @@ type EnvironmentSlugQueryParam = Slug
 // EnvironmentsFieldParam defines model for EnvironmentsFieldParam.
 type EnvironmentsFieldParam string
 
+// EventActionFilterParam defines model for EventActionFilterParam.
+type EventActionFilterParam = EventAction
+
+// EventActorSlugFilterParam defines model for EventActorSlugFilterParam.
+type EventActorSlugFilterParam = Slug
+
+// EventActorTypeFilterParam defines model for EventActorTypeFilterParam.
+type EventActorTypeFilterParam = EventActorType
+
+// EventEntitySlugFilterParam defines model for EventEntitySlugFilterParam.
+type EventEntitySlugFilterParam = Slug
+
+// EventEntityTypeFilterParam defines model for EventEntityTypeFilterParam.
+type EventEntityTypeFilterParam = EventEntityType
+
 // EventFieldParam defines model for EventFieldParam.
 type EventFieldParam string
+
+// EventOccurredBeforeFilterParam defines model for EventOccurredBeforeFilterParam.
+type EventOccurredBeforeFilterParam = time.Time
+
+// EventOccurredFromFilterParam defines model for EventOccurredFromFilterParam.
+type EventOccurredFromFilterParam = time.Time
+
+// EventRequestIdFilterParam defines model for EventRequestIdFilterParam.
+type EventRequestIdFilterParam = string
 
 // InvitationSlugParam defines model for InvitationSlugParam.
 type InvitationSlugParam = Slug
@@ -11450,6 +13004,9 @@ type MemberInvitationsFieldParam string
 
 // MembersFieldParam defines model for MembersFieldParam.
 type MembersFieldParam string
+
+// NotificationConnectionSlugParam defines model for NotificationConnectionSlugParam.
+type NotificationConnectionSlugParam = Slug
 
 // NotificationFieldParam defines model for NotificationFieldParam.
 type NotificationFieldParam string
@@ -11531,6 +13088,15 @@ type RunSlugParam = Slug
 
 // RuntimeVariableKeyParam defines model for RuntimeVariableKeyParam.
 type RuntimeVariableKeyParam = string
+
+// SecurityAuditEventFieldParam defines model for SecurityAuditEventFieldParam.
+type SecurityAuditEventFieldParam string
+
+// SecurityAuditEventOrderParam defines model for SecurityAuditEventOrderParam.
+type SecurityAuditEventOrderParam string
+
+// SecurityAuditEventPageDirectionParam defines model for SecurityAuditEventPageDirectionParam.
+type SecurityAuditEventPageDirectionParam string
 
 // SlugParam defines model for SlugParam.
 type SlugParam = string
@@ -12061,6 +13627,18 @@ type ListPipelineRunsParamsDirection string
 // ListPipelineRunsParamsStatus defines parameters for ListPipelineRuns.
 type ListPipelineRunsParamsStatus string
 
+// GetPipelineRunProgressParams defines parameters for GetPipelineRunProgress.
+type GetPipelineRunProgressParams struct {
+	AfterEvent *int64 `form:"after_event,omitempty" json:"after_event,omitempty"`
+	Limit      *int   `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListPipelineCreationProposalsParams defines parameters for ListPipelineCreationProposals.
+type ListPipelineCreationProposalsParams struct {
+	Limit  *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Slug       `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
 	Limit     *LimitParam                   `form:"limit,omitempty" json:"limit,omitempty"`
@@ -12086,6 +13664,11 @@ type DeleteDataSourceBindingParams struct {
 	ProtectedEnvironmentConfirmation *ProtectedEnvironmentConfirmationParam `form:"protected_environment_confirmation,omitempty" json:"protected_environment_confirmation,omitempty"`
 }
 
+// CompilePipelineVersionParams defines parameters for CompilePipelineVersion.
+type CompilePipelineVersionParams struct {
+	EnvironmentSlug *Slug `form:"environment_slug,omitempty" json:"environment_slug,omitempty"`
+}
+
 // ListRolesParams defines parameters for ListRoles.
 type ListRolesParams struct {
 	Limit          *LimitParam               `form:"limit,omitempty" json:"limit,omitempty"`
@@ -12105,6 +13688,44 @@ type ListRolesParamsOrder string
 
 // ListRolesParamsDirection defines parameters for ListRoles.
 type ListRolesParamsDirection string
+
+// ListSecurityAuditEventsParams defines parameters for ListSecurityAuditEvents.
+type ListSecurityAuditEventsParams struct {
+	Limit          *LimitParam                             `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *CursorParam                            `form:"cursor,omitempty" json:"cursor,omitempty"`
+	SortBy         *ListSecurityAuditEventsParamsSortBy    `form:"sort_by,omitempty" json:"sort_by,omitempty"`
+	Order          *ListSecurityAuditEventsParamsOrder     `form:"order,omitempty" json:"order,omitempty"`
+	Direction      *ListSecurityAuditEventsParamsDirection `form:"direction,omitempty" json:"direction,omitempty"`
+	ActorType      *EventActorTypeFilterParam              `form:"actor_type,omitempty" json:"actor_type,omitempty"`
+	ActorSlug      *EventActorSlugFilterParam              `form:"actor_slug,omitempty" json:"actor_slug,omitempty"`
+	EntityType     *EventEntityTypeFilterParam             `form:"entity_type,omitempty" json:"entity_type,omitempty"`
+	EntitySlug     *EventEntitySlugFilterParam             `form:"entity_slug,omitempty" json:"entity_slug,omitempty"`
+	Action         *EventActionFilterParam                 `form:"action,omitempty" json:"action,omitempty"`
+	RequestId      *EventRequestIdFilterParam              `form:"request_id,omitempty" json:"request_id,omitempty"`
+	OccurredFrom   *EventOccurredFromFilterParam           `form:"occurred_from,omitempty" json:"occurred_from,omitempty"`
+	OccurredBefore *EventOccurredBeforeFilterParam         `form:"occurred_before,omitempty" json:"occurred_before,omitempty"`
+}
+
+// ListSecurityAuditEventsParamsSortBy defines parameters for ListSecurityAuditEvents.
+type ListSecurityAuditEventsParamsSortBy string
+
+// ListSecurityAuditEventsParamsOrder defines parameters for ListSecurityAuditEvents.
+type ListSecurityAuditEventsParamsOrder string
+
+// ListSecurityAuditEventsParamsDirection defines parameters for ListSecurityAuditEvents.
+type ListSecurityAuditEventsParamsDirection string
+
+// ExportSecurityAuditEventsParams defines parameters for ExportSecurityAuditEvents.
+type ExportSecurityAuditEventsParams struct {
+	ActorType      *EventActorTypeFilterParam      `form:"actor_type,omitempty" json:"actor_type,omitempty"`
+	ActorSlug      *EventActorSlugFilterParam      `form:"actor_slug,omitempty" json:"actor_slug,omitempty"`
+	EntityType     *EventEntityTypeFilterParam     `form:"entity_type,omitempty" json:"entity_type,omitempty"`
+	EntitySlug     *EventEntitySlugFilterParam     `form:"entity_slug,omitempty" json:"entity_slug,omitempty"`
+	Action         *EventActionFilterParam         `form:"action,omitempty" json:"action,omitempty"`
+	RequestId      *EventRequestIdFilterParam      `form:"request_id,omitempty" json:"request_id,omitempty"`
+	OccurredFrom   *EventOccurredFromFilterParam   `form:"occurred_from,omitempty" json:"occurred_from,omitempty"`
+	OccurredBefore *EventOccurredBeforeFilterParam `form:"occurred_before,omitempty" json:"occurred_before,omitempty"`
+}
 
 // ListPersonalAccessTokensParams defines parameters for ListPersonalAccessTokens.
 type ListPersonalAccessTokensParams struct {
@@ -12199,6 +13820,9 @@ type CreateMemberJSONRequestBody = NewMember
 // UpdateMemberJSONRequestBody defines body for UpdateMember for application/json ContentType.
 type UpdateMemberJSONRequestBody = UpdateMember
 
+// CreateNotificationConnectionJSONRequestBody defines body for CreateNotificationConnection for application/json ContentType.
+type CreateNotificationConnectionJSONRequestBody = NewNotificationConnection
+
 // FormatPipelineSpecJSONRequestBody defines body for FormatPipelineSpec for application/json ContentType.
 type FormatPipelineSpecJSONRequestBody = PipelineSpecFormatRequest
 
@@ -12235,6 +13859,9 @@ type UpdatePipelineTriggerJSONRequestBody = UpdatePipelineTrigger
 // ValidatePipelineJSONRequestBody defines body for ValidatePipeline for application/json ContentType.
 type ValidatePipelineJSONRequestBody = PipelineValidationRequest
 
+// UpdateSuccessfulRunRecencyJSONRequestBody defines body for UpdateSuccessfulRunRecency for application/json ContentType.
+type UpdateSuccessfulRunRecencyJSONRequestBody = SuccessfulRunRecencyUpdate
+
 // BootstrapPipelineCheckpointsJSONRequestBody defines body for BootstrapPipelineCheckpoints for application/json ContentType.
 type BootstrapPipelineCheckpointsJSONRequestBody = BootstrapPipelineCheckpointsRequest
 
@@ -12246,6 +13873,9 @@ type ExecutePipelineJSONRequestBody = ExecutePipelineRequest
 
 // SetProjectPipelineBackendJSONRequestBody defines body for SetProjectPipelineBackend for application/json ContentType.
 type SetProjectPipelineBackendJSONRequestBody = SetProjectPipelineBackendRequest
+
+// CreatePipelineProposalJSONRequestBody defines body for CreatePipelineProposal for application/json ContentType.
+type CreatePipelineProposalJSONRequestBody = PipelineSpec
 
 // UpdatePipelineJSONRequestBody defines body for UpdatePipeline for application/json ContentType.
 type UpdatePipelineJSONRequestBody = UpdatePipeline
@@ -12265,8 +13895,20 @@ type PublishPipelineDraftJSONRequestBody = PublishPipelineDraftRequest
 // UpsertDataSourceBindingJSONRequestBody defines body for UpsertDataSourceBinding for application/json ContentType.
 type UpsertDataSourceBindingJSONRequestBody = UpsertDataSourceBinding
 
+// CompilePipelineVersionJSONRequestBody defines body for CompilePipelineVersion for application/json ContentType.
+type CompilePipelineVersionJSONRequestBody = PipelineCompilationRequest
+
 // ReconcilePipelinesJSONRequestBody defines body for ReconcilePipelines for application/json ContentType.
 type ReconcilePipelinesJSONRequestBody = PipelineReconcileRequest
+
+// CreateProjectRepositoryJSONRequestBody defines body for CreateProjectRepository for application/json ContentType.
+type CreateProjectRepositoryJSONRequestBody = CreateProjectRepositoryRequest
+
+// AbandonProjectRepositorySetupJSONRequestBody defines body for AbandonProjectRepositorySetup for application/json ContentType.
+type AbandonProjectRepositorySetupJSONRequestBody = AbandonProjectRepositorySetupRequest
+
+// CompleteProjectRepositoryGitHubAuthorizationJSONRequestBody defines body for CompleteProjectRepositoryGitHubAuthorization for application/json ContentType.
+type CompleteProjectRepositoryGitHubAuthorizationJSONRequestBody = ProjectRepositoryGitHubAuthorization
 
 // StartProviderDataSourceInstallJSONRequestBody defines body for StartProviderDataSourceInstall for application/json ContentType.
 type StartProviderDataSourceInstallJSONRequestBody = StartProviderDataSourceInstallRequest
@@ -12308,6 +13950,32 @@ func (t *AlertDestinationConfig) FromEmailAlertDestinationConfig(v EmailAlertDes
 
 // MergeEmailAlertDestinationConfig performs a merge with any union data inside the AlertDestinationConfig, using the provided EmailAlertDestinationConfig
 func (t *AlertDestinationConfig) MergeEmailAlertDestinationConfig(v EmailAlertDestinationConfig) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSlackAlertDestinationConfig returns the union data inside the AlertDestinationConfig as a SlackAlertDestinationConfig
+func (t AlertDestinationConfig) AsSlackAlertDestinationConfig() (SlackAlertDestinationConfig, error) {
+	var body SlackAlertDestinationConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSlackAlertDestinationConfig overwrites any union data inside the AlertDestinationConfig as the provided SlackAlertDestinationConfig
+func (t *AlertDestinationConfig) FromSlackAlertDestinationConfig(v SlackAlertDestinationConfig) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSlackAlertDestinationConfig performs a merge with any union data inside the AlertDestinationConfig, using the provided SlackAlertDestinationConfig
+func (t *AlertDestinationConfig) MergeSlackAlertDestinationConfig(v SlackAlertDestinationConfig) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -15328,6 +16996,32 @@ func (t *HTTPPagination) MergeHTTPPagination1(v HTTPPagination1) error {
 	return err
 }
 
+// AsHTTPPagination2 returns the union data inside the HTTPPagination as a HTTPPagination2
+func (t HTTPPagination) AsHTTPPagination2() (HTTPPagination2, error) {
+	var body HTTPPagination2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromHTTPPagination2 overwrites any union data inside the HTTPPagination as the provided HTTPPagination2
+func (t *HTTPPagination) FromHTTPPagination2(v HTTPPagination2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeHTTPPagination2 performs a merge with any union data inside the HTTPPagination, using the provided HTTPPagination2
+func (t *HTTPPagination) MergeHTTPPagination2(v HTTPPagination2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t HTTPPagination) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	if err != nil {
@@ -15357,6 +17051,13 @@ func (t HTTPPagination) MarshalJSON() ([]byte, error) {
 		object["next_cursor_path"], err = json.Marshal(t.NextCursorPath)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'next_cursor_path': %w", err)
+		}
+	}
+
+	if t.NextLinkPath != nil {
+		object["next_link_path"], err = json.Marshal(t.NextLinkPath)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'next_link_path': %w", err)
 		}
 	}
 
@@ -15437,6 +17138,13 @@ func (t *HTTPPagination) UnmarshalJSON(b []byte) error {
 		err = json.Unmarshal(raw, &t.NextCursorPath)
 		if err != nil {
 			return fmt.Errorf("error reading 'next_cursor_path': %w", err)
+		}
+	}
+
+	if raw, found := object["next_link_path"]; found {
+		err = json.Unmarshal(raw, &t.NextLinkPath)
+		if err != nil {
+			return fmt.Errorf("error reading 'next_link_path': %w", err)
 		}
 	}
 
@@ -16036,6 +17744,42 @@ func (t *IntrospectSchemaResponse) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsSlackNotificationConnectionMetadata returns the union data inside the NotificationConnectionMetadata as a SlackNotificationConnectionMetadata
+func (t NotificationConnectionMetadata) AsSlackNotificationConnectionMetadata() (SlackNotificationConnectionMetadata, error) {
+	var body SlackNotificationConnectionMetadata
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSlackNotificationConnectionMetadata overwrites any union data inside the NotificationConnectionMetadata as the provided SlackNotificationConnectionMetadata
+func (t *NotificationConnectionMetadata) FromSlackNotificationConnectionMetadata(v SlackNotificationConnectionMetadata) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSlackNotificationConnectionMetadata performs a merge with any union data inside the NotificationConnectionMetadata, using the provided SlackNotificationConnectionMetadata
+func (t *NotificationConnectionMetadata) MergeSlackNotificationConnectionMetadata(v SlackNotificationConnectionMetadata) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t NotificationConnectionMetadata) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *NotificationConnectionMetadata) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsPipelineInputContractAttachment0 returns the union data inside the PipelineInputContractAttachment as a PipelineInputContractAttachment0
 func (t PipelineInputContractAttachment) AsPipelineInputContractAttachment0() (PipelineInputContractAttachment0, error) {
 	var body PipelineInputContractAttachment0
@@ -16392,6 +18136,40 @@ func (t *PipelineRunSourceSummary) MergePipelineRunWebhookSourceSummary(v Pipeli
 	return err
 }
 
+// AsPipelineRunCompletionSourceSummary returns the union data inside the PipelineRunSourceSummary as a PipelineRunCompletionSourceSummary
+func (t PipelineRunSourceSummary) AsPipelineRunCompletionSourceSummary() (PipelineRunCompletionSourceSummary, error) {
+	var body PipelineRunCompletionSourceSummary
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPipelineRunCompletionSourceSummary overwrites any union data inside the PipelineRunSourceSummary as the provided PipelineRunCompletionSourceSummary
+func (t *PipelineRunSourceSummary) FromPipelineRunCompletionSourceSummary(v PipelineRunCompletionSourceSummary) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"type":"completion"}`))
+	t.union = b
+	return err
+}
+
+// MergePipelineRunCompletionSourceSummary performs a merge with any union data inside the PipelineRunSourceSummary, using the provided PipelineRunCompletionSourceSummary
+func (t *PipelineRunSourceSummary) MergePipelineRunCompletionSourceSummary(v PipelineRunCompletionSourceSummary) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"type":"completion"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t PipelineRunSourceSummary) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -16408,6 +18186,8 @@ func (t PipelineRunSourceSummary) ValueByDiscriminator() (interface{}, error) {
 	switch discriminator {
 	case "api":
 		return t.AsPipelineRunAPISourceSummary()
+	case "completion":
+		return t.AsPipelineRunCompletionSourceSummary()
 	case "manual":
 		return t.AsPipelineRunManualSourceSummary()
 	case "schedule":
@@ -17046,6 +18826,101 @@ func (t PipelineStep) MarshalJSON() ([]byte, error) {
 
 func (t *PipelineStep) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPipelineTriggerCompletionWithOtherConfig0 returns the union data inside the PipelineTriggerCompletionWithOtherConfig as a PipelineTriggerCompletionWithOtherConfig0
+func (t PipelineTriggerCompletionWithOtherConfig) AsPipelineTriggerCompletionWithOtherConfig0() (PipelineTriggerCompletionWithOtherConfig0, error) {
+	var body PipelineTriggerCompletionWithOtherConfig0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPipelineTriggerCompletionWithOtherConfig0 overwrites any union data inside the PipelineTriggerCompletionWithOtherConfig as the provided PipelineTriggerCompletionWithOtherConfig0
+func (t *PipelineTriggerCompletionWithOtherConfig) FromPipelineTriggerCompletionWithOtherConfig0(v PipelineTriggerCompletionWithOtherConfig0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePipelineTriggerCompletionWithOtherConfig0 performs a merge with any union data inside the PipelineTriggerCompletionWithOtherConfig, using the provided PipelineTriggerCompletionWithOtherConfig0
+func (t *PipelineTriggerCompletionWithOtherConfig) MergePipelineTriggerCompletionWithOtherConfig0(v PipelineTriggerCompletionWithOtherConfig0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPipelineTriggerCompletionWithOtherConfig1 returns the union data inside the PipelineTriggerCompletionWithOtherConfig as a PipelineTriggerCompletionWithOtherConfig1
+func (t PipelineTriggerCompletionWithOtherConfig) AsPipelineTriggerCompletionWithOtherConfig1() (PipelineTriggerCompletionWithOtherConfig1, error) {
+	var body PipelineTriggerCompletionWithOtherConfig1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPipelineTriggerCompletionWithOtherConfig1 overwrites any union data inside the PipelineTriggerCompletionWithOtherConfig as the provided PipelineTriggerCompletionWithOtherConfig1
+func (t *PipelineTriggerCompletionWithOtherConfig) FromPipelineTriggerCompletionWithOtherConfig1(v PipelineTriggerCompletionWithOtherConfig1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePipelineTriggerCompletionWithOtherConfig1 performs a merge with any union data inside the PipelineTriggerCompletionWithOtherConfig, using the provided PipelineTriggerCompletionWithOtherConfig1
+func (t *PipelineTriggerCompletionWithOtherConfig) MergePipelineTriggerCompletionWithOtherConfig1(v PipelineTriggerCompletionWithOtherConfig1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PipelineTriggerCompletionWithOtherConfig) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	object["type"], err = json.Marshal(t.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *PipelineTriggerCompletionWithOtherConfig) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &t.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+	}
+
 	return err
 }
 
@@ -19468,6 +21343,23 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	UpdateMember(ctx context.Context, slug SlugParam, userSlug UserSlugParam, body UpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListNotificationConnections performs a GET /organizations/{slug}/notification-connections (the `ListNotificationConnections` operationId) request.
+	ListNotificationConnections(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateNotificationConnectionWithBody performs a POST /organizations/{slug}/notification-connections (the `CreateNotificationConnection` operationId) request,
+	// with any type of body and a specified content type.
+	CreateNotificationConnectionWithBody(ctx context.Context, slug SlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateNotificationConnection performs a POST /organizations/{slug}/notification-connections (the `CreateNotificationConnection` operationId) request.
+	// Takes a body of the `application/json` content type.
+	CreateNotificationConnection(ctx context.Context, slug SlugParam, body CreateNotificationConnectionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConnectNotificationConnection performs a POST /organizations/{slug}/notification-connections/{notification_connection_slug}/connect (the `ConnectNotificationConnection` operationId) request.
+	ConnectNotificationConnection(ctx context.Context, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DisconnectNotificationConnection performs a POST /organizations/{slug}/notification-connections/{notification_connection_slug}/disconnect (the `DisconnectNotificationConnection` operationId) request.
+	DisconnectNotificationConnection(ctx context.Context, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListNotifications performs a GET /organizations/{slug}/notifications (the `ListNotifications` operationId) request.
 	ListNotifications(ctx context.Context, slug SlugParam, params *ListNotificationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19482,6 +21374,9 @@ type ClientInterface interface {
 
 	// ResolveNotification performs a POST /organizations/{slug}/notifications/{notification_slug}/resolve (the `ResolveNotification` operationId) request.
 	ResolveNotification(ctx context.Context, slug SlugParam, notificationSlug NotificationSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPipelineOperationalCapabilities performs a GET /organizations/{slug}/pipeline-operational-capabilities (the `GetPipelineOperationalCapabilities` operationId) request.
+	GetPipelineOperationalCapabilities(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// FormatPipelineSpecWithBody performs a POST /organizations/{slug}/pipeline-spec:format (the `FormatPipelineSpec` operationId) request,
 	// with any type of body and a specified content type.
@@ -19660,6 +21555,17 @@ type ClientInterface interface {
 	// GetPipelineDeployment performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/deployment (the `GetPipelineDeployment` operationId) request.
 	GetPipelineDeployment(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetSuccessfulRunRecency performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `GetSuccessfulRunRecency` operationId) request.
+	GetSuccessfulRunRecency(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSuccessfulRunRecencyWithBody performs a PUT /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `UpdateSuccessfulRunRecency` operationId) request,
+	// with any type of body and a specified content type.
+	UpdateSuccessfulRunRecencyWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSuccessfulRunRecency performs a PUT /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `UpdateSuccessfulRunRecency` operationId) request.
+	// Takes a body of the `application/json` content type.
+	UpdateSuccessfulRunRecency(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, body UpdateSuccessfulRunRecencyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// BootstrapPipelineCheckpointsWithBody performs a POST /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}:bootstrap-checkpoints (the `BootstrapPipelineCheckpoints` operationId) request,
 	// with any type of body and a specified content type.
 	BootstrapPipelineCheckpointsWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -19696,6 +21602,15 @@ type ClientInterface interface {
 	// GetPipelineRun performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug} (the `GetPipelineRun` operationId) request.
 	GetPipelineRun(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetPipelineRunCompletion performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/completion (the `GetPipelineRunCompletion` operationId) request.
+	GetPipelineRunCompletion(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPipelineRunConnected performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/connected (the `GetPipelineRunConnected` operationId) request.
+	GetPipelineRunConnected(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPipelineRunProgress performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/progress (the `GetPipelineRunProgress` operationId) request.
+	GetPipelineRunProgress(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, params *GetPipelineRunProgressParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListPipelineRunTriggerRetryAttempts performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/trigger-retry-attempts (the `ListPipelineRunTriggerRetryAttempts` operationId) request.
 	ListPipelineRunTriggerRetryAttempts(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19706,6 +21621,20 @@ type ClientInterface interface {
 	// SetProjectPipelineBackend performs a PUT /organizations/{slug}/projects/{project_slug}/pipeline-backend (the `SetProjectPipelineBackend` operationId) request.
 	// Takes a body of the `application/json` content type.
 	SetProjectPipelineBackend(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body SetProjectPipelineBackendJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListPipelineCreationProposals performs a GET /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `ListPipelineCreationProposals` operationId) request.
+	ListPipelineCreationProposals(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, params *ListPipelineCreationProposalsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePipelineProposalWithBody performs a POST /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `CreatePipelineProposal` operationId) request,
+	// with any type of body and a specified content type.
+	CreatePipelineProposalWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePipelineProposal performs a POST /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `CreatePipelineProposal` operationId) request.
+	// Takes a body of the `application/json` content type.
+	CreatePipelineProposal(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CreatePipelineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPipelineCreationProposal performs a GET /organizations/{slug}/projects/{project_slug}/pipeline-creations/{creation_slug} (the `GetPipelineCreationProposal` operationId) request.
+	GetPipelineCreationProposal(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, creationSlug Slug, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListPipelines performs a GET /organizations/{slug}/projects/{project_slug}/pipelines (the `ListPipelines` operationId) request.
 	ListPipelines(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, params *ListPipelinesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -19720,6 +21649,9 @@ type ClientInterface interface {
 	// UpdatePipeline performs a PUT /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug} (the `UpdatePipeline` operationId) request.
 	// Takes a body of the `application/json` content type.
 	UpdatePipeline(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, body UpdatePipelineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPipelineCompiledPlan performs a GET /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/compiled-plans/{digest} (the `GetPipelineCompiledPlan` operationId) request.
+	GetPipelineCompiledPlan(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, digest string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateDataSourceRefWithBody performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/data-source-refs (the `CreateDataSourceRef` operationId) request,
 	// with any type of body and a specified content type.
@@ -19765,6 +21697,9 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	PublishPipelineDraft(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, body PublishPipelineDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// RefreshPipelineDraftProposal performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/draft:refresh-proposal (the `RefreshPipelineDraftProposal` operationId) request.
+	RefreshPipelineDraftProposal(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteDataSourceBinding performs a DELETE /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/environments/{environment_slug}/data-source-bindings/{data_source_ref_slug} (the `DeleteDataSourceBinding` operationId) request.
 	DeleteDataSourceBinding(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, environmentSlug EnvironmentSlugParam, dataSourceRefSlug DataSourceRefSlugParam, params *DeleteDataSourceBindingParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19785,6 +21720,14 @@ type ClientInterface interface {
 	// GetPipelineVersion performs a GET /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash} (the `GetPipelineVersion` operationId) request.
 	GetPipelineVersion(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash PipelineVersionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CompilePipelineVersionWithBody performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash}/compiled-plans (the `CompilePipelineVersion` operationId) request,
+	// with any type of body and a specified content type.
+	CompilePipelineVersionWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompilePipelineVersion performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash}/compiled-plans (the `CompilePipelineVersion` operationId) request.
+	// Takes a body of the `application/json` content type.
+	CompilePipelineVersion(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, body CompilePipelineVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ReconcilePipelinesWithBody performs a POST /organizations/{slug}/projects/{project_slug}/pipelines:reconcile (the `ReconcilePipelines` operationId) request,
 	// with any type of body and a specified content type.
 	ReconcilePipelinesWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -19792,6 +21735,36 @@ type ClientInterface interface {
 	// ReconcilePipelines performs a POST /organizations/{slug}/projects/{project_slug}/pipelines:reconcile (the `ReconcilePipelines` operationId) request.
 	// Takes a body of the `application/json` content type.
 	ReconcilePipelines(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body ReconcilePipelinesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetProjectRepositorySetup performs a GET /organizations/{slug}/projects/{project_slug}/repository-setup (the `GetProjectRepositorySetup` operationId) request.
+	GetProjectRepositorySetup(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateProjectRepositoryWithBody performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup (the `CreateProjectRepository` operationId) request,
+	// with any type of body and a specified content type.
+	CreateProjectRepositoryWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateProjectRepository performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup (the `CreateProjectRepository` operationId) request.
+	// Takes a body of the `application/json` content type.
+	CreateProjectRepository(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CreateProjectRepositoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AbandonProjectRepositorySetupWithBody performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/abandon (the `AbandonProjectRepositorySetup` operationId) request,
+	// with any type of body and a specified content type.
+	AbandonProjectRepositorySetupWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AbandonProjectRepositorySetup performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/abandon (the `AbandonProjectRepositorySetup` operationId) request.
+	// Takes a body of the `application/json` content type.
+	AbandonProjectRepositorySetup(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body AbandonProjectRepositorySetupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompleteProjectRepositoryGitHubAuthorizationWithBody performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/github-authorization (the `CompleteProjectRepositoryGitHubAuthorization` operationId) request,
+	// with any type of body and a specified content type.
+	CompleteProjectRepositoryGitHubAuthorizationWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompleteProjectRepositoryGitHubAuthorization performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/github-authorization (the `CompleteProjectRepositoryGitHubAuthorization` operationId) request.
+	// Takes a body of the `application/json` content type.
+	CompleteProjectRepositoryGitHubAuthorization(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CompleteProjectRepositoryGitHubAuthorizationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetProjectRepositorySetupAttempt performs a GET /organizations/{slug}/projects/{project_slug}/repository-setups/{setup_slug} (the `GetProjectRepositorySetupAttempt` operationId) request.
+	GetProjectRepositorySetupAttempt(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, setupSlug Slug, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartProviderDataSourceInstallWithBody performs a POST /organizations/{slug}/provider-connectors/{provider}/data-source-installs (the `StartProviderDataSourceInstall` operationId) request,
 	// with any type of body and a specified content type.
@@ -19808,6 +21781,9 @@ type ClientInterface interface {
 	// StartProviderConnectorInstall performs a POST /organizations/{slug}/provider-connectors/{provider}/installs (the `StartProviderConnectorInstall` operationId) request.
 	// Takes a body of the `application/json` content type.
 	StartProviderConnectorInstall(ctx context.Context, slug SlugParam, provider ProviderKey, body StartProviderConnectorInstallJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetQueryExecutionSummary performs a GET /organizations/{slug}/query-execution-summary (the `GetQueryExecutionSummary` operationId) request.
+	GetQueryExecutionSummary(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetOrganizationRetentionPolicy performs a GET /organizations/{slug}/retention (the `GetOrganizationRetentionPolicy` operationId) request.
 	GetOrganizationRetentionPolicy(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -19850,6 +21826,12 @@ type ClientInterface interface {
 
 	// RestoreRole performs a POST /organizations/{slug}/roles/{role_slug}/restore (the `RestoreRole` operationId) request.
 	RestoreRole(ctx context.Context, slug SlugParam, roleSlug RoleSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSecurityAuditEvents performs a GET /organizations/{slug}/security-audit-events (the `ListSecurityAuditEvents` operationId) request.
+	ListSecurityAuditEvents(ctx context.Context, slug SlugParam, params *ListSecurityAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ExportSecurityAuditEvents performs a GET /organizations/{slug}/security-audit-events/export (the `ExportSecurityAuditEvents` operationId) request.
+	ExportSecurityAuditEvents(ctx context.Context, slug SlugParam, params *ExportSecurityAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetUsersProfile performs a GET /users/profile (the `GetUsersProfile` operationId) request.
 	GetUsersProfile(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -21332,6 +23314,73 @@ func (c *Client) UpdateMember(ctx context.Context, slug SlugParam, userSlug User
 	return c.Client.Do(req)
 }
 
+// ListNotificationConnections performs a GET /organizations/{slug}/notification-connections (the `ListNotificationConnections` operationId) request.
+func (c *Client) ListNotificationConnections(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListNotificationConnectionsRequest(c.Server, slug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateNotificationConnectionWithBody performs a POST /organizations/{slug}/notification-connections (the `CreateNotificationConnection` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CreateNotificationConnectionWithBody(ctx context.Context, slug SlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateNotificationConnectionRequestWithBody(c.Server, slug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateNotificationConnection performs a POST /organizations/{slug}/notification-connections (the `CreateNotificationConnection` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) CreateNotificationConnection(ctx context.Context, slug SlugParam, body CreateNotificationConnectionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateNotificationConnectionRequest(c.Server, slug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ConnectNotificationConnection performs a POST /organizations/{slug}/notification-connections/{notification_connection_slug}/connect (the `ConnectNotificationConnection` operationId) request.
+func (c *Client) ConnectNotificationConnection(ctx context.Context, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectNotificationConnectionRequest(c.Server, slug, notificationConnectionSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DisconnectNotificationConnection performs a POST /organizations/{slug}/notification-connections/{notification_connection_slug}/disconnect (the `DisconnectNotificationConnection` operationId) request.
+func (c *Client) DisconnectNotificationConnection(ctx context.Context, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDisconnectNotificationConnectionRequest(c.Server, slug, notificationConnectionSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListNotifications performs a GET /organizations/{slug}/notifications (the `ListNotifications` operationId) request.
 func (c *Client) ListNotifications(ctx context.Context, slug SlugParam, params *ListNotificationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListNotificationsRequest(c.Server, slug, params)
@@ -21387,6 +23436,19 @@ func (c *Client) ListNotificationDeliveryAttempts(ctx context.Context, slug Slug
 // ResolveNotification performs a POST /organizations/{slug}/notifications/{notification_slug}/resolve (the `ResolveNotification` operationId) request.
 func (c *Client) ResolveNotification(ctx context.Context, slug SlugParam, notificationSlug NotificationSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewResolveNotificationRequest(c.Server, slug, notificationSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetPipelineOperationalCapabilities performs a GET /organizations/{slug}/pipeline-operational-capabilities (the `GetPipelineOperationalCapabilities` operationId) request.
+func (c *Client) GetPipelineOperationalCapabilities(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPipelineOperationalCapabilitiesRequest(c.Server, slug)
 	if err != nil {
 		return nil, err
 	}
@@ -22084,6 +24146,47 @@ func (c *Client) GetPipelineDeployment(ctx context.Context, slug SlugParam, proj
 	return c.Client.Do(req)
 }
 
+// GetSuccessfulRunRecency performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `GetSuccessfulRunRecency` operationId) request.
+func (c *Client) GetSuccessfulRunRecency(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSuccessfulRunRecencyRequest(c.Server, slug, projectSlug, environmentSlug, pipelineSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateSuccessfulRunRecencyWithBody performs a PUT /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `UpdateSuccessfulRunRecency` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) UpdateSuccessfulRunRecencyWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSuccessfulRunRecencyRequestWithBody(c.Server, slug, projectSlug, environmentSlug, pipelineSlug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateSuccessfulRunRecency performs a PUT /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `UpdateSuccessfulRunRecency` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) UpdateSuccessfulRunRecency(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, body UpdateSuccessfulRunRecencyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSuccessfulRunRecencyRequest(c.Server, slug, projectSlug, environmentSlug, pipelineSlug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // BootstrapPipelineCheckpointsWithBody performs a POST /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}:bootstrap-checkpoints (the `BootstrapPipelineCheckpoints` operationId) request,
 // with any type of body and a specified content type.
 func (c *Client) BootstrapPipelineCheckpointsWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -22220,6 +24323,45 @@ func (c *Client) GetPipelineRun(ctx context.Context, slug SlugParam, projectSlug
 	return c.Client.Do(req)
 }
 
+// GetPipelineRunCompletion performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/completion (the `GetPipelineRunCompletion` operationId) request.
+func (c *Client) GetPipelineRunCompletion(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPipelineRunCompletionRequest(c.Server, slug, projectSlug, environmentSlug, runSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetPipelineRunConnected performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/connected (the `GetPipelineRunConnected` operationId) request.
+func (c *Client) GetPipelineRunConnected(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPipelineRunConnectedRequest(c.Server, slug, projectSlug, environmentSlug, runSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetPipelineRunProgress performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/progress (the `GetPipelineRunProgress` operationId) request.
+func (c *Client) GetPipelineRunProgress(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, params *GetPipelineRunProgressParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPipelineRunProgressRequest(c.Server, slug, projectSlug, environmentSlug, runSlug, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListPipelineRunTriggerRetryAttempts performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/trigger-retry-attempts (the `ListPipelineRunTriggerRetryAttempts` operationId) request.
 func (c *Client) ListPipelineRunTriggerRetryAttempts(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPipelineRunTriggerRetryAttemptsRequest(c.Server, slug, projectSlug, environmentSlug, runSlug)
@@ -22251,6 +24393,60 @@ func (c *Client) SetProjectPipelineBackendWithBody(ctx context.Context, slug Slu
 // Takes a body of the `application/json` content type.
 func (c *Client) SetProjectPipelineBackend(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body SetProjectPipelineBackendJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetProjectPipelineBackendRequest(c.Server, slug, projectSlug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListPipelineCreationProposals performs a GET /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `ListPipelineCreationProposals` operationId) request.
+func (c *Client) ListPipelineCreationProposals(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, params *ListPipelineCreationProposalsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPipelineCreationProposalsRequest(c.Server, slug, projectSlug, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePipelineProposalWithBody performs a POST /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `CreatePipelineProposal` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CreatePipelineProposalWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePipelineProposalRequestWithBody(c.Server, slug, projectSlug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePipelineProposal performs a POST /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `CreatePipelineProposal` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) CreatePipelineProposal(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CreatePipelineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePipelineProposalRequest(c.Server, slug, projectSlug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetPipelineCreationProposal performs a GET /organizations/{slug}/projects/{project_slug}/pipeline-creations/{creation_slug} (the `GetPipelineCreationProposal` operationId) request.
+func (c *Client) GetPipelineCreationProposal(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, creationSlug Slug, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPipelineCreationProposalRequest(c.Server, slug, projectSlug, creationSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -22305,6 +24501,19 @@ func (c *Client) UpdatePipelineWithBody(ctx context.Context, slug SlugParam, pro
 // Takes a body of the `application/json` content type.
 func (c *Client) UpdatePipeline(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, body UpdatePipelineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdatePipelineRequest(c.Server, slug, projectSlug, pipelineSlug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetPipelineCompiledPlan performs a GET /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/compiled-plans/{digest} (the `GetPipelineCompiledPlan` operationId) request.
+func (c *Client) GetPipelineCompiledPlan(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, digest string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPipelineCompiledPlanRequest(c.Server, slug, projectSlug, pipelineSlug, digest)
 	if err != nil {
 		return nil, err
 	}
@@ -22479,6 +24688,19 @@ func (c *Client) PublishPipelineDraft(ctx context.Context, slug SlugParam, proje
 	return c.Client.Do(req)
 }
 
+// RefreshPipelineDraftProposal performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/draft:refresh-proposal (the `RefreshPipelineDraftProposal` operationId) request.
+func (c *Client) RefreshPipelineDraftProposal(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRefreshPipelineDraftProposalRequest(c.Server, slug, projectSlug, pipelineSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // DeleteDataSourceBinding performs a DELETE /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/environments/{environment_slug}/data-source-bindings/{data_source_ref_slug} (the `DeleteDataSourceBinding` operationId) request.
 func (c *Client) DeleteDataSourceBinding(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, environmentSlug EnvironmentSlugParam, dataSourceRefSlug DataSourceRefSlugParam, params *DeleteDataSourceBindingParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteDataSourceBindingRequest(c.Server, slug, projectSlug, pipelineSlug, environmentSlug, dataSourceRefSlug, params)
@@ -22559,6 +24781,34 @@ func (c *Client) GetPipelineVersion(ctx context.Context, slug SlugParam, project
 	return c.Client.Do(req)
 }
 
+// CompilePipelineVersionWithBody performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash}/compiled-plans (the `CompilePipelineVersion` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CompilePipelineVersionWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompilePipelineVersionRequestWithBody(c.Server, slug, projectSlug, pipelineSlug, specHash, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CompilePipelineVersion performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash}/compiled-plans (the `CompilePipelineVersion` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) CompilePipelineVersion(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, body CompilePipelineVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompilePipelineVersionRequest(c.Server, slug, projectSlug, pipelineSlug, specHash, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ReconcilePipelinesWithBody performs a POST /organizations/{slug}/projects/{project_slug}/pipelines:reconcile (the `ReconcilePipelines` operationId) request,
 // with any type of body and a specified content type.
 func (c *Client) ReconcilePipelinesWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -22577,6 +24827,116 @@ func (c *Client) ReconcilePipelinesWithBody(ctx context.Context, slug SlugParam,
 // Takes a body of the `application/json` content type.
 func (c *Client) ReconcilePipelines(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body ReconcilePipelinesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReconcilePipelinesRequest(c.Server, slug, projectSlug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetProjectRepositorySetup performs a GET /organizations/{slug}/projects/{project_slug}/repository-setup (the `GetProjectRepositorySetup` operationId) request.
+func (c *Client) GetProjectRepositorySetup(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectRepositorySetupRequest(c.Server, slug, projectSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateProjectRepositoryWithBody performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup (the `CreateProjectRepository` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CreateProjectRepositoryWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectRepositoryRequestWithBody(c.Server, slug, projectSlug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateProjectRepository performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup (the `CreateProjectRepository` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) CreateProjectRepository(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CreateProjectRepositoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectRepositoryRequest(c.Server, slug, projectSlug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AbandonProjectRepositorySetupWithBody performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/abandon (the `AbandonProjectRepositorySetup` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) AbandonProjectRepositorySetupWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAbandonProjectRepositorySetupRequestWithBody(c.Server, slug, projectSlug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AbandonProjectRepositorySetup performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/abandon (the `AbandonProjectRepositorySetup` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) AbandonProjectRepositorySetup(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body AbandonProjectRepositorySetupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAbandonProjectRepositorySetupRequest(c.Server, slug, projectSlug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CompleteProjectRepositoryGitHubAuthorizationWithBody performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/github-authorization (the `CompleteProjectRepositoryGitHubAuthorization` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CompleteProjectRepositoryGitHubAuthorizationWithBody(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteProjectRepositoryGitHubAuthorizationRequestWithBody(c.Server, slug, projectSlug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CompleteProjectRepositoryGitHubAuthorization performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/github-authorization (the `CompleteProjectRepositoryGitHubAuthorization` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) CompleteProjectRepositoryGitHubAuthorization(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CompleteProjectRepositoryGitHubAuthorizationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteProjectRepositoryGitHubAuthorizationRequest(c.Server, slug, projectSlug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetProjectRepositorySetupAttempt performs a GET /organizations/{slug}/projects/{project_slug}/repository-setups/{setup_slug} (the `GetProjectRepositorySetupAttempt` operationId) request.
+func (c *Client) GetProjectRepositorySetupAttempt(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, setupSlug Slug, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectRepositorySetupAttemptRequest(c.Server, slug, projectSlug, setupSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -22633,6 +24993,19 @@ func (c *Client) StartProviderConnectorInstallWithBody(ctx context.Context, slug
 // Takes a body of the `application/json` content type.
 func (c *Client) StartProviderConnectorInstall(ctx context.Context, slug SlugParam, provider ProviderKey, body StartProviderConnectorInstallJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStartProviderConnectorInstallRequest(c.Server, slug, provider, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetQueryExecutionSummary performs a GET /organizations/{slug}/query-execution-summary (the `GetQueryExecutionSummary` operationId) request.
+func (c *Client) GetQueryExecutionSummary(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetQueryExecutionSummaryRequest(c.Server, slug)
 	if err != nil {
 		return nil, err
 	}
@@ -22795,6 +25168,32 @@ func (c *Client) UpdateRole(ctx context.Context, slug SlugParam, roleSlug RoleSl
 // RestoreRole performs a POST /organizations/{slug}/roles/{role_slug}/restore (the `RestoreRole` operationId) request.
 func (c *Client) RestoreRole(ctx context.Context, slug SlugParam, roleSlug RoleSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRestoreRoleRequest(c.Server, slug, roleSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListSecurityAuditEvents performs a GET /organizations/{slug}/security-audit-events (the `ListSecurityAuditEvents` operationId) request.
+func (c *Client) ListSecurityAuditEvents(ctx context.Context, slug SlugParam, params *ListSecurityAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSecurityAuditEventsRequest(c.Server, slug, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ExportSecurityAuditEvents performs a GET /organizations/{slug}/security-audit-events/export (the `ExportSecurityAuditEvents` operationId) request.
+func (c *Client) ExportSecurityAuditEvents(ctx context.Context, slug SlugParam, params *ExportSecurityAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExportSecurityAuditEventsRequest(c.Server, slug, params)
 	if err != nil {
 		return nil, err
 	}
@@ -27997,6 +30396,169 @@ func NewUpdateMemberRequestWithBody(server string, slug SlugParam, userSlug User
 	return req, nil
 }
 
+// NewListNotificationConnectionsRequest constructs an http.Request for the ListNotificationConnections method
+func NewListNotificationConnectionsRequest(server string, slug SlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/notification-connections", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateNotificationConnectionRequest calls the generic CreateNotificationConnection builder with application/json body
+func NewCreateNotificationConnectionRequest(server string, slug SlugParam, body CreateNotificationConnectionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateNotificationConnectionRequestWithBody(server, slug, "application/json", bodyReader)
+}
+
+// NewCreateNotificationConnectionRequestWithBody constructs an http.Request for the CreateNotificationConnection method, with any body, and a specified content type
+func NewCreateNotificationConnectionRequestWithBody(server string, slug SlugParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/notification-connections", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewConnectNotificationConnectionRequest constructs an http.Request for the ConnectNotificationConnection method
+func NewConnectNotificationConnectionRequest(server string, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "notification_connection_slug", notificationConnectionSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/notification-connections/%s/connect", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDisconnectNotificationConnectionRequest constructs an http.Request for the DisconnectNotificationConnection method
+func NewDisconnectNotificationConnectionRequest(server string, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "notification_connection_slug", notificationConnectionSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/notification-connections/%s/disconnect", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListNotificationsRequest constructs an http.Request for the ListNotifications method
 func NewListNotificationsRequest(server string, slug SlugParam, params *ListNotificationsParams) (*http.Request, error) {
 	var err error
@@ -28410,6 +30972,40 @@ func NewResolveNotificationRequest(server string, slug SlugParam, notificationSl
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetPipelineOperationalCapabilitiesRequest constructs an http.Request for the GetPipelineOperationalCapabilities method
+func NewGetPipelineOperationalCapabilitiesRequest(server string, slug SlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/pipeline-operational-capabilities", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -31174,6 +33770,129 @@ func NewGetPipelineDeploymentRequest(server string, slug SlugParam, projectSlug 
 	return req, nil
 }
 
+// NewGetSuccessfulRunRecencyRequest constructs an http.Request for the GetSuccessfulRunRecency method
+func NewGetSuccessfulRunRecencyRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "environment_slug", environmentSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam3 string
+
+	pathParam3, err = runtime.StyleParamWithOptions("simple", false, "pipeline_slug", pipelineSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/environments/%s/pipelines/%s/successful-run-recency", pathParam0, pathParam1, pathParam2, pathParam3)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateSuccessfulRunRecencyRequest calls the generic UpdateSuccessfulRunRecency builder with application/json body
+func NewUpdateSuccessfulRunRecencyRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, body UpdateSuccessfulRunRecencyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateSuccessfulRunRecencyRequestWithBody(server, slug, projectSlug, environmentSlug, pipelineSlug, "application/json", bodyReader)
+}
+
+// NewUpdateSuccessfulRunRecencyRequestWithBody constructs an http.Request for the UpdateSuccessfulRunRecency method, with any body, and a specified content type
+func NewUpdateSuccessfulRunRecencyRequestWithBody(server string, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "environment_slug", environmentSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam3 string
+
+	pathParam3, err = runtime.StyleParamWithOptions("simple", false, "pipeline_slug", pipelineSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/environments/%s/pipelines/%s/successful-run-recency", pathParam0, pathParam1, pathParam2, pathParam3)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewBootstrapPipelineCheckpointsRequest calls the generic BootstrapPipelineCheckpoints builder with application/json body
 func NewBootstrapPipelineCheckpointsRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, body BootstrapPipelineCheckpointsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -31714,6 +34433,210 @@ func NewGetPipelineRunRequest(server string, slug SlugParam, projectSlug Project
 	return req, nil
 }
 
+// NewGetPipelineRunCompletionRequest constructs an http.Request for the GetPipelineRunCompletion method
+func NewGetPipelineRunCompletionRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "environment_slug", environmentSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam3 string
+
+	pathParam3, err = runtime.StyleParamWithOptions("simple", false, "run_slug", runSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/environments/%s/runs/%s/completion", pathParam0, pathParam1, pathParam2, pathParam3)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetPipelineRunConnectedRequest constructs an http.Request for the GetPipelineRunConnected method
+func NewGetPipelineRunConnectedRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "environment_slug", environmentSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam3 string
+
+	pathParam3, err = runtime.StyleParamWithOptions("simple", false, "run_slug", runSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/environments/%s/runs/%s/connected", pathParam0, pathParam1, pathParam2, pathParam3)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetPipelineRunProgressRequest constructs an http.Request for the GetPipelineRunProgress method
+func NewGetPipelineRunProgressRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, params *GetPipelineRunProgressParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "environment_slug", environmentSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam3 string
+
+	pathParam3, err = runtime.StyleParamWithOptions("simple", false, "run_slug", runSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/environments/%s/runs/%s/progress", pathParam0, pathParam1, pathParam2, pathParam3)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.AfterEvent != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_event", *params.AfterEvent, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListPipelineRunTriggerRetryAttemptsRequest constructs an http.Request for the ListPipelineRunTriggerRetryAttempts method
 func NewListPipelineRunTriggerRetryAttemptsRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam) (*http.Request, error) {
 	var err error
@@ -31819,6 +34742,188 @@ func NewSetProjectPipelineBackendRequestWithBody(server string, slug SlugParam, 
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListPipelineCreationProposalsRequest constructs an http.Request for the ListPipelineCreationProposals method
+func NewListPipelineCreationProposalsRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, params *ListPipelineCreationProposalsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/pipeline-creations", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreatePipelineProposalRequest calls the generic CreatePipelineProposal builder with application/json body
+func NewCreatePipelineProposalRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, body CreatePipelineProposalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreatePipelineProposalRequestWithBody(server, slug, projectSlug, "application/json", bodyReader)
+}
+
+// NewCreatePipelineProposalRequestWithBody constructs an http.Request for the CreatePipelineProposal method, with any body, and a specified content type
+func NewCreatePipelineProposalRequestWithBody(server string, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/pipeline-creations", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetPipelineCreationProposalRequest constructs an http.Request for the GetPipelineCreationProposal method
+func NewGetPipelineCreationProposalRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, creationSlug Slug) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "creation_slug", creationSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/pipeline-creations/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -32020,6 +35125,61 @@ func NewUpdatePipelineRequestWithBody(server string, slug SlugParam, projectSlug
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetPipelineCompiledPlanRequest constructs an http.Request for the GetPipelineCompiledPlan method
+func NewGetPipelineCompiledPlanRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, digest string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "pipeline_slug", pipelineSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam3 string
+
+	pathParam3, err = runtime.StyleParamWithOptions("simple", false, "digest", digest, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/pipelines/%s/compiled-plans/%s", pathParam0, pathParam1, pathParam2, pathParam3)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -32481,6 +35641,54 @@ func NewPublishPipelineDraftRequestWithBody(server string, slug SlugParam, proje
 	return req, nil
 }
 
+// NewRefreshPipelineDraftProposalRequest constructs an http.Request for the RefreshPipelineDraftProposal method
+func NewRefreshPipelineDraftProposalRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "pipeline_slug", pipelineSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/pipelines/%s/draft:refresh-proposal", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewDeleteDataSourceBindingRequest constructs an http.Request for the DeleteDataSourceBinding method
 func NewDeleteDataSourceBindingRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, environmentSlug EnvironmentSlugParam, dataSourceRefSlug DataSourceRefSlugParam, params *DeleteDataSourceBindingParams) (*http.Request, error) {
 	var err error
@@ -32810,6 +36018,101 @@ func NewGetPipelineVersionRequest(server string, slug SlugParam, projectSlug Pro
 	return req, nil
 }
 
+// NewCompilePipelineVersionRequest calls the generic CompilePipelineVersion builder with application/json body
+func NewCompilePipelineVersionRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, body CompilePipelineVersionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCompilePipelineVersionRequestWithBody(server, slug, projectSlug, pipelineSlug, specHash, params, "application/json", bodyReader)
+}
+
+// NewCompilePipelineVersionRequestWithBody constructs an http.Request for the CompilePipelineVersion method, with any body, and a specified content type
+func NewCompilePipelineVersionRequestWithBody(server string, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "pipeline_slug", pipelineSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam3 string
+
+	pathParam3, err = runtime.StyleParamWithOptions("simple", false, "spec_hash", specHash, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/pipelines/%s/versions/%s/compiled-plans", pathParam0, pathParam1, pathParam2, pathParam3)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.EnvironmentSlug != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "environment_slug", *params.EnvironmentSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewReconcilePipelinesRequest calls the generic ReconcilePipelines builder with application/json body
 func NewReconcilePipelinesRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, body ReconcilePipelinesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -32860,6 +36163,257 @@ func NewReconcilePipelinesRequestWithBody(server string, slug SlugParam, project
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetProjectRepositorySetupRequest constructs an http.Request for the GetProjectRepositorySetup method
+func NewGetProjectRepositorySetupRequest(server string, slug SlugParam, projectSlug ProjectSlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/repository-setup", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateProjectRepositoryRequest calls the generic CreateProjectRepository builder with application/json body
+func NewCreateProjectRepositoryRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, body CreateProjectRepositoryJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateProjectRepositoryRequestWithBody(server, slug, projectSlug, "application/json", bodyReader)
+}
+
+// NewCreateProjectRepositoryRequestWithBody constructs an http.Request for the CreateProjectRepository method, with any body, and a specified content type
+func NewCreateProjectRepositoryRequestWithBody(server string, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/repository-setup", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAbandonProjectRepositorySetupRequest calls the generic AbandonProjectRepositorySetup builder with application/json body
+func NewAbandonProjectRepositorySetupRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, body AbandonProjectRepositorySetupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAbandonProjectRepositorySetupRequestWithBody(server, slug, projectSlug, "application/json", bodyReader)
+}
+
+// NewAbandonProjectRepositorySetupRequestWithBody constructs an http.Request for the AbandonProjectRepositorySetup method, with any body, and a specified content type
+func NewAbandonProjectRepositorySetupRequestWithBody(server string, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/repository-setup/abandon", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCompleteProjectRepositoryGitHubAuthorizationRequest calls the generic CompleteProjectRepositoryGitHubAuthorization builder with application/json body
+func NewCompleteProjectRepositoryGitHubAuthorizationRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, body CompleteProjectRepositoryGitHubAuthorizationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCompleteProjectRepositoryGitHubAuthorizationRequestWithBody(server, slug, projectSlug, "application/json", bodyReader)
+}
+
+// NewCompleteProjectRepositoryGitHubAuthorizationRequestWithBody constructs an http.Request for the CompleteProjectRepositoryGitHubAuthorization method, with any body, and a specified content type
+func NewCompleteProjectRepositoryGitHubAuthorizationRequestWithBody(server string, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/repository-setup/github-authorization", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetProjectRepositorySetupAttemptRequest constructs an http.Request for the GetProjectRepositorySetupAttempt method
+func NewGetProjectRepositorySetupAttemptRequest(server string, slug SlugParam, projectSlug ProjectSlugParam, setupSlug Slug) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "setup_slug", setupSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/repository-setups/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -32968,6 +36522,40 @@ func NewStartProviderConnectorInstallRequestWithBody(server string, slug SlugPar
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetQueryExecutionSummaryRequest constructs an http.Request for the GetQueryExecutionSummary method
+func NewGetQueryExecutionSummaryRequest(server string, slug SlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/query-execution-summary", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -33437,6 +37025,356 @@ func NewRestoreRoleRequest(server string, slug SlugParam, roleSlug RoleSlugParam
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListSecurityAuditEventsRequest constructs an http.Request for the ListSecurityAuditEvents method
+func NewListSecurityAuditEventsRequest(server string, slug SlugParam, params *ListSecurityAuditEventsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/security-audit-events", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SortBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sort_by", *params.SortBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "order", *params.Order, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Direction != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "direction", *params.Direction, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ActorType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_type", *params.ActorType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ActorSlug != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_slug", *params.ActorSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EntityType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "entity_type", *params.EntityType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EntitySlug != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "entity_slug", *params.EntitySlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Action != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "action", *params.Action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RequestId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "request_id", *params.RequestId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OccurredFrom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "occurred_from", *params.OccurredFrom, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OccurredBefore != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "occurred_before", *params.OccurredBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewExportSecurityAuditEventsRequest constructs an http.Request for the ExportSecurityAuditEvents method
+func NewExportSecurityAuditEventsRequest(server string, slug SlugParam, params *ExportSecurityAuditEventsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/security-audit-events/export", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.ActorType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_type", *params.ActorType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ActorSlug != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_slug", *params.ActorSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EntityType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "entity_type", *params.EntityType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EntitySlug != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "entity_slug", *params.EntitySlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Action != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "action", *params.Action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RequestId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "request_id", *params.RequestId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OccurredFrom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "occurred_from", *params.OccurredFrom, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OccurredBefore != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "occurred_before", *params.OccurredBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -34381,6 +38319,31 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	UpdateMemberWithResponse(ctx context.Context, slug SlugParam, userSlug UserSlugParam, body UpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMemberResponse, error)
 
+	// ListNotificationConnectionsWithResponse performs a GET /organizations/{slug}/notification-connections (the `ListNotificationConnections` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListNotificationConnectionsWithResponse(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*ListNotificationConnectionsResponse, error)
+
+	// CreateNotificationConnectionWithBodyWithResponse performs a POST /organizations/{slug}/notification-connections (the `CreateNotificationConnection` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateNotificationConnectionWithBodyWithResponse(ctx context.Context, slug SlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNotificationConnectionResponse, error)
+
+	// CreateNotificationConnectionWithResponse performs a POST /organizations/{slug}/notification-connections (the `CreateNotificationConnection` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CreateNotificationConnectionWithResponse(ctx context.Context, slug SlugParam, body CreateNotificationConnectionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateNotificationConnectionResponse, error)
+
+	// ConnectNotificationConnectionWithResponse performs a POST /organizations/{slug}/notification-connections/{notification_connection_slug}/connect (the `ConnectNotificationConnection` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ConnectNotificationConnectionWithResponse(ctx context.Context, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam, reqEditors ...RequestEditorFn) (*ConnectNotificationConnectionResponse, error)
+
+	// DisconnectNotificationConnectionWithResponse performs a POST /organizations/{slug}/notification-connections/{notification_connection_slug}/disconnect (the `DisconnectNotificationConnection` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DisconnectNotificationConnectionWithResponse(ctx context.Context, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam, reqEditors ...RequestEditorFn) (*DisconnectNotificationConnectionResponse, error)
+
 	// ListNotificationsWithResponse performs a GET /organizations/{slug}/notifications (the `ListNotifications` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -34405,6 +38368,11 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	ResolveNotificationWithResponse(ctx context.Context, slug SlugParam, notificationSlug NotificationSlugParam, reqEditors ...RequestEditorFn) (*ResolveNotificationResponse, error)
+
+	// GetPipelineOperationalCapabilitiesWithResponse performs a GET /organizations/{slug}/pipeline-operational-capabilities (the `GetPipelineOperationalCapabilities` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetPipelineOperationalCapabilitiesWithResponse(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*GetPipelineOperationalCapabilitiesResponse, error)
 
 	// FormatPipelineSpecWithBodyWithResponse performs a POST /organizations/{slug}/pipeline-spec:format (the `FormatPipelineSpec` operationId) request,
 	// with any type of body and a specified content type.
@@ -34661,6 +38629,21 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetPipelineDeploymentWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*GetPipelineDeploymentResponse, error)
 
+	// GetSuccessfulRunRecencyWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `GetSuccessfulRunRecency` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetSuccessfulRunRecencyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*GetSuccessfulRunRecencyResponse, error)
+
+	// UpdateSuccessfulRunRecencyWithBodyWithResponse performs a PUT /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `UpdateSuccessfulRunRecency` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateSuccessfulRunRecencyWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSuccessfulRunRecencyResponse, error)
+
+	// UpdateSuccessfulRunRecencyWithResponse performs a PUT /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `UpdateSuccessfulRunRecency` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	UpdateSuccessfulRunRecencyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, body UpdateSuccessfulRunRecencyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSuccessfulRunRecencyResponse, error)
+
 	// BootstrapPipelineCheckpointsWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}:bootstrap-checkpoints (the `BootstrapPipelineCheckpoints` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -34711,6 +38694,21 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetPipelineRunWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*GetPipelineRunResponse, error)
 
+	// GetPipelineRunCompletionWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/completion (the `GetPipelineRunCompletion` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetPipelineRunCompletionWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*GetPipelineRunCompletionResponse, error)
+
+	// GetPipelineRunConnectedWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/connected (the `GetPipelineRunConnected` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetPipelineRunConnectedWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*GetPipelineRunConnectedResponse, error)
+
+	// GetPipelineRunProgressWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/progress (the `GetPipelineRunProgress` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetPipelineRunProgressWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, params *GetPipelineRunProgressParams, reqEditors ...RequestEditorFn) (*GetPipelineRunProgressResponse, error)
+
 	// ListPipelineRunTriggerRetryAttemptsWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/trigger-retry-attempts (the `ListPipelineRunTriggerRetryAttempts` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -34725,6 +38723,26 @@ type ClientWithResponsesInterface interface {
 	// SetProjectPipelineBackendWithResponse performs a PUT /organizations/{slug}/projects/{project_slug}/pipeline-backend (the `SetProjectPipelineBackend` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	SetProjectPipelineBackendWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body SetProjectPipelineBackendJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectPipelineBackendResponse, error)
+
+	// ListPipelineCreationProposalsWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `ListPipelineCreationProposals` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListPipelineCreationProposalsWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, params *ListPipelineCreationProposalsParams, reqEditors ...RequestEditorFn) (*ListPipelineCreationProposalsResponse, error)
+
+	// CreatePipelineProposalWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `CreatePipelineProposal` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreatePipelineProposalWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePipelineProposalResponse, error)
+
+	// CreatePipelineProposalWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `CreatePipelineProposal` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CreatePipelineProposalWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CreatePipelineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePipelineProposalResponse, error)
+
+	// GetPipelineCreationProposalWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/pipeline-creations/{creation_slug} (the `GetPipelineCreationProposal` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetPipelineCreationProposalWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, creationSlug Slug, reqEditors ...RequestEditorFn) (*GetPipelineCreationProposalResponse, error)
 
 	// ListPipelinesWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/pipelines (the `ListPipelines` operationId) request.
 	//
@@ -34745,6 +38763,11 @@ type ClientWithResponsesInterface interface {
 	// UpdatePipelineWithResponse performs a PUT /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug} (the `UpdatePipeline` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	UpdatePipelineWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, body UpdatePipelineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePipelineResponse, error)
+
+	// GetPipelineCompiledPlanWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/compiled-plans/{digest} (the `GetPipelineCompiledPlan` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetPipelineCompiledPlanWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, digest string, reqEditors ...RequestEditorFn) (*GetPipelineCompiledPlanResponse, error)
 
 	// CreateDataSourceRefWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/data-source-refs (the `CreateDataSourceRef` operationId) request,
 	// with any type of body and a specified content type.
@@ -34806,6 +38829,11 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	PublishPipelineDraftWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, body PublishPipelineDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*PublishPipelineDraftResponse, error)
 
+	// RefreshPipelineDraftProposalWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/draft:refresh-proposal (the `RefreshPipelineDraftProposal` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RefreshPipelineDraftProposalWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*RefreshPipelineDraftProposalResponse, error)
+
 	// DeleteDataSourceBindingWithResponse performs a DELETE /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/environments/{environment_slug}/data-source-bindings/{data_source_ref_slug} (the `DeleteDataSourceBinding` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -34836,6 +38864,16 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetPipelineVersionWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash PipelineVersionIdParam, reqEditors ...RequestEditorFn) (*GetPipelineVersionResponse, error)
 
+	// CompilePipelineVersionWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash}/compiled-plans (the `CompilePipelineVersion` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CompilePipelineVersionWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompilePipelineVersionResponse, error)
+
+	// CompilePipelineVersionWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash}/compiled-plans (the `CompilePipelineVersion` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CompilePipelineVersionWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, body CompilePipelineVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CompilePipelineVersionResponse, error)
+
 	// ReconcilePipelinesWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines:reconcile (the `ReconcilePipelines` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -34845,6 +38883,46 @@ type ClientWithResponsesInterface interface {
 	// ReconcilePipelinesWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines:reconcile (the `ReconcilePipelines` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	ReconcilePipelinesWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body ReconcilePipelinesJSONRequestBody, reqEditors ...RequestEditorFn) (*ReconcilePipelinesResponse, error)
+
+	// GetProjectRepositorySetupWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/repository-setup (the `GetProjectRepositorySetup` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetProjectRepositorySetupWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*GetProjectRepositorySetupResponse, error)
+
+	// CreateProjectRepositoryWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup (the `CreateProjectRepository` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateProjectRepositoryWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectRepositoryResponse, error)
+
+	// CreateProjectRepositoryWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup (the `CreateProjectRepository` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CreateProjectRepositoryWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CreateProjectRepositoryJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectRepositoryResponse, error)
+
+	// AbandonProjectRepositorySetupWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/abandon (the `AbandonProjectRepositorySetup` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	AbandonProjectRepositorySetupWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AbandonProjectRepositorySetupResponse, error)
+
+	// AbandonProjectRepositorySetupWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/abandon (the `AbandonProjectRepositorySetup` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	AbandonProjectRepositorySetupWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body AbandonProjectRepositorySetupJSONRequestBody, reqEditors ...RequestEditorFn) (*AbandonProjectRepositorySetupResponse, error)
+
+	// CompleteProjectRepositoryGitHubAuthorizationWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/github-authorization (the `CompleteProjectRepositoryGitHubAuthorization` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CompleteProjectRepositoryGitHubAuthorizationWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteProjectRepositoryGitHubAuthorizationResponse, error)
+
+	// CompleteProjectRepositoryGitHubAuthorizationWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/github-authorization (the `CompleteProjectRepositoryGitHubAuthorization` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CompleteProjectRepositoryGitHubAuthorizationWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CompleteProjectRepositoryGitHubAuthorizationJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteProjectRepositoryGitHubAuthorizationResponse, error)
+
+	// GetProjectRepositorySetupAttemptWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/repository-setups/{setup_slug} (the `GetProjectRepositorySetupAttempt` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetProjectRepositorySetupAttemptWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, setupSlug Slug, reqEditors ...RequestEditorFn) (*GetProjectRepositorySetupAttemptResponse, error)
 
 	// StartProviderDataSourceInstallWithBodyWithResponse performs a POST /organizations/{slug}/provider-connectors/{provider}/data-source-installs (the `StartProviderDataSourceInstall` operationId) request,
 	// with any type of body and a specified content type.
@@ -34865,6 +38943,11 @@ type ClientWithResponsesInterface interface {
 	// StartProviderConnectorInstallWithResponse performs a POST /organizations/{slug}/provider-connectors/{provider}/installs (the `StartProviderConnectorInstall` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	StartProviderConnectorInstallWithResponse(ctx context.Context, slug SlugParam, provider ProviderKey, body StartProviderConnectorInstallJSONRequestBody, reqEditors ...RequestEditorFn) (*StartProviderConnectorInstallResponse, error)
+
+	// GetQueryExecutionSummaryWithResponse performs a GET /organizations/{slug}/query-execution-summary (the `GetQueryExecutionSummary` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetQueryExecutionSummaryWithResponse(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*GetQueryExecutionSummaryResponse, error)
 
 	// GetOrganizationRetentionPolicyWithResponse performs a GET /organizations/{slug}/retention (the `GetOrganizationRetentionPolicy` operationId) request.
 	//
@@ -34925,6 +39008,16 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	RestoreRoleWithResponse(ctx context.Context, slug SlugParam, roleSlug RoleSlugParam, reqEditors ...RequestEditorFn) (*RestoreRoleResponse, error)
+
+	// ListSecurityAuditEventsWithResponse performs a GET /organizations/{slug}/security-audit-events (the `ListSecurityAuditEvents` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListSecurityAuditEventsWithResponse(ctx context.Context, slug SlugParam, params *ListSecurityAuditEventsParams, reqEditors ...RequestEditorFn) (*ListSecurityAuditEventsResponse, error)
+
+	// ExportSecurityAuditEventsWithResponse performs a GET /organizations/{slug}/security-audit-events/export (the `ExportSecurityAuditEvents` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ExportSecurityAuditEventsWithResponse(ctx context.Context, slug SlugParam, params *ExportSecurityAuditEventsParams, reqEditors ...RequestEditorFn) (*ExportSecurityAuditEventsResponse, error)
 
 	// GetUsersProfileWithResponse performs a GET /users/profile (the `GetUsersProfile` operationId) request.
 	//
@@ -39331,6 +43424,352 @@ func (r UpdateMemberResponse) ContentType() string {
 	return ""
 }
 
+type ListNotificationConnectionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *[]NotificationConnection
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListNotificationConnectionsResponse) GetJSON200() *[]NotificationConnection {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListNotificationConnectionsResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListNotificationConnectionsResponse) GetJSON401() *ErrorResponse {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListNotificationConnectionsResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListNotificationConnectionsResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListNotificationConnectionsResponse) GetJSON503() *ErrorResponse {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListNotificationConnectionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListNotificationConnectionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListNotificationConnectionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListNotificationConnectionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateNotificationConnectionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *NotificationConnection
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *ErrorResponse
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *ErrorResponse
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateNotificationConnectionResponse) GetJSON201() *NotificationConnection {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateNotificationConnectionResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateNotificationConnectionResponse) GetJSON401() *ErrorResponse {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateNotificationConnectionResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateNotificationConnectionResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateNotificationConnectionResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateNotificationConnectionResponse) GetJSON429() *ErrorResponse {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateNotificationConnectionResponse) GetJSON503() *ErrorResponse {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateNotificationConnectionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateNotificationConnectionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateNotificationConnectionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateNotificationConnectionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ConnectNotificationConnectionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *ProviderConnectorInstall
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *ErrorResponse
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *ErrorResponse
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r ConnectNotificationConnectionResponse) GetJSON201() *ProviderConnectorInstall {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ConnectNotificationConnectionResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ConnectNotificationConnectionResponse) GetJSON401() *ErrorResponse {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ConnectNotificationConnectionResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ConnectNotificationConnectionResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ConnectNotificationConnectionResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ConnectNotificationConnectionResponse) GetJSON429() *ErrorResponse {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ConnectNotificationConnectionResponse) GetJSON503() *ErrorResponse {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ConnectNotificationConnectionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ConnectNotificationConnectionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConnectNotificationConnectionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ConnectNotificationConnectionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DisconnectNotificationConnectionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CredentialMetadata
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *ErrorResponse
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r DisconnectNotificationConnectionResponse) GetJSON200() *CredentialMetadata {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DisconnectNotificationConnectionResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DisconnectNotificationConnectionResponse) GetJSON401() *ErrorResponse {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DisconnectNotificationConnectionResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DisconnectNotificationConnectionResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DisconnectNotificationConnectionResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DisconnectNotificationConnectionResponse) GetJSON429() *ErrorResponse {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DisconnectNotificationConnectionResponse) GetJSON503() *ErrorResponse {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DisconnectNotificationConnectionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DisconnectNotificationConnectionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DisconnectNotificationConnectionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DisconnectNotificationConnectionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListNotificationsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -39635,6 +44074,68 @@ func (r ResolveNotificationResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ResolveNotificationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetPipelineOperationalCapabilitiesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PipelineOperationalCapabilities
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPipelineOperationalCapabilitiesResponse) GetJSON200() *PipelineOperationalCapabilities {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetPipelineOperationalCapabilitiesResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetPipelineOperationalCapabilitiesResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetPipelineOperationalCapabilitiesResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPipelineOperationalCapabilitiesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPipelineOperationalCapabilitiesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPipelineOperationalCapabilitiesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPipelineOperationalCapabilitiesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -42031,6 +46532,137 @@ func (r GetPipelineDeploymentResponse) ContentType() string {
 	return ""
 }
 
+type GetSuccessfulRunRecencyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SuccessfulRunRecency
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetSuccessfulRunRecencyResponse) GetJSON200() *SuccessfulRunRecency {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetSuccessfulRunRecencyResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetSuccessfulRunRecencyResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetSuccessfulRunRecencyResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetSuccessfulRunRecencyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSuccessfulRunRecencyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSuccessfulRunRecencyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSuccessfulRunRecencyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateSuccessfulRunRecencyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SuccessfulRunRecency
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateSuccessfulRunRecencyResponse) GetJSON200() *SuccessfulRunRecency {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UpdateSuccessfulRunRecencyResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateSuccessfulRunRecencyResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateSuccessfulRunRecencyResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateSuccessfulRunRecencyResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateSuccessfulRunRecencyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateSuccessfulRunRecencyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateSuccessfulRunRecencyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateSuccessfulRunRecencyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type BootstrapPipelineCheckpointsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -42479,6 +47111,213 @@ func (r GetPipelineRunResponse) ContentType() string {
 	return ""
 }
 
+type GetPipelineRunCompletionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PipelineRunCompletion
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPipelineRunCompletionResponse) GetJSON200() *PipelineRunCompletion {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetPipelineRunCompletionResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetPipelineRunCompletionResponse) GetJSON401() *ErrorResponse {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetPipelineRunCompletionResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetPipelineRunCompletionResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPipelineRunCompletionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPipelineRunCompletionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPipelineRunCompletionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPipelineRunCompletionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetPipelineRunConnectedResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PipelineRunConnected
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPipelineRunConnectedResponse) GetJSON200() *PipelineRunConnected {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetPipelineRunConnectedResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetPipelineRunConnectedResponse) GetJSON401() *ErrorResponse {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetPipelineRunConnectedResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetPipelineRunConnectedResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPipelineRunConnectedResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPipelineRunConnectedResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPipelineRunConnectedResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPipelineRunConnectedResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetPipelineRunProgressResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PipelineRunProgress
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPipelineRunProgressResponse) GetJSON200() *PipelineRunProgress {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetPipelineRunProgressResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetPipelineRunProgressResponse) GetJSON401() *ErrorResponse {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetPipelineRunProgressResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetPipelineRunProgressResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPipelineRunProgressResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPipelineRunProgressResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPipelineRunProgressResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPipelineRunProgressResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListPipelineRunTriggerRetryAttemptsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -42618,6 +47457,178 @@ func (r SetProjectPipelineBackendResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SetProjectPipelineBackendResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListPipelineCreationProposalsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PipelineCreationProposalListResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListPipelineCreationProposalsResponse) GetJSON200() *PipelineCreationProposalListResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListPipelineCreationProposalsResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListPipelineCreationProposalsResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetBody returns the raw response body bytes
+func (r ListPipelineCreationProposalsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPipelineCreationProposalsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPipelineCreationProposalsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListPipelineCreationProposalsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreatePipelineProposalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PipelineCreationProposal
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreatePipelineProposalResponse) GetJSON200() *PipelineCreationProposal {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreatePipelineProposalResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreatePipelineProposalResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreatePipelineProposalResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r CreatePipelineProposalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreatePipelineProposalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreatePipelineProposalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreatePipelineProposalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetPipelineCreationProposalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PipelineCreationProposal
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPipelineCreationProposalResponse) GetJSON200() *PipelineCreationProposal {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetPipelineCreationProposalResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetPipelineCreationProposalResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPipelineCreationProposalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPipelineCreationProposalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPipelineCreationProposalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPipelineCreationProposalResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -42783,6 +47794,75 @@ func (r UpdatePipelineResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r UpdatePipelineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetPipelineCompiledPlanResponse200Headers the declared response headers of an HTTP 200 response for GetPipelineCompiledPlan
+type GetPipelineCompiledPlanResponse200Headers struct {
+	CacheControl *string
+}
+
+type GetPipelineCompiledPlanResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PipelineCompiledPlan
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetPipelineCompiledPlanResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPipelineCompiledPlanResponse) GetJSON200() *PipelineCompiledPlan {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetPipelineCompiledPlanResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetPipelineCompiledPlanResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetPipelineCompiledPlanResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPipelineCompiledPlanResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPipelineCompiledPlanResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPipelineCompiledPlanResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPipelineCompiledPlanResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -43250,6 +48330,68 @@ func (r PublishPipelineDraftResponse) ContentType() string {
 	return ""
 }
 
+type RefreshPipelineDraftProposalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Pipeline
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RefreshPipelineDraftProposalResponse) GetJSON200() *Pipeline {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r RefreshPipelineDraftProposalResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r RefreshPipelineDraftProposalResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RefreshPipelineDraftProposalResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r RefreshPipelineDraftProposalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RefreshPipelineDraftProposalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RefreshPipelineDraftProposalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RefreshPipelineDraftProposalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type DeleteDataSourceBindingResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -43525,6 +48667,75 @@ func (r GetPipelineVersionResponse) ContentType() string {
 	return ""
 }
 
+// CompilePipelineVersionResponse200Headers the declared response headers of an HTTP 200 response for CompilePipelineVersion
+type CompilePipelineVersionResponse200Headers struct {
+	CacheControl *string
+}
+
+type CompilePipelineVersionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PipelineCompiledPlan
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *CompilePipelineVersionResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CompilePipelineVersionResponse) GetJSON200() *PipelineCompiledPlan {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CompilePipelineVersionResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CompilePipelineVersionResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CompilePipelineVersionResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r CompilePipelineVersionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CompilePipelineVersionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CompilePipelineVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CompilePipelineVersionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ReconcilePipelinesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -43595,6 +48806,302 @@ func (r ReconcilePipelinesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReconcilePipelinesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetProjectRepositorySetupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectRepositorySetup
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetProjectRepositorySetupResponse) GetJSON200() *ProjectRepositorySetup {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetProjectRepositorySetupResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetProjectRepositorySetupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectRepositorySetupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectRepositorySetupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProjectRepositorySetupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateProjectRepositoryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectRepositorySetup
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateProjectRepositoryResponse) GetJSON200() *ProjectRepositorySetup {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateProjectRepositoryResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateProjectRepositoryResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateProjectRepositoryResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateProjectRepositoryResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateProjectRepositoryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateProjectRepositoryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateProjectRepositoryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateProjectRepositoryResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AbandonProjectRepositorySetupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectRepositorySetup
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AbandonProjectRepositorySetupResponse) GetJSON200() *ProjectRepositorySetup {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r AbandonProjectRepositorySetupResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r AbandonProjectRepositorySetupResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AbandonProjectRepositorySetupResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AbandonProjectRepositorySetupResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r AbandonProjectRepositorySetupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AbandonProjectRepositorySetupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AbandonProjectRepositorySetupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AbandonProjectRepositorySetupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CompleteProjectRepositoryGitHubAuthorizationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectRepositorySetup
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CompleteProjectRepositoryGitHubAuthorizationResponse) GetJSON200() *ProjectRepositorySetup {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CompleteProjectRepositoryGitHubAuthorizationResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CompleteProjectRepositoryGitHubAuthorizationResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CompleteProjectRepositoryGitHubAuthorizationResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r CompleteProjectRepositoryGitHubAuthorizationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CompleteProjectRepositoryGitHubAuthorizationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CompleteProjectRepositoryGitHubAuthorizationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CompleteProjectRepositoryGitHubAuthorizationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetProjectRepositorySetupAttemptResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectRepositorySetup
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetProjectRepositorySetupAttemptResponse) GetJSON200() *ProjectRepositorySetup {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetProjectRepositorySetupAttemptResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetProjectRepositorySetupAttemptResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectRepositorySetupAttemptResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectRepositorySetupAttemptResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProjectRepositorySetupAttemptResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -43719,6 +49226,54 @@ func (r StartProviderConnectorInstallResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r StartProviderConnectorInstallResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetQueryExecutionSummaryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *QueryExecutionSummary
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetQueryExecutionSummaryResponse) GetJSON200() *QueryExecutionSummary {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetQueryExecutionSummaryResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetBody returns the raw response body bytes
+func (r GetQueryExecutionSummaryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetQueryExecutionSummaryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetQueryExecutionSummaryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetQueryExecutionSummaryResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -44151,6 +49706,116 @@ func (r RestoreRoleResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RestoreRoleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListSecurityAuditEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *EventListResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListSecurityAuditEventsResponse) GetJSON200() *EventListResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListSecurityAuditEventsResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListSecurityAuditEventsResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetBody returns the raw response body bytes
+func (r ListSecurityAuditEventsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSecurityAuditEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSecurityAuditEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSecurityAuditEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ExportSecurityAuditEventsResponse200Headers the declared response headers of an HTTP 200 response for ExportSecurityAuditEvents
+type ExportSecurityAuditEventsResponse200Headers struct {
+	ContentDisposition *string
+}
+
+type ExportSecurityAuditEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ExportSecurityAuditEventsResponse200Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ExportSecurityAuditEventsResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ExportSecurityAuditEventsResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetBody returns the raw response body bytes
+func (r ExportSecurityAuditEventsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ExportSecurityAuditEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ExportSecurityAuditEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ExportSecurityAuditEventsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -45774,6 +51439,61 @@ func (c *ClientWithResponses) UpdateMemberWithResponse(ctx context.Context, slug
 	return ParseUpdateMemberResponse(rsp)
 }
 
+// ListNotificationConnectionsWithResponse performs a GET /organizations/{slug}/notification-connections (the `ListNotificationConnections` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListNotificationConnectionsWithResponse(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*ListNotificationConnectionsResponse, error) {
+	rsp, err := c.ListNotificationConnections(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListNotificationConnectionsResponse(rsp)
+}
+
+// CreateNotificationConnectionWithBodyWithResponse performs a POST /organizations/{slug}/notification-connections (the `CreateNotificationConnection` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateNotificationConnectionWithBodyWithResponse(ctx context.Context, slug SlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNotificationConnectionResponse, error) {
+	rsp, err := c.CreateNotificationConnectionWithBody(ctx, slug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateNotificationConnectionResponse(rsp)
+}
+
+// CreateNotificationConnectionWithResponse performs a POST /organizations/{slug}/notification-connections (the `CreateNotificationConnection` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateNotificationConnectionWithResponse(ctx context.Context, slug SlugParam, body CreateNotificationConnectionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateNotificationConnectionResponse, error) {
+	rsp, err := c.CreateNotificationConnection(ctx, slug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateNotificationConnectionResponse(rsp)
+}
+
+// ConnectNotificationConnectionWithResponse performs a POST /organizations/{slug}/notification-connections/{notification_connection_slug}/connect (the `ConnectNotificationConnection` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ConnectNotificationConnectionWithResponse(ctx context.Context, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam, reqEditors ...RequestEditorFn) (*ConnectNotificationConnectionResponse, error) {
+	rsp, err := c.ConnectNotificationConnection(ctx, slug, notificationConnectionSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectNotificationConnectionResponse(rsp)
+}
+
+// DisconnectNotificationConnectionWithResponse performs a POST /organizations/{slug}/notification-connections/{notification_connection_slug}/disconnect (the `DisconnectNotificationConnection` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DisconnectNotificationConnectionWithResponse(ctx context.Context, slug SlugParam, notificationConnectionSlug NotificationConnectionSlugParam, reqEditors ...RequestEditorFn) (*DisconnectNotificationConnectionResponse, error) {
+	rsp, err := c.DisconnectNotificationConnection(ctx, slug, notificationConnectionSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDisconnectNotificationConnectionResponse(rsp)
+}
+
 // ListNotificationsWithResponse performs a GET /organizations/{slug}/notifications (the `ListNotifications` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -45827,6 +51547,17 @@ func (c *ClientWithResponses) ResolveNotificationWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseResolveNotificationResponse(rsp)
+}
+
+// GetPipelineOperationalCapabilitiesWithResponse performs a GET /organizations/{slug}/pipeline-operational-capabilities (the `GetPipelineOperationalCapabilities` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetPipelineOperationalCapabilitiesWithResponse(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*GetPipelineOperationalCapabilitiesResponse, error) {
+	rsp, err := c.GetPipelineOperationalCapabilities(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPipelineOperationalCapabilitiesResponse(rsp)
 }
 
 // FormatPipelineSpecWithBodyWithResponse performs a POST /organizations/{slug}/pipeline-spec:format (the `FormatPipelineSpec` operationId) request,
@@ -46390,6 +52121,39 @@ func (c *ClientWithResponses) GetPipelineDeploymentWithResponse(ctx context.Cont
 	return ParseGetPipelineDeploymentResponse(rsp)
 }
 
+// GetSuccessfulRunRecencyWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `GetSuccessfulRunRecency` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetSuccessfulRunRecencyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*GetSuccessfulRunRecencyResponse, error) {
+	rsp, err := c.GetSuccessfulRunRecency(ctx, slug, projectSlug, environmentSlug, pipelineSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSuccessfulRunRecencyResponse(rsp)
+}
+
+// UpdateSuccessfulRunRecencyWithBodyWithResponse performs a PUT /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `UpdateSuccessfulRunRecency` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateSuccessfulRunRecencyWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSuccessfulRunRecencyResponse, error) {
+	rsp, err := c.UpdateSuccessfulRunRecencyWithBody(ctx, slug, projectSlug, environmentSlug, pipelineSlug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSuccessfulRunRecencyResponse(rsp)
+}
+
+// UpdateSuccessfulRunRecencyWithResponse performs a PUT /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}/successful-run-recency (the `UpdateSuccessfulRunRecency` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateSuccessfulRunRecencyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, pipelineSlug PipelineSlugParam, body UpdateSuccessfulRunRecencyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSuccessfulRunRecencyResponse, error) {
+	rsp, err := c.UpdateSuccessfulRunRecency(ctx, slug, projectSlug, environmentSlug, pipelineSlug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSuccessfulRunRecencyResponse(rsp)
+}
+
 // BootstrapPipelineCheckpointsWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/pipelines/{pipeline_slug}:bootstrap-checkpoints (the `BootstrapPipelineCheckpoints` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -46500,6 +52264,39 @@ func (c *ClientWithResponses) GetPipelineRunWithResponse(ctx context.Context, sl
 	return ParseGetPipelineRunResponse(rsp)
 }
 
+// GetPipelineRunCompletionWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/completion (the `GetPipelineRunCompletion` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetPipelineRunCompletionWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*GetPipelineRunCompletionResponse, error) {
+	rsp, err := c.GetPipelineRunCompletion(ctx, slug, projectSlug, environmentSlug, runSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPipelineRunCompletionResponse(rsp)
+}
+
+// GetPipelineRunConnectedWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/connected (the `GetPipelineRunConnected` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetPipelineRunConnectedWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, reqEditors ...RequestEditorFn) (*GetPipelineRunConnectedResponse, error) {
+	rsp, err := c.GetPipelineRunConnected(ctx, slug, projectSlug, environmentSlug, runSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPipelineRunConnectedResponse(rsp)
+}
+
+// GetPipelineRunProgressWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/progress (the `GetPipelineRunProgress` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetPipelineRunProgressWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, environmentSlug EnvironmentSlugParam, runSlug RunSlugParam, params *GetPipelineRunProgressParams, reqEditors ...RequestEditorFn) (*GetPipelineRunProgressResponse, error) {
+	rsp, err := c.GetPipelineRunProgress(ctx, slug, projectSlug, environmentSlug, runSlug, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPipelineRunProgressResponse(rsp)
+}
+
 // ListPipelineRunTriggerRetryAttemptsWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/environments/{environment_slug}/runs/{run_slug}/trigger-retry-attempts (the `ListPipelineRunTriggerRetryAttempts` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -46531,6 +52328,50 @@ func (c *ClientWithResponses) SetProjectPipelineBackendWithResponse(ctx context.
 		return nil, err
 	}
 	return ParseSetProjectPipelineBackendResponse(rsp)
+}
+
+// ListPipelineCreationProposalsWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `ListPipelineCreationProposals` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListPipelineCreationProposalsWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, params *ListPipelineCreationProposalsParams, reqEditors ...RequestEditorFn) (*ListPipelineCreationProposalsResponse, error) {
+	rsp, err := c.ListPipelineCreationProposals(ctx, slug, projectSlug, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPipelineCreationProposalsResponse(rsp)
+}
+
+// CreatePipelineProposalWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `CreatePipelineProposal` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreatePipelineProposalWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePipelineProposalResponse, error) {
+	rsp, err := c.CreatePipelineProposalWithBody(ctx, slug, projectSlug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePipelineProposalResponse(rsp)
+}
+
+// CreatePipelineProposalWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipeline-creations (the `CreatePipelineProposal` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreatePipelineProposalWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CreatePipelineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePipelineProposalResponse, error) {
+	rsp, err := c.CreatePipelineProposal(ctx, slug, projectSlug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePipelineProposalResponse(rsp)
+}
+
+// GetPipelineCreationProposalWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/pipeline-creations/{creation_slug} (the `GetPipelineCreationProposal` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetPipelineCreationProposalWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, creationSlug Slug, reqEditors ...RequestEditorFn) (*GetPipelineCreationProposalResponse, error) {
+	rsp, err := c.GetPipelineCreationProposal(ctx, slug, projectSlug, creationSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPipelineCreationProposalResponse(rsp)
 }
 
 // ListPipelinesWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/pipelines (the `ListPipelines` operationId) request.
@@ -46575,6 +52416,17 @@ func (c *ClientWithResponses) UpdatePipelineWithResponse(ctx context.Context, sl
 		return nil, err
 	}
 	return ParseUpdatePipelineResponse(rsp)
+}
+
+// GetPipelineCompiledPlanWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/compiled-plans/{digest} (the `GetPipelineCompiledPlan` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetPipelineCompiledPlanWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, digest string, reqEditors ...RequestEditorFn) (*GetPipelineCompiledPlanResponse, error) {
+	rsp, err := c.GetPipelineCompiledPlan(ctx, slug, projectSlug, pipelineSlug, digest, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPipelineCompiledPlanResponse(rsp)
 }
 
 // CreateDataSourceRefWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/data-source-refs (the `CreateDataSourceRef` operationId) request,
@@ -46709,6 +52561,17 @@ func (c *ClientWithResponses) PublishPipelineDraftWithResponse(ctx context.Conte
 	return ParsePublishPipelineDraftResponse(rsp)
 }
 
+// RefreshPipelineDraftProposalWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/draft:refresh-proposal (the `RefreshPipelineDraftProposal` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RefreshPipelineDraftProposalWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, reqEditors ...RequestEditorFn) (*RefreshPipelineDraftProposalResponse, error) {
+	rsp, err := c.RefreshPipelineDraftProposal(ctx, slug, projectSlug, pipelineSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRefreshPipelineDraftProposalResponse(rsp)
+}
+
 // DeleteDataSourceBindingWithResponse performs a DELETE /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/environments/{environment_slug}/data-source-bindings/{data_source_ref_slug} (the `DeleteDataSourceBinding` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -46775,6 +52638,28 @@ func (c *ClientWithResponses) GetPipelineVersionWithResponse(ctx context.Context
 	return ParseGetPipelineVersionResponse(rsp)
 }
 
+// CompilePipelineVersionWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash}/compiled-plans (the `CompilePipelineVersion` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CompilePipelineVersionWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompilePipelineVersionResponse, error) {
+	rsp, err := c.CompilePipelineVersionWithBody(ctx, slug, projectSlug, pipelineSlug, specHash, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompilePipelineVersionResponse(rsp)
+}
+
+// CompilePipelineVersionWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines/{pipeline_slug}/versions/{spec_hash}/compiled-plans (the `CompilePipelineVersion` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CompilePipelineVersionWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, pipelineSlug PipelineSlugParam, specHash string, params *CompilePipelineVersionParams, body CompilePipelineVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CompilePipelineVersionResponse, error) {
+	rsp, err := c.CompilePipelineVersion(ctx, slug, projectSlug, pipelineSlug, specHash, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompilePipelineVersionResponse(rsp)
+}
+
 // ReconcilePipelinesWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/pipelines:reconcile (the `ReconcilePipelines` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -46795,6 +52680,94 @@ func (c *ClientWithResponses) ReconcilePipelinesWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseReconcilePipelinesResponse(rsp)
+}
+
+// GetProjectRepositorySetupWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/repository-setup (the `GetProjectRepositorySetup` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetProjectRepositorySetupWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*GetProjectRepositorySetupResponse, error) {
+	rsp, err := c.GetProjectRepositorySetup(ctx, slug, projectSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProjectRepositorySetupResponse(rsp)
+}
+
+// CreateProjectRepositoryWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup (the `CreateProjectRepository` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateProjectRepositoryWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectRepositoryResponse, error) {
+	rsp, err := c.CreateProjectRepositoryWithBody(ctx, slug, projectSlug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProjectRepositoryResponse(rsp)
+}
+
+// CreateProjectRepositoryWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup (the `CreateProjectRepository` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateProjectRepositoryWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CreateProjectRepositoryJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectRepositoryResponse, error) {
+	rsp, err := c.CreateProjectRepository(ctx, slug, projectSlug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProjectRepositoryResponse(rsp)
+}
+
+// AbandonProjectRepositorySetupWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/abandon (the `AbandonProjectRepositorySetup` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AbandonProjectRepositorySetupWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AbandonProjectRepositorySetupResponse, error) {
+	rsp, err := c.AbandonProjectRepositorySetupWithBody(ctx, slug, projectSlug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAbandonProjectRepositorySetupResponse(rsp)
+}
+
+// AbandonProjectRepositorySetupWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/abandon (the `AbandonProjectRepositorySetup` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AbandonProjectRepositorySetupWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body AbandonProjectRepositorySetupJSONRequestBody, reqEditors ...RequestEditorFn) (*AbandonProjectRepositorySetupResponse, error) {
+	rsp, err := c.AbandonProjectRepositorySetup(ctx, slug, projectSlug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAbandonProjectRepositorySetupResponse(rsp)
+}
+
+// CompleteProjectRepositoryGitHubAuthorizationWithBodyWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/github-authorization (the `CompleteProjectRepositoryGitHubAuthorization` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CompleteProjectRepositoryGitHubAuthorizationWithBodyWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteProjectRepositoryGitHubAuthorizationResponse, error) {
+	rsp, err := c.CompleteProjectRepositoryGitHubAuthorizationWithBody(ctx, slug, projectSlug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteProjectRepositoryGitHubAuthorizationResponse(rsp)
+}
+
+// CompleteProjectRepositoryGitHubAuthorizationWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/repository-setup/github-authorization (the `CompleteProjectRepositoryGitHubAuthorization` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CompleteProjectRepositoryGitHubAuthorizationWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, body CompleteProjectRepositoryGitHubAuthorizationJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteProjectRepositoryGitHubAuthorizationResponse, error) {
+	rsp, err := c.CompleteProjectRepositoryGitHubAuthorization(ctx, slug, projectSlug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteProjectRepositoryGitHubAuthorizationResponse(rsp)
+}
+
+// GetProjectRepositorySetupAttemptWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/repository-setups/{setup_slug} (the `GetProjectRepositorySetupAttempt` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetProjectRepositorySetupAttemptWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, setupSlug Slug, reqEditors ...RequestEditorFn) (*GetProjectRepositorySetupAttemptResponse, error) {
+	rsp, err := c.GetProjectRepositorySetupAttempt(ctx, slug, projectSlug, setupSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProjectRepositorySetupAttemptResponse(rsp)
 }
 
 // StartProviderDataSourceInstallWithBodyWithResponse performs a POST /organizations/{slug}/provider-connectors/{provider}/data-source-installs (the `StartProviderDataSourceInstall` operationId) request,
@@ -46839,6 +52812,17 @@ func (c *ClientWithResponses) StartProviderConnectorInstallWithResponse(ctx cont
 		return nil, err
 	}
 	return ParseStartProviderConnectorInstallResponse(rsp)
+}
+
+// GetQueryExecutionSummaryWithResponse performs a GET /organizations/{slug}/query-execution-summary (the `GetQueryExecutionSummary` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetQueryExecutionSummaryWithResponse(ctx context.Context, slug SlugParam, reqEditors ...RequestEditorFn) (*GetQueryExecutionSummaryResponse, error) {
+	rsp, err := c.GetQueryExecutionSummary(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetQueryExecutionSummaryResponse(rsp)
 }
 
 // GetOrganizationRetentionPolicyWithResponse performs a GET /organizations/{slug}/retention (the `GetOrganizationRetentionPolicy` operationId) request.
@@ -46971,6 +52955,28 @@ func (c *ClientWithResponses) RestoreRoleWithResponse(ctx context.Context, slug 
 		return nil, err
 	}
 	return ParseRestoreRoleResponse(rsp)
+}
+
+// ListSecurityAuditEventsWithResponse performs a GET /organizations/{slug}/security-audit-events (the `ListSecurityAuditEvents` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListSecurityAuditEventsWithResponse(ctx context.Context, slug SlugParam, params *ListSecurityAuditEventsParams, reqEditors ...RequestEditorFn) (*ListSecurityAuditEventsResponse, error) {
+	rsp, err := c.ListSecurityAuditEvents(ctx, slug, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSecurityAuditEventsResponse(rsp)
+}
+
+// ExportSecurityAuditEventsWithResponse performs a GET /organizations/{slug}/security-audit-events/export (the `ExportSecurityAuditEvents` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ExportSecurityAuditEventsWithResponse(ctx context.Context, slug SlugParam, params *ExportSecurityAuditEventsParams, reqEditors ...RequestEditorFn) (*ExportSecurityAuditEventsResponse, error) {
+	rsp, err := c.ExportSecurityAuditEvents(ctx, slug, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExportSecurityAuditEventsResponse(rsp)
 }
 
 // GetUsersProfileWithResponse performs a GET /users/profile (the `GetUsersProfile` operationId) request.
@@ -50264,6 +56270,292 @@ func ParseUpdateMemberResponse(rsp *http.Response) (*UpdateMemberResponse, error
 	return response, nil
 }
 
+// ParseListNotificationConnectionsResponse parses an HTTP response from a ListNotificationConnectionsWithResponse call
+func ParseListNotificationConnectionsResponse(rsp *http.Response) (*ListNotificationConnectionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListNotificationConnectionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []NotificationConnection
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateNotificationConnectionResponse parses an HTTP response from a CreateNotificationConnectionWithResponse call
+func ParseCreateNotificationConnectionResponse(rsp *http.Response) (*CreateNotificationConnectionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateNotificationConnectionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest NotificationConnection
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseConnectNotificationConnectionResponse parses an HTTP response from a ConnectNotificationConnectionWithResponse call
+func ParseConnectNotificationConnectionResponse(rsp *http.Response) (*ConnectNotificationConnectionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConnectNotificationConnectionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ProviderConnectorInstall
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDisconnectNotificationConnectionResponse parses an HTTP response from a DisconnectNotificationConnectionWithResponse call
+func ParseDisconnectNotificationConnectionResponse(rsp *http.Response) (*DisconnectNotificationConnectionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DisconnectNotificationConnectionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CredentialMetadata
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListNotificationsResponse parses an HTTP response from a ListNotificationsWithResponse call
 func ParseListNotificationsResponse(rsp *http.Response) (*ListNotificationsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -50479,6 +56771,53 @@ func ParseResolveNotificationResponse(rsp *http.Response) (*ResolveNotificationR
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPipelineOperationalCapabilitiesResponse parses an HTTP response from a GetPipelineOperationalCapabilitiesWithResponse call
+func ParseGetPipelineOperationalCapabilitiesResponse(rsp *http.Response) (*GetPipelineOperationalCapabilitiesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPipelineOperationalCapabilitiesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PipelineOperationalCapabilities
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
@@ -52313,6 +58652,107 @@ func ParseGetPipelineDeploymentResponse(rsp *http.Response) (*GetPipelineDeploym
 	return response, nil
 }
 
+// ParseGetSuccessfulRunRecencyResponse parses an HTTP response from a GetSuccessfulRunRecencyWithResponse call
+func ParseGetSuccessfulRunRecencyResponse(rsp *http.Response) (*GetSuccessfulRunRecencyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSuccessfulRunRecencyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SuccessfulRunRecency
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateSuccessfulRunRecencyResponse parses an HTTP response from a UpdateSuccessfulRunRecencyWithResponse call
+func ParseUpdateSuccessfulRunRecencyResponse(rsp *http.Response) (*UpdateSuccessfulRunRecencyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateSuccessfulRunRecencyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SuccessfulRunRecency
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseBootstrapPipelineCheckpointsResponse parses an HTTP response from a BootstrapPipelineCheckpointsWithResponse call
 func ParseBootstrapPipelineCheckpointsResponse(rsp *http.Response) (*BootstrapPipelineCheckpointsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -52665,6 +59105,168 @@ func ParseGetPipelineRunResponse(rsp *http.Response) (*GetPipelineRunResponse, e
 	return response, nil
 }
 
+// ParseGetPipelineRunCompletionResponse parses an HTTP response from a GetPipelineRunCompletionWithResponse call
+func ParseGetPipelineRunCompletionResponse(rsp *http.Response) (*GetPipelineRunCompletionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPipelineRunCompletionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PipelineRunCompletion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPipelineRunConnectedResponse parses an HTTP response from a GetPipelineRunConnectedWithResponse call
+func ParseGetPipelineRunConnectedResponse(rsp *http.Response) (*GetPipelineRunConnectedResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPipelineRunConnectedResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PipelineRunConnected
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPipelineRunProgressResponse parses an HTTP response from a GetPipelineRunProgressWithResponse call
+func ParseGetPipelineRunProgressResponse(rsp *http.Response) (*GetPipelineRunProgressResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPipelineRunProgressResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PipelineRunProgress
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListPipelineRunTriggerRetryAttemptsResponse parses an HTTP response from a ListPipelineRunTriggerRetryAttemptsWithResponse call
 func ParseListPipelineRunTriggerRetryAttemptsResponse(rsp *http.Response) (*ListPipelineRunTriggerRetryAttemptsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -52774,6 +59376,133 @@ func ParseSetProjectPipelineBackendResponse(rsp *http.Response) (*SetProjectPipe
 			return nil, err
 		}
 		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListPipelineCreationProposalsResponse parses an HTTP response from a ListPipelineCreationProposalsWithResponse call
+func ParseListPipelineCreationProposalsResponse(rsp *http.Response) (*ListPipelineCreationProposalsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPipelineCreationProposalsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PipelineCreationProposalListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreatePipelineProposalResponse parses an HTTP response from a CreatePipelineProposalWithResponse call
+func ParseCreatePipelineProposalResponse(rsp *http.Response) (*CreatePipelineProposalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreatePipelineProposalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PipelineCreationProposal
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPipelineCreationProposalResponse parses an HTTP response from a GetPipelineCreationProposalWithResponse call
+func ParseGetPipelineCreationProposalResponse(rsp *http.Response) (*GetPipelineCreationProposalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPipelineCreationProposalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PipelineCreationProposal
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -52895,6 +59624,66 @@ func ParseUpdatePipelineResponse(rsp *http.Response) (*UpdatePipelineResponse, e
 		}
 		response.JSON404 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseGetPipelineCompiledPlanResponse parses an HTTP response from a GetPipelineCompiledPlanWithResponse call
+func ParseGetPipelineCompiledPlanResponse(rsp *http.Response) (*GetPipelineCompiledPlanResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPipelineCompiledPlanResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PipelineCompiledPlan
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetPipelineCompiledPlanResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
 	}
 
 	return response, nil
@@ -53247,6 +60036,53 @@ func ParsePublishPipelineDraftResponse(rsp *http.Response) (*PublishPipelineDraf
 	return response, nil
 }
 
+// ParseRefreshPipelineDraftProposalResponse parses an HTTP response from a RefreshPipelineDraftProposalWithResponse call
+func ParseRefreshPipelineDraftProposalResponse(rsp *http.Response) (*RefreshPipelineDraftProposalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RefreshPipelineDraftProposalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Pipeline
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseDeleteDataSourceBindingResponse parses an HTTP response from a DeleteDataSourceBindingWithResponse call
 func ParseDeleteDataSourceBindingResponse(rsp *http.Response) (*DeleteDataSourceBindingResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -53450,6 +60286,66 @@ func ParseGetPipelineVersionResponse(rsp *http.Response) (*GetPipelineVersionRes
 	return response, nil
 }
 
+// ParseCompilePipelineVersionResponse parses an HTTP response from a CompilePipelineVersionWithResponse call
+func ParseCompilePipelineVersionResponse(rsp *http.Response) (*CompilePipelineVersionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CompilePipelineVersionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PipelineCompiledPlan
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers CompilePipelineVersionResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseReconcilePipelinesResponse parses an HTTP response from a ReconcilePipelinesWithResponse call
 func ParseReconcilePipelinesResponse(rsp *http.Response) (*ReconcilePipelinesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -53505,6 +60401,230 @@ func ParseReconcilePipelinesResponse(rsp *http.Response) (*ReconcilePipelinesRes
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetProjectRepositorySetupResponse parses an HTTP response from a GetProjectRepositorySetupWithResponse call
+func ParseGetProjectRepositorySetupResponse(rsp *http.Response) (*GetProjectRepositorySetupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProjectRepositorySetupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectRepositorySetup
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateProjectRepositoryResponse parses an HTTP response from a CreateProjectRepositoryWithResponse call
+func ParseCreateProjectRepositoryResponse(rsp *http.Response) (*CreateProjectRepositoryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateProjectRepositoryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectRepositorySetup
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAbandonProjectRepositorySetupResponse parses an HTTP response from a AbandonProjectRepositorySetupWithResponse call
+func ParseAbandonProjectRepositorySetupResponse(rsp *http.Response) (*AbandonProjectRepositorySetupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AbandonProjectRepositorySetupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectRepositorySetup
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCompleteProjectRepositoryGitHubAuthorizationResponse parses an HTTP response from a CompleteProjectRepositoryGitHubAuthorizationWithResponse call
+func ParseCompleteProjectRepositoryGitHubAuthorizationResponse(rsp *http.Response) (*CompleteProjectRepositoryGitHubAuthorizationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CompleteProjectRepositoryGitHubAuthorizationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectRepositorySetup
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetProjectRepositorySetupAttemptResponse parses an HTTP response from a GetProjectRepositorySetupAttemptWithResponse call
+func ParseGetProjectRepositorySetupAttemptResponse(rsp *http.Response) (*GetProjectRepositorySetupAttemptResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProjectRepositorySetupAttemptResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectRepositorySetup
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -53599,6 +60719,39 @@ func ParseStartProviderConnectorInstallResponse(rsp *http.Response) (*StartProvi
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetQueryExecutionSummaryResponse parses an HTTP response from a GetQueryExecutionSummaryWithResponse call
+func ParseGetQueryExecutionSummaryResponse(rsp *http.Response) (*GetQueryExecutionSummaryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetQueryExecutionSummaryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest QueryExecutionSummary
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	}
 
@@ -53906,6 +61059,92 @@ func ParseRestoreRoleResponse(rsp *http.Response) (*RestoreRoleResponse, error) 
 		}
 		response.JSON404 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseListSecurityAuditEventsResponse parses an HTTP response from a ListSecurityAuditEventsWithResponse call
+func ParseListSecurityAuditEventsResponse(rsp *http.Response) (*ListSecurityAuditEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSecurityAuditEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EventListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseExportSecurityAuditEventsResponse parses an HTTP response from a ExportSecurityAuditEventsWithResponse call
+func ParseExportSecurityAuditEventsResponse(rsp *http.Response) (*ExportSecurityAuditEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ExportSecurityAuditEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ExportSecurityAuditEventsResponse200Headers
+		if values := rsp.Header.Values("Content-Disposition"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Content-Disposition", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ContentDisposition = &value
+		}
+		response.Headers200 = &headers
 	}
 
 	return response, nil

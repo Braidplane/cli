@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,8 +21,9 @@ const (
 	EnvNamespace         = Namespace + "env."
 	SecretNamespace      = Namespace + "secrets."
 	InputNamespace       = Namespace + "input."
-	RunDateParamName     = Namespace + "run_date"
-	RunDateTimeParamName = Namespace + "run_datetime"
+	RunSlugParamName     = Namespace + "run.slug"
+	RunDateParamName     = Namespace + "run.date"
+	RunDateTimeParamName = Namespace + "run.datetime"
 	stepReferencePrefix  = "$steps."
 )
 
@@ -45,8 +47,8 @@ var secretRuntimeInputKeyFragments = []string{
 }
 
 type resolvedVariable struct {
-	source string
-	value  any
+	value any
+	date  bool
 }
 
 type variableResolver struct {
@@ -127,10 +129,12 @@ func resolvePipelineFields(
 			if step.Query.Parameters, err = resolveMap(step.Query.Parameters, resolved, resolver); err != nil {
 				return stepError(i, step.Slug.String(), "query parameters", err)
 			}
-			if step.Query.OperationInline, err = resolveMap(step.Query.OperationInline, resolved, resolver); err != nil {
+			if step.Query.Parameters == nil {
+				step.Query.Parameters = map[string]any{}
+			}
+			if err = bindOperationReferences(step.Query.OperationInline, resolved, resolver, step.Query.Parameters); err != nil {
 				return stepError(i, step.Slug.String(), "query operation_inline", err)
 			}
-			step.Query.OperationInline = unwrapLiteralStringsInMap(step.Query.OperationInline)
 			if step.Query.Incremental != nil && step.Query.Incremental.LookbackWindow != "" {
 				lookbackWindow := step.Query.Incremental.LookbackWindow
 				value, err := resolveString(lookbackWindow, resolved, resolver)
@@ -161,14 +165,15 @@ func resolvePipelineFields(
 		}
 		if step.Sink != nil {
 			var err error
-			if step.Sink.OperationInline, err = resolveMap(step.Sink.OperationInline, resolved, resolver); err != nil {
-				return stepError(i, step.Slug.String(), "sink operation_inline", err)
+			if step.Sink.Config == nil {
+				step.Sink.Config = map[string]any{}
 			}
-			step.Sink.OperationInline = unwrapLiteralStringsInMap(step.Sink.OperationInline)
 			if step.Sink.Config, err = resolveMap(step.Sink.Config, resolved, resolver); err != nil {
 				return stepError(i, step.Slug.String(), "sink config", err)
 			}
-			step.Sink.Config = unwrapLiteralStringsInMap(step.Sink.Config)
+			if err = bindOperationReferences(step.Sink.OperationInline, resolved, resolver, step.Sink.Config); err != nil {
+				return stepError(i, step.Slug.String(), "sink operation_inline", err)
+			}
 		}
 	}
 	return nil
@@ -181,13 +186,12 @@ func resolveVariableMap(variables []model.RuntimeVariable) (map[string]resolvedV
 		if err != nil {
 			return nil, err
 		}
-		if variable.ValueType == model.RuntimeVariableValueTypeText &&
-			strings.HasPrefix(variable.Value, stepReferencePrefix) {
+		if variable.ValueType == model.RuntimeVariableValueTypeText && literalRuntimeValue(variable.Value) {
 			value = LiteralString(variable.Value)
 		}
 		resolved[EnvNamespace+variable.Key] = resolvedVariable{
-			source: variable.Value,
-			value:  value,
+			value: value,
+			date:  variable.ValueType == model.RuntimeVariableValueTypeDate,
 		}
 	}
 	return resolved, nil
@@ -202,8 +206,8 @@ func resolveInputMap(input map[string]any) (map[string]resolvedVariable, error) 
 	for key, raw := range input {
 		value := runtimeInputValue(raw)
 		resolved[InputNamespace+key] = resolvedVariable{
-			source: runtimeInputSource(raw),
-			value:  value,
+			value: value,
+			date:  true,
 		}
 	}
 	return resolved, nil
@@ -213,12 +217,11 @@ func resolveSecretMap(secrets []model.RuntimeSecretValue) map[string]resolvedVar
 	resolved := make(map[string]resolvedVariable, len(secrets))
 	for _, secret := range secrets {
 		value := any(secret.Value)
-		if strings.HasPrefix(secret.Value, stepReferencePrefix) {
+		if literalRuntimeValue(secret.Value) {
 			value = LiteralString(secret.Value)
 		}
 		resolved[SecretNamespace+secret.Key] = resolvedVariable{
-			source: secret.Value,
-			value:  value,
+			value: value,
 		}
 	}
 	return resolved
@@ -275,7 +278,7 @@ func resolveValue(
 	resolver variableResolver,
 ) (any, error) {
 	switch v := value.(type) {
-	case string:
+	case string, LiteralTemplate:
 		return resolveString(v, variables, resolver)
 	case []any:
 		resolved := make([]any, len(v))
@@ -294,63 +297,74 @@ func resolveValue(
 	}
 }
 
-func resolveString(
-	input string,
-	variables map[string]resolvedVariable,
-	resolver variableResolver,
-) (any, error) {
-	matches := placeholderPattern.FindAllStringSubmatchIndex(input, -1)
-	if len(matches) == 0 {
-		return input, nil
-	}
-
-	exact := len(matches) == 1 && matches[0][0] == 0 && matches[0][1] == len(input)
-	if exact {
-		name := input[matches[0][2]:matches[0][3]]
+func resolveString(input any, variables map[string]resolvedVariable, resolver variableResolver) (any, error) {
+	return resolveAuthoredText(input, func(expression string) (any, bool, bool, error) {
+		parts := strings.Split(expression, "|")
+		name := strings.TrimSpace(parts[0])
 		if !strings.HasPrefix(name, resolver.namespace) {
-			return input, nil
+			return nil, false, false, nil
 		}
 		variable, ok := variables[name]
 		if !ok {
-			return nil, resolver.missing(name)
+			return nil, true, true, resolver.missing(name)
 		}
-		return variable.value, nil
-	}
+		if len(parts) == 1 {
+			return variable.value, true, true, nil
+		}
+		if !variable.date {
+			return nil, true, false, invalidDateExpression(name + ": date operations require a date-typed environment variable or ISO date/datetime input")
+		}
+		value, err := applyDateOperations(variable.value, parts[1:], true)
+		if err != nil {
+			return nil, true, false, xerror.Wrapf("runtime parameter %s: %w", name, err)
+		}
+		return value, true, false, nil
+	})
+}
 
-	var builder strings.Builder
-	last := 0
-	leadingStepLikeLiteral := false
-	for _, match := range matches {
-		name := input[match[2]:match[3]]
-		if !strings.HasPrefix(name, resolver.namespace) {
-			continue
+func bindOperationReferences(value any, variables map[string]resolvedVariable, resolver variableResolver, parameters map[string]any) error {
+	switch v := value.(type) {
+	case map[string]any:
+		for _, item := range v {
+			if err := bindOperationReferences(item, variables, resolver, parameters); err != nil {
+				return err
+			}
 		}
-		variable, ok := variables[name]
-		if !ok {
-			return nil, resolver.missing(name)
+	case []any:
+		for _, item := range v {
+			if err := bindOperationReferences(item, variables, resolver, parameters); err != nil {
+				return err
+			}
 		}
-		builder.WriteString(input[last:match[0]])
-		if last == 0 && match[0] == 0 {
-			_, leadingStepLikeLiteral = variable.value.(LiteralString)
+	case string, LiteralTemplate:
+		for _, part := range fragments(v) {
+			if part.literal {
+				continue
+			}
+			for _, match := range runtimeReference.FindAllStringSubmatch(part.text, -1) {
+				name, operation, hasOperation := strings.Cut(match[1], "|")
+				name = strings.TrimSpace(name)
+				if !strings.HasPrefix(name, resolver.namespace) {
+					continue
+				}
+				if hasOperation || operation != "" {
+					return invalidDateExpression(name + ": place expressions in query.parameters or sink.config and use named connector parameters")
+				}
+				variable, ok := variables[name]
+				if !ok {
+					return resolver.missing(name)
+				}
+				parameters[name] = variable.value
+			}
 		}
-		builder.WriteString(variable.source)
-		last = match[1]
 	}
-	if last == 0 {
-		return input, nil
-	}
-	builder.WriteString(input[last:])
-	resolved := builder.String()
-	if leadingStepLikeLiteral && strings.HasPrefix(resolved, stepReferencePrefix) {
-		return LiteralString(resolved), nil
-	}
-	return resolved, nil
+	return nil
 }
 
 func runtimeInputValue(value any) any {
 	switch typed := value.(type) {
 	case string:
-		if strings.HasPrefix(typed, stepReferencePrefix) {
+		if literalRuntimeValue(typed) {
 			return LiteralString(typed)
 		}
 		return typed
@@ -386,31 +400,136 @@ func runtimeInputSource(value any) string {
 	return fmt.Sprintf("%v", value)
 }
 
-func unwrapLiteralStringsInMap(input map[string]any) map[string]any {
-	if input == nil {
-		return nil
-	}
-	unwrapped := make(map[string]any, len(input))
-	for key, value := range input {
-		unwrapped[key] = unwrapLiteralStringValue(value)
-	}
-	return unwrapped
+func literalRuntimeValue(value string) bool {
+	return strings.HasPrefix(value, stepReferencePrefix) || strings.Contains(value, "{{")
 }
 
-func unwrapLiteralStringValue(value any) any {
-	switch typed := value.(type) {
-	case LiteralString:
-		return string(typed)
-	case map[string]any:
-		return unwrapLiteralStringsInMap(typed)
-	case []any:
-		unwrapped := make([]any, len(typed))
-		for i, item := range typed {
-			unwrapped[i] = unwrapLiteralStringValue(item)
+// LiteralLocations returns deterministic locations whose values must not be
+// interpreted as runtime syntax after a JSON clone or deployment reload.
+func LiteralLocations(pipeline *pipelinespec.Pipeline) []LiteralLocation {
+	if pipeline == nil {
+		return nil
+	}
+	var paths []LiteralLocation
+	for i := range pipeline.Steps {
+		step := pipeline.Steps[i]
+		if step.Query != nil {
+			paths = append(paths, literalMapPaths(step.Query.Parameters, []string{"steps", strconv.Itoa(i), "query", "parameters"})...)
+			paths = append(paths, literalMapPaths(step.Query.OperationInline, []string{"steps", strconv.Itoa(i), "query", "operation_inline"})...)
 		}
-		return unwrapped
+		if step.Sink != nil {
+			paths = append(paths, literalMapPaths(step.Sink.Config, []string{"steps", strconv.Itoa(i), "sink", "config"})...)
+			paths = append(paths, literalMapPaths(step.Sink.OperationInline, []string{"steps", strconv.Itoa(i), "sink", "operation_inline"})...)
+		}
+	}
+	return paths
+}
+
+func literalMapPaths(values map[string]any, prefix []string) []LiteralLocation {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	var paths []LiteralLocation
+	for _, key := range keys {
+		paths = append(paths, literalValuePaths(values[key], append(prefix, key))...)
+	}
+	return paths
+}
+
+func literalValuePaths(value any, path []string) []LiteralLocation {
+	switch typed := value.(type) {
+	case LiteralTemplate:
+		return []LiteralLocation{{Path: slices.Clone(path), Ranges: slices.Clone(typed.Ranges)}}
+	case LiteralString:
+		return []LiteralLocation{{Path: slices.Clone(path)}}
+	case map[string]any:
+		return literalMapPaths(typed, path)
+	case []any:
+		var paths []LiteralLocation
+		for i, item := range typed {
+			paths = append(paths, literalValuePaths(item, append(path, strconv.Itoa(i)))...)
+		}
+		return paths
 	default:
-		return value
+		return nil
+	}
+}
+
+// RestoreLiteralLocations restores literal trust markers lost by JSON.
+func RestoreLiteralLocations(pipeline *pipelinespec.Pipeline, paths []LiteralLocation) bool {
+	if pipeline == nil {
+		return len(paths) == 0
+	}
+	for _, location := range paths {
+		path := location.Path
+		if len(path) < 5 || path[0] != "steps" {
+			return false
+		}
+		stepIndex, err := strconv.Atoi(path[1])
+		if err != nil || stepIndex < 0 || stepIndex >= len(pipeline.Steps) {
+			return false
+		}
+		step := &pipeline.Steps[stepIndex]
+		var values map[string]any
+		switch {
+		case path[2] == "query" && step.Query != nil && path[3] == "parameters":
+			values = step.Query.Parameters
+		case path[2] == "query" && step.Query != nil && path[3] == "operation_inline":
+			values = step.Query.OperationInline
+		case path[2] == "sink" && step.Sink != nil && path[3] == "config":
+			values = step.Sink.Config
+		case path[2] == "sink" && step.Sink != nil && path[3] == "operation_inline":
+			values = step.Sink.OperationInline
+		default:
+			return false
+		}
+		if !restoreLiteralMapValue(values, path[4:], location.Ranges) {
+			return false
+		}
+	}
+	return true
+}
+
+func restoreLiteralMapValue(values map[string]any, path []string, ranges [][2]int) bool {
+	value, ok := values[path[0]]
+	if !ok {
+		return false
+	}
+	restored, ok := restoreLiteralValue(value, path[1:], ranges)
+	if ok {
+		values[path[0]] = restored
+	}
+	return ok
+}
+
+func restoreLiteralValue(value any, path []string, ranges [][2]int) (any, bool) {
+	if len(path) == 0 {
+		text, ok := value.(string)
+		if !ok || !validLiteralRanges(text, ranges) {
+			return nil, false
+		}
+		if len(ranges) > 0 {
+			return LiteralTemplate{Text: text, Ranges: slices.Clone(ranges)}, true
+		}
+		return LiteralString(text), true
+	}
+	switch typed := value.(type) {
+	case map[string]any:
+		return typed, restoreLiteralMapValue(typed, path, ranges)
+	case []any:
+		index, err := strconv.Atoi(path[0])
+		if err != nil || index < 0 || index >= len(typed) {
+			return nil, false
+		}
+		restored, ok := restoreLiteralValue(typed[index], path[1:], ranges)
+		if ok {
+			typed[index] = restored
+		}
+		return typed, ok
+	default:
+		return nil, false
 	}
 }
 
@@ -488,6 +607,12 @@ func hasNamespaceReferenceInMap(input map[string]any, namespace string) bool {
 
 func hasNamespaceReferenceInValue(value any, namespace string) bool {
 	switch typed := value.(type) {
+	case LiteralTemplate:
+		for _, part := range fragments(typed) {
+			if !part.literal && hasNamespaceReference(part.text, namespace) {
+				return true
+			}
+		}
 	case string:
 		return hasNamespaceReference(typed, namespace)
 	case []any:
@@ -633,8 +758,9 @@ func EnvironmentKeys(pipeline *pipelinespec.Pipeline) []string {
 	visit = func(value any) {
 		switch value := value.(type) {
 		case string:
-			for _, match := range placeholderPattern.FindAllStringSubmatch(value, -1) {
-				if key, ok := strings.CutPrefix(match[1], EnvNamespace); ok {
+			for _, match := range runtimeReference.FindAllStringSubmatch(value, -1) {
+				name, _, _ := strings.Cut(match[1], "|")
+				if key, ok := strings.CutPrefix(strings.TrimSpace(name), EnvNamespace); ok {
 					keys[key] = true
 				}
 			}

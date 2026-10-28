@@ -86,10 +86,10 @@ func TestValidateOrGenerate(t *testing.T) {
 			want:         "admin-role",
 		},
 		{
-			name:         "InvalidSlugGeneratesFromParam",
+			name:         "InvalidSlugIsRejected",
 			slug:         "INVALID-SLUG",
 			generateFrom: "Valid Source",
-			want:         "valid-source",
+			wantErr:      true,
 		},
 		{
 			name:         "EmptyParamWithValidSlug",
@@ -122,5 +122,22 @@ func TestValidateOrGenerate(t *testing.T) {
 				t.Fatalf("expected %q, got %q", tt.want, got.String())
 			}
 		})
+	}
+}
+
+func TestGenerateWithoutASCII(t *testing.T) {
+	first, err := Slug("").ValidateOrGenerate("日本語")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := Slug("").ValidateOrGenerate("日本語")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := New(first.String()); err != nil {
+		t.Fatal(err)
+	}
+	if first == second {
+		t.Fatal("generated identifiers must differ")
 	}
 }

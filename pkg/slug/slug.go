@@ -164,19 +164,17 @@ func (s *Slug) Scan(val any) error {
 	return nil
 }
 
-// ValidateOrGenerate validates the slug, and if invalid, generates one from the provided source
-// string. If the slug is valid, it is returned as-is. If invalid, a slug is generated from the
-// source string.
+// ValidateOrGenerate preserves explicit identifiers and generates omitted ones.
 func (s Slug) ValidateOrGenerate(generateFrom string) (Slug, error) {
 	if s != "" {
-		// Slug was provided, validate it
-		if err := validate(s.String()); err == nil {
-			// Valid, return as-is
-			return s, nil
-		}
-		// Invalid, but we'll try to generate from the parameter below
+		return New(s.String())
 	}
-
-	// Generate from source string
-	return FromName(generateFrom)
+	generated, err := FromName(generateFrom)
+	if err == nil {
+		return generated, nil
+	}
+	if strings.TrimSpace(generateFrom) == "" {
+		return "", err
+	}
+	return WithRandomSuffix("resource", 12)
 }

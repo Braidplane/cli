@@ -67,7 +67,7 @@ func TestSQLQualification(t *testing.T) {
 		{name: "nullif", statement: "SELECT NULLIF(id, 1) AS v FROM input", fieldType: model.ContractFieldTypeValueInteger, rows: `[{"v":null},{"v":2},{"v":3}]`},
 		{name: "modulo", statement: "SELECT id % 2 AS v FROM input", structuralReject: true, typeReject: true, validationError: ErrFeatureNotAllowed, runtimeError: "projection operator"},
 		{name: "projection comparison", statement: "SELECT id = 1 AS v FROM input", structuralReject: true, typeReject: true, validationError: ErrFeatureNotAllowed, runtimeError: "projection operator"},
-		{name: "parentheses", statement: "SELECT (id + 1) AS v FROM input", typeReject: true, runtimeError: "unsupported transform projection expression"},
+		{name: "parentheses", statement: "SELECT (id + 1) AS v FROM input", rows: `[{"v":2},{"v":3},{"v":4}]`},
 		{name: "unary minus", statement: "SELECT -id AS v FROM input", typeReject: true, runtimeError: "unsupported transform projection expression"},
 		{name: "json extract", statement: "SELECT JSON_EXTRACT(doc, '$.x') AS v FROM input LIMIT 1", typeReject: true, rows: `[{"v":3}]`},
 		{name: "json object rows", statement: "SELECT JSON_OBJECT('x', id) AS v FROM input LIMIT 1", fieldType: model.ContractFieldTypeValueString, rows: `[{"v":"{\"x\":1}"}]`},
@@ -87,7 +87,7 @@ func TestSQLQualification(t *testing.T) {
 		{name: "recursive cte", statement: "WITH RECURSIVE chosen AS (SELECT id FROM input) SELECT id AS v FROM chosen", structuralReject: true, typeReject: true, runtimeError: "recursive CTEs"},
 		{name: "subquery", statement: "SELECT id AS v FROM (SELECT id FROM input) AS chosen", structuralReject: true, typeReject: true, runtimeError: "subqueries"},
 		{name: "window", statement: "SELECT ROW_NUMBER() OVER () AS v FROM input", structuralReject: true, typeReject: true, runtimeError: "window"},
-		{name: "having", statement: "SELECT SUM(id) AS v FROM input HAVING SUM(id) > 1", structuralReject: true, typeReject: true, runtimeError: "having"},
+		{name: "having", statement: "SELECT SUM(id) AS v FROM input HAVING SUM(id) > 1", rows: `[{"v":6}]`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.fieldType == model.ContractFieldTypeUnknown {

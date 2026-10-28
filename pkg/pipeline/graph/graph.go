@@ -106,7 +106,7 @@ func Normalize(pipeline *pipelinespec.Pipeline) (*Graph, error) {
 	return normalized, nil
 }
 
-// ValidateConnectivity rejects orphan query steps in the normalized graph.
+// ValidateConnectivity requires one weakly connected data-flow component.
 func ValidateConnectivity(g *Graph) error {
 	if g == nil {
 		return nil
@@ -121,24 +121,45 @@ func ValidateConnectivity(g *Graph) error {
 		return nil
 	}
 
-	incoming := make(map[slug.Slug]int, len(g.nodes))
-	outgoing := make(map[slug.Slug]int, len(g.nodes))
+	neighbors := make([][]int, len(g.nodes))
 	for _, edge := range g.edges {
-		incoming[edge.ToStepSlug]++
-		outgoing[edge.FromStepSlug]++
+		neighbors[edge.FromIndex] = append(neighbors[edge.FromIndex], edge.ToIndex)
+		neighbors[edge.ToIndex] = append(neighbors[edge.ToIndex], edge.FromIndex)
 	}
 
-	for i, node := range g.nodes {
-		step := node.Step
-		if step.Input == nil && (i == 0 || step.Query == nil) {
+	visited := make([]bool, len(g.nodes))
+	groups := make([]string, 0)
+	for i := range g.nodes {
+		if visited[i] {
 			continue
 		}
-		if incoming[step.Slug] == 0 && outgoing[step.Slug] == 0 {
-			return ErrOrphanStep.Detailf(
-				"step %q is not connected to any upstream or downstream step",
-				step.Slug,
-			)
+		visited[i] = true
+		pending := []int{i}
+		members := make([]int, 0)
+		for len(pending) > 0 {
+			current := pending[len(pending)-1]
+			pending = pending[:len(pending)-1]
+			members = append(members, current)
+			for _, next := range neighbors[current] {
+				if !visited[next] {
+					visited[next] = true
+					pending = append(pending, next)
+				}
+			}
 		}
+		sort.Ints(members)
+		names := make([]string, 0, len(members))
+		for _, index := range members {
+			names = append(names, fmt.Sprintf("%q", g.nodes[index].Step.Slug))
+		}
+		groups = append(groups, "["+strings.Join(names, ", ")+"]")
+	}
+	if len(groups) > 1 {
+		detail := fmt.Sprintf(
+			"pipeline has %d disconnected data-flow groups: %s; split independent flows into separate pipelines or connect them with an actual data dependency",
+			len(groups), strings.Join(groups, "; "),
+		)
+		return ErrOrphanStep.Detail(detail).WithPublicDetail(detail)
 	}
 
 	return nil

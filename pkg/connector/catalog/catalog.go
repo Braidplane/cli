@@ -211,6 +211,7 @@ var descriptors = []Descriptor{
 		},
 		IncrementalSourceCheckpointKinds: []model.IncrementalCheckpointKind{
 			model.IncrementalCheckpointKindCursor,
+			model.IncrementalCheckpointKindWatermark,
 		},
 	},
 	{

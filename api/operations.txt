@@ -1,6 +1,9 @@
 # Reviewed API operations consumed by the CLI. Changes expand the public boundary.
+abandonProjectRepositorySetup
 acceptMyMemberInvitation
 acknowledgeNotification
+compilePipelineVersion
+completeProjectRepositoryGitHubAuthorization
 createAPIKey
 createAlertDestination
 createAlertPolicy
@@ -13,8 +16,10 @@ createODCSContract
 createODCSRevision
 createOrganization
 createPersonalAccessToken
+createPipelineProposal
 createPipelineTrigger
 createProject
+createProjectRepository
 createQuery
 createRole
 declineMyMemberInvitation
@@ -62,17 +67,24 @@ getOrganization
 getOrganizationRetentionPolicy
 getPersonalAccessToken
 getPipeline
+getPipelineCreationProposal
+listPipelineCreationProposals
+getPipelineCompiledPlan
 getPipelineDeployment
 getPipelineDraft
 getPipelineRun
+getPipelineRunProgress
 getPipelineTrigger
 getPipelineValidationResult
 getPipelineVersion
 getPipelineWebhookDelivery
 getProject
+getProjectRepositorySetup
+getProjectRepositorySetupAttempt
 getProofReceipt
 getQuery
 getQueryExecution
+getQueryExecutionSummary
 getRole
 getSnowflakeOnboarding
 getUsersProfile
@@ -106,6 +118,7 @@ listOrganizations
 listPersonalAccessTokens
 listPipelineDeployments
 listPipelineRunTriggerRetryAttempts
+getPipelineRunCompletion
 listPipelineRuns
 listPipelineScheduleFires
 listPipelineTriggers
@@ -171,3 +184,16 @@ validatePipeline
 verifyGoogleWorkspaceFiles
 
 connectDataSourceHTTPOAuth
+listNotificationConnections
+createNotificationConnection
+connectNotificationConnection
+disconnectNotificationConnection
+getPipelineOperationalCapabilities
+getSuccessfulRunRecency
+updateSuccessfulRunRecency
+
+getPipelineRunConnected
+
+listSecurityAuditEvents
+exportSecurityAuditEvents
+refreshPipelineDraftProposal

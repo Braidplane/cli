@@ -24,8 +24,25 @@ type queryCommand struct {
 }
 
 type queryExecutionCommand struct {
-	List listQueryExecutionsCommand `cmd:"" help:"List saved-query execution history."`
-	Get  getQueryExecutionCommand   `cmd:"" help:"Get one saved-query execution record."`
+	List    listQueryExecutionsCommand   `cmd:"" help:"List saved-query execution history."`
+	Get     getQueryExecutionCommand     `cmd:"" help:"Get one saved-query execution record."`
+	Summary queryExecutionSummaryCommand `cmd:"" help:"Show recorded first-result progress without result payloads."`
+}
+
+type queryExecutionSummaryCommand struct {
+	apiAuthFlags
+}
+
+func (c *queryExecutionSummaryCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	client, err := newAPIClient(c.apiAuthFlags, runtime)
+	if err != nil {
+		return err
+	}
+	summary, err := client.queryExecutionSummary(context.Background())
+	if err != nil {
+		return err
+	}
+	return writeCLIJSON(output.stdout, summary)
 }
 
 type queryDataSourceFlags struct {

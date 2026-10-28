@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
@@ -44,6 +45,7 @@ type decodedTransformOperationConfig struct {
 }
 
 type rowInput struct {
+	Contract    *pipepayload.Contract
 	Rows        []map[string]any
 	ColumnNames []string
 	RowCount    int
@@ -192,7 +194,7 @@ func executeTransformStepFromPayloadsWithBudget(
 		if upstreamPayload == nil {
 			return nil, xerror.UnexpectedUpstreamResultRequired()
 		}
-		inputContract := contractForNamedTransformInput(decodedConfig.sqlV1.InputSchema, name, len(upstreamPayloads))
+		inputContract := ContractForNamedInput(decodedConfig.sqlV1.InputSchema, name, len(upstreamPayloads))
 		if transform.InputContracts != nil {
 			inputContract = transform.InputContracts[name]
 			if inputContract != nil && ((inputContract.Representation != model.ContractRepresentationUnknown && inputContract.Representation != upstreamPayload.Representation) || (inputContract.RootShape != model.ContractRootShapeUnknown && inputContract.RootShape != upstreamPayload.RootShape)) {
@@ -208,12 +210,8 @@ func executeTransformStepFromPayloadsWithBudget(
 			return nil, xerror.Wrapf("input %q: %w", name, err)
 		}
 		if transform.InputContracts != nil && inputContract != nil {
-			rows := resolvedInput.Rows
-			if upstreamPayload.Representation == model.ContractRepresentationCSV {
-				rows = pipepayload.CoerceContractFieldValidationRows(inputContract, rows)
-			}
-			if err := validateRowsOutputContract(rows, inputContract); err != nil {
-				return nil, xerror.Wrapf("input %q: %w", name, xerror.Join(xerror.TransformInputContractViolation(), err))
+			if err := validateNamedInputRows(resolvedInput, upstreamPayload, inputContract); err != nil {
+				return nil, xerror.Wrapf("input %q: %w", name, err)
 			}
 		}
 		// Empty relations still expose declared fields for LEFT JOIN null extension.
@@ -223,6 +221,7 @@ func executeTransformStepFromPayloadsWithBudget(
 				resolvedInput.ColumnNames = append(resolvedInput.ColumnNames, field.Name)
 			}
 		}
+		resolvedInput.Contract = inputContract
 		inputSQL[name] = resolvedInput
 	}
 
@@ -244,6 +243,14 @@ func executeTransformStepWithInputs(
 
 	selectStmt, _, err := parseTransformSelect(decodedConfig.sqlV1.SQL)
 	if err != nil {
+		return nil, err
+	}
+
+	contracts := make(map[string]*pipepayload.Contract, len(inputSQL))
+	for name, input := range inputSQL {
+		contracts[name] = input.Contract
+	}
+	if _, err := transformKnownFields(selectStmt, contracts); err != nil {
 		return nil, err
 	}
 
@@ -315,7 +322,7 @@ func materializeTransformCTEs(
 // evaluateTransformSelectRows executes one already-validated SELECT body over
 // the provided row relations and returns its projected row relation.
 func evaluateTransformSelectRows(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	inputSQL map[string]*rowInput,
 	budget *executionBudget,
 	depth int,
@@ -323,6 +330,10 @@ func evaluateTransformSelectRows(
 	if err := budget.checkDepth(depth); err != nil {
 		return nil, err
 	}
+	if len(selectStmt.unionAll) > 0 {
+		return evaluateUnionAll(selectStmt, inputSQL, budget, depth)
+	}
+
 	inputRows, err := buildTransformInputRows(selectStmt.From, inputSQL, budget, depth)
 	if err != nil {
 		return nil, err
@@ -351,7 +362,7 @@ func evaluateTransformSelectRows(
 		columnNames = append(columnNames, name)
 	}
 
-	if hasAggregate || selectStmt.GroupBy != nil {
+	if hasAggregate || selectStmt.GroupBy != nil || selectStmt.Having != nil {
 		groupedRows, err := evaluateTransformGroupedRows(selectStmt, filteredRows, budget)
 		if err != nil {
 			return nil, err
@@ -369,7 +380,11 @@ func evaluateTransformSelectRows(
 		}, nil
 	}
 
-	for _, row := range filteredRows {
+	windows, err := evaluateRowNumbers(selectStmt, filteredRows, budget)
+	if err != nil {
+		return nil, err
+	}
+	for rowIndex, row := range filteredRows {
 		if err := budget.checkContext(); err != nil {
 			return nil, err
 		}
@@ -383,7 +398,12 @@ func evaluateTransformSelectRows(
 			if err != nil {
 				return nil, err
 			}
-			value, err := evaluateTransformProjectionExpr(field.Expr, row, budget, 1)
+			var value any
+			if window, ok := field.Expr.(*ast.WindowFuncExpr); ok {
+				value = windows[window][rowIndex]
+			} else {
+				value, err = evaluateTransformProjectionExpr(field.Expr, row, budget, 1)
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -707,7 +727,8 @@ func decodeTransformOperationConfig(
 	}, nil
 }
 
-func contractForNamedTransformInput(
+// ContractForNamedInput selects the local requirement from a combined flat contract.
+func ContractForNamedInput(
 	contract *pipepayload.Contract,
 	inputName string,
 	inputCount int,
@@ -979,7 +1000,7 @@ func encodeRowsAsCSV(
 }
 
 func applyOrderByAndLimit(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	rows []map[string]any,
 	budget *executionBudget,
 ) ([]map[string]any, error) {
@@ -990,7 +1011,8 @@ func applyOrderByAndLimit(
 		return rows, nil
 	}
 
-	finalRows := append([]map[string]any(nil), rows...)
+	finalRows := make([]map[string]any, len(rows))
+	copy(finalRows, rows)
 
 	if selectStmt.OrderBy != nil && len(selectStmt.OrderBy.Items) > 0 {
 		if err := applyOrderBy(selectStmt.OrderBy, finalRows, budget); err != nil {
@@ -1091,6 +1113,11 @@ func compareOrderByValues(leftValue, rightValue any) (int, error) {
 		return -1, nil
 	}
 
+	if left, ok := leftValue.(time.Time); ok {
+		if right, ok := rightValue.(time.Time); ok {
+			return left.Compare(right), nil
+		}
+	}
 	comparison, isComparable, err := compareOrderedWhereValues(leftValue, rightValue)
 	if err != nil {
 		return 0, err
@@ -1190,7 +1217,7 @@ func parseLimitValue(expr ast.ExprNode, defaultValue int) (int, error) {
 }
 
 func evaluateTransformGroupedRows(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	rows []map[string]any,
 	budget *executionBudget,
 ) ([]map[string]any, error) {
@@ -1227,6 +1254,15 @@ func evaluateTransformGroupedRows(
 			}
 			projected[name] = value
 		}
+		if selectStmt.Having != nil {
+			keep, err := evaluateHaving(selectStmt.Having.Expr, bucket, projected, budget)
+			if err != nil {
+				return nil, xerror.Wrapf("evaluate HAVING: %w", err)
+			}
+			if keep != predicateTrue {
+				continue
+			}
+		}
 		projectedSize, err := estimateTransformRowBytes(projected, budget, 1)
 		if err != nil {
 			return nil, err
@@ -1247,45 +1283,25 @@ func isTransformAggregateProjectionExpr(expr ast.ExprNode) bool {
 		return node != nil
 	case *ast.FuncCastExpr:
 		return node != nil && isTransformAggregateProjectionExpr(node.Expr)
+	case *ast.BinaryOperationExpr:
+		return isTransformAggregateProjectionExpr(node.L) || isTransformAggregateProjectionExpr(node.R)
+	case *ast.ParenthesesExpr:
+		return isTransformAggregateProjectionExpr(node.Expr)
 	default:
 		return false
 	}
 }
 
-func evaluateTransformGroupedProjectionExpr(
-	expr ast.ExprNode,
-	rows []map[string]any,
-	representative map[string]any,
-	budget *executionBudget,
-	depth int,
-) (any, error) {
-	if castExpr, ok := expr.(*ast.FuncCastExpr); ok && castExpr != nil &&
-		isTransformAggregateProjectionExpr(castExpr.Expr) {
-		if err := budget.checkExpression(depth); err != nil {
-			return nil, err
-		}
-		value, err := evaluateTransformGroupedProjectionExpr(
-			castExpr.Expr,
-			rows,
-			representative,
-			budget,
-			depth+1,
-		)
-		if err != nil {
-			return nil, err
-		}
-		result, err := castRuntimeValue(value, castExpr)
-		if err != nil {
-			return nil, err
-		}
-		return chargeDecimalValue(result, budget)
+func evaluateTransformGroupedProjectionExpr(expr ast.ExprNode, rows []map[string]any, representative map[string]any, budget *executionBudget, depth int) (any, error) {
+	if !isTransformAggregateProjectionExpr(expr) {
+		return evaluateTransformProjectionExpr(expr, representative, budget, depth)
 	}
-
-	if _, ok := expr.(*ast.AggregateFuncExpr); ok {
-		return evaluateTransformAggregateExpr(expr, rows, budget, depth)
+	v := &havingValueVisitor{bucket: runtimeGroupBucket{rows: rows, representative: representative}, budget: budget, depth: depth - 1}
+	materialized, ok := expr.Accept(v)
+	if !ok || v.err != nil {
+		return nil, v.err
 	}
-
-	return evaluateTransformProjectionExpr(expr, representative, budget, depth)
+	return evaluateTransformProjectionExpr(materialized.(ast.ExprNode), representative, budget, depth)
 }
 
 type runtimeGroupBucket struct {
@@ -1294,7 +1310,7 @@ type runtimeGroupBucket struct {
 }
 
 func buildGroupBuckets(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	rows []map[string]any,
 	budget *executionBudget,
 ) ([]runtimeGroupBucket, error) {
@@ -1380,7 +1396,7 @@ func firstOrEmptyRow(rows []map[string]any) map[string]any {
 }
 
 func applyWhereFilter(
-	selectStmt *ast.SelectStmt,
+	selectStmt *transformSelect,
 	rows []map[string]any,
 	budget *executionBudget,
 ) ([]map[string]any, error) {
@@ -1727,6 +1743,9 @@ func evaluateTransformProjectionExpr(
 ) (any, error) {
 	if err := budget.checkExpression(depth); err != nil {
 		return nil, err
+	}
+	if parens, ok := expr.(*ast.ParenthesesExpr); ok {
+		return evaluateTransformProjectionExpr(parens.Expr, row, budget, depth+1)
 	}
 	if caseExpr, ok := expr.(*ast.CaseExpr); ok {
 		for _, clause := range caseExpr.WhenClauses {
@@ -2540,4 +2559,42 @@ func castRuntimeValue(value any, castExpr *ast.FuncCastExpr) (any, error) {
 		"unsupported cast target type %q at runtime",
 		castExpr.Tp.String(),
 	)
+}
+
+// ValidateInputContext uses the runtime's normalization and validation before
+// execution so orchestration can durably record this boundary before SQL runs.
+func (r Runtime) ValidateInputContext(ctx context.Context, input *pipepayload.Payload, contract *pipepayload.Contract) error {
+	if r.initErr != nil {
+		return r.initErr
+	}
+	if input == nil {
+		return xerror.UnexpectedUpstreamResultRequired()
+	}
+	if contract != nil && ((contract.Representation != model.ContractRepresentationUnknown && contract.Representation != input.Representation) || (contract.RootShape != model.ContractRootShapeUnknown && contract.RootShape != input.RootShape)) {
+		return xerror.TransformInputContractViolation().Detail("payload representation or root shape differs from its contract")
+	}
+	if r.limits.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, r.limits.Timeout)
+		defer cancel()
+	}
+	resolved, err := runtimePayloadToTransformInputWithBudget(input, contract, newExecutionBudget(ctx, r.limits))
+	if err != nil {
+		return err
+	}
+	if contract == nil {
+		return nil
+	}
+	return validateNamedInputRows(resolved, input, contract)
+}
+
+func validateNamedInputRows(input *rowInput, upstream *pipepayload.Payload, contract *pipepayload.Contract) error {
+	rows := input.Rows
+	if upstream.Representation == model.ContractRepresentationCSV {
+		rows = pipepayload.CoerceContractFieldValidationRows(contract, rows)
+	}
+	if err := validateRowsOutputContract(rows, contract); err != nil {
+		return xerror.Join(xerror.TransformInputContractViolation(), err)
+	}
+	return nil
 }

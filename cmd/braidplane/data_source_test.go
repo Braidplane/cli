@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -179,6 +180,7 @@ func TestRunWithArgsDataSourceMutationCommandsUseExpectedRequests(t *testing.T) 
 			method:     http.MethodPost,
 			target:     "/api/organizations/acme/data-sources/test-connection",
 			statusCode: http.StatusNoContent,
+			wantOutput: true,
 			wantBody: `{
 				"type":"http",
 				"config":{
@@ -389,6 +391,7 @@ func TestRunWithArgsDataSourceRequestFileCommandsUseExpectedRequests(t *testing.
 			method:     http.MethodPost,
 			target:     "/api/organizations/acme/data-sources/test-connection",
 			statusCode: http.StatusNoContent,
+			wantOutput: true,
 			wantBody: `{
 				"type":"postgres",
 				"config":{
@@ -1334,7 +1337,50 @@ func TestRunWithArgsDataSourceCreateHelpShowsRequestFile(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Contains(t, stdout.String(), "--file")
+	require.Contains(t, strings.Join(strings.Fields(stdout.String()), " "), "omit positional arguments")
 	require.Empty(t, stderr.String())
+}
+
+func TestDraftDataSourceTestReportsCompletion(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "github.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{"type":"github","config":{"repository_id":"123456"}}`), 0o600))
+	for _, format := range []string{"json", "text"} {
+		t.Run(format, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "/api/organizations/acme/data-sources/test-connection", r.URL.Path)
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			t.Cleanup(server.Close)
+			stdout, stderr, err := runCLIForDataSourceTest(t, server.URL, []string{
+				"braidplane", "data-source", "test", "--file", path, "--output", format,
+			})
+			require.NoError(t, err)
+			require.Empty(t, stderr)
+			if format == "json" {
+				require.JSONEq(t, `{"type":"github","status":"succeeded"}`, stdout)
+			} else {
+				require.Equal(t, "Draft github connection test succeeded.\n", stdout)
+			}
+		})
+	}
+}
+
+func TestDraftDataSourceTestFailurePrintsNoSuccess(t *testing.T) {
+	t.Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":{"code":"CONNECTION_TEST_FAILED","message":"test-secret refused"}}`))
+	}))
+	t.Cleanup(server.Close)
+	stdout, _, err := runCLIForDataSourceTest(t, server.URL, []string{
+		"braidplane", "data-source", "test", "http", "--base-url", "https://example.test", "--bearer-token", "test-secret",
+	})
+	require.Error(t, err)
+	require.NotContains(t, err.Error(), "test-secret")
+	require.Empty(t, stdout)
 }
 
 func runCLIForDataSourceTest(t *testing.T, serverURL string, args []string) (string, string, error) {

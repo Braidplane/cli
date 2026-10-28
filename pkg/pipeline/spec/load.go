@@ -51,8 +51,23 @@ func parseYAMLOrJSON(path string, data []byte, ext string) (*Pipeline, error) {
 	case jsonFileExt:
 		decoder := json.NewDecoder(bytes.NewReader(data))
 		decoder.DisallowUnknownFields()
+		decoder.UseNumber()
 		if err := decoder.Decode(&p); err != nil {
 			return nil, xerror.Wrapf("parse %s: decode pipeline: %w", path, err)
+		}
+		for _, step := range p.Steps {
+			var maps []map[string]any
+			if step.Query != nil {
+				maps = append(maps, step.Query.Parameters, step.Query.OperationInline)
+			}
+			if step.Sink != nil {
+				maps = append(maps, step.Sink.Config, step.Sink.OperationInline)
+			}
+			for _, values := range maps {
+				if _, err := normalizeJSONNumbers(values); err != nil {
+					return nil, xerror.Wrapf("parse %s: decode pipeline: %w", path, err)
+				}
+			}
 		}
 	default:
 		return nil, ErrUnsupportedFormat.Detailf("%q", ext)

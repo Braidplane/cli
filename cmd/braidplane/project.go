@@ -9,6 +9,7 @@ import (
 )
 
 type projectCommand struct {
+	Repository      projectRepositoryCommand      `cmd:"" help:"Create or inspect a managed project repository."`
 	List            listProjectsCommand           `cmd:"" help:"List organization projects."`
 	Get             getProjectCommand             `cmd:"" help:"Get an organization project."`
 	Create          createProjectCommand          `cmd:"" help:"Create an organization project."`

@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -1294,10 +1295,10 @@ steps:
       parameters:
         subject: hello
 `,
-			wantErrContains: "upstream or downstream step",
+			wantErrContains: "disconnected data-flow groups",
 		},
 		{
-			name: "AllowsQueryStepConsumedOnlyByDownstreamStepInput",
+			name: "RejectsUnusedFirstQueryAlongsideConnectedChain",
 			path: "pipeline.step-input.downstream-only.yaml",
 			data: `metadata:
   slug: acme-users-sync
@@ -1329,10 +1330,7 @@ steps:
       operation_type: sql
       operation_ref: upsert-users
 `,
-			assertFn: func(t *testing.T, p *pipelinespec.Pipeline) {
-				require.Len(t, p.Steps, 3)
-				require.Equal(t, "stage-users", string(p.Steps[2].Sink.Input.FromStep))
-			},
+			wantErrContains: `["fetch-users"]; ["stage-users", "acme-users-sync"]`,
 		},
 		{
 			name: "LoadsMultiStepPipelineWithRefs",
@@ -4539,4 +4537,55 @@ func TestSinkEmptyInputPolicyValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDisconnectedDraftRoundTripAndExecutableValidation(t *testing.T) {
+	t.Parallel()
+	data := []byte(`metadata:
+  slug: independent-flows
+  name: Independent flows
+steps:
+  - kind: query
+    slug: a
+    query:
+      data_source_ref: shared
+      operation_type: sql
+      operation_ref: read-a
+  - kind: sink
+    slug: x
+    sink:
+      input: a
+      data_source_ref: shared
+      operation_type: sql
+      operation_ref: write-x
+      idempotency_class: idempotent_with_key
+  - kind: query
+    slug: b
+    query:
+      data_source_ref: shared
+      operation_type: sql
+      operation_ref: read-b
+  - kind: sink
+    slug: y
+    sink:
+      input: b
+      data_source_ref: shared
+      operation_type: sql
+      operation_ref: write-y
+      idempotency_class: idempotent_with_key
+`)
+	draft, err := pipelinespec.Load("draft.yaml", data)
+	require.NoError(t, err)
+	encoded, err := json.Marshal(draft)
+	require.NoError(t, err)
+	restored, err := pipelinespec.Load("draft.json", encoded)
+	require.NoError(t, err)
+	require.Equal(t, draft, restored)
+	require.NoError(t, ValidateArtifactStructure(restored))
+	require.ErrorIs(t, Validate(restored), ErrOrphanStep)
+	_, err = Load("executable.json", encoded)
+	require.ErrorContains(t, err, `["a", "x"]; ["b", "y"]`)
+	restored.Steps[0].Query.Parameters = map[string]any{"rows": "$steps.b.rows"}
+	restored.Steps[2].Query.Parameters = map[string]any{"rows": "$steps.a.rows"}
+	require.ErrorContains(t, ValidateArtifactStructure(restored), "cycle")
 }

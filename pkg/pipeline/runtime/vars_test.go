@@ -28,7 +28,7 @@ func TestResolvePipelineSubstitutesEnvironmentVariablesInRuntimeFields(t *testin
 					Parameters: map[string]any{
 						"prefix":        "{{runtime.env.s3_prefix}}",
 						"limit":         "{{runtime.env.batch_size}}",
-						"kept":          "{{runtime.run_date}}",
+						"kept":          "{{runtime.run.date}}",
 						"path":          "{{runtime.env.step_like_path}}",
 						"embedded_path": "{{runtime.env.step_like_prefix}}/orders",
 					},
@@ -67,17 +67,18 @@ func TestResolvePipelineSubstitutesEnvironmentVariablesInRuntimeFields(t *testin
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, "select * from orders where bucket = dev/dir", pipeline.Steps[0].Query.OperationInline["statement"])
+	require.Equal(t, "select * from orders where bucket = {{runtime.env.s3_prefix}}", pipeline.Steps[0].Query.OperationInline["statement"])
+	require.Equal(t, "dev/dir", pipeline.Steps[0].Query.Parameters["runtime.env.s3_prefix"])
 	require.Equal(t, "dev/dir", pipeline.Steps[0].Query.Parameters["prefix"])
 	require.Equal(t, int64(250), pipeline.Steps[0].Query.Parameters["limit"])
-	require.Equal(t, "{{runtime.run_date}}", pipeline.Steps[0].Query.Parameters["kept"])
+	require.Equal(t, "{{runtime.run.date}}", pipeline.Steps[0].Query.Parameters["kept"])
 	require.Equal(t, LiteralString("$steps.archive/path"), pipeline.Steps[0].Query.Parameters["path"])
-	require.Equal(t, LiteralString("$steps.archive/orders"), pipeline.Steps[0].Query.Parameters["embedded_path"])
+	require.Equal(t, "$steps.archive/orders", LiteralValue(pipeline.Steps[0].Query.Parameters["embedded_path"]))
 	require.Equal(t, "24h", pipeline.Steps[0].Query.Incremental.LookbackWindow)
 	require.Equal(t, "/dev/dir/orders", pipeline.Steps[1].Sink.Config["path"])
-	require.Equal(t, "$steps.archive/path", pipeline.Steps[1].Sink.Config["step_path"])
+	require.Equal(t, LiteralString("$steps.archive/path"), pipeline.Steps[1].Sink.Config["step_path"])
 	require.Equal(t, true, pipeline.Steps[1].Sink.Config["nested"].(map[string]any)["enabled"])
-	require.Equal(t, "$steps.archive/path", pipeline.Steps[1].Sink.Config["nested"].(map[string]any)["path"])
+	require.Equal(t, LiteralString("$steps.archive/path"), pipeline.Steps[1].Sink.Config["nested"].(map[string]any)["path"])
 }
 
 func TestResolvePipelineInputSubstitutesPerRunValuesInRuntimeFields(t *testing.T) {
@@ -99,10 +100,11 @@ func TestResolvePipelineInputSubstitutesPerRunValuesInRuntimeFields(t *testing.T
 						},
 					},
 					Parameters: map[string]any{
-						"customer_id": "{{runtime.input.customer_id}}",
-						"limit":       "{{runtime.input.limit}}",
-						"dry_run":     "{{runtime.input.dry_run}}",
-						"literal_ref": "{{runtime.input.step_ref}}",
+						"customer_id":  "{{runtime.input.customer_id}}",
+						"limit":        "{{runtime.input.limit}}",
+						"dry_run":      "{{runtime.input.dry_run}}",
+						"literal_ref":  "{{runtime.input.step_ref}}",
+						"literal_date": "{{runtime.input.as_of}}",
 					},
 				},
 			},
@@ -126,18 +128,20 @@ func TestResolvePipelineInputSubstitutesPerRunValuesInRuntimeFields(t *testing.T
 		"limit":       100,
 		"dry_run":     true,
 		"step_ref":    "$steps.fetch-orders.rows",
+		"as_of":       "{{runtime.run.date}}",
 		"payload": map[string]any{
 			"tier": "enterprise",
 		},
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, "/customers/cus_123/orders", pipeline.Steps[0].Query.OperationInline["path"])
-	require.Equal(t, map[string]any{"tier": "enterprise"}, pipeline.Steps[0].Query.OperationInline["body"].(map[string]any)["payload"])
+	require.Equal(t, "/customers/{{runtime.input.customer_id}}/orders", pipeline.Steps[0].Query.OperationInline["path"])
+	require.Equal(t, map[string]any{"tier": "enterprise"}, pipeline.Steps[0].Query.Parameters["runtime.input.payload"])
 	require.Equal(t, "cus_123", pipeline.Steps[0].Query.Parameters["customer_id"])
 	require.Equal(t, 100, pipeline.Steps[0].Query.Parameters["limit"])
 	require.Equal(t, true, pipeline.Steps[0].Query.Parameters["dry_run"])
 	require.Equal(t, LiteralString("$steps.fetch-orders.rows"), pipeline.Steps[0].Query.Parameters["literal_ref"])
+	require.Equal(t, LiteralString("{{runtime.run.date}}"), pipeline.Steps[0].Query.Parameters["literal_date"])
 	require.Equal(t, "/exports/cus_123", pipeline.Steps[1].Sink.Config["path"])
 }
 
@@ -159,9 +163,10 @@ func TestResolvePipelineSecretsSubstitutesWriteOnlyEnvironmentSecrets(t *testing
 						},
 					},
 					Parameters: map[string]any{
-						"token":       "{{runtime.secrets.API_TOKEN}}",
-						"literal_ref": "{{runtime.secrets.STEP_REF}}",
-						"kept":        "{{runtime.env.s3_prefix}}",
+						"token":        "{{runtime.secrets.API_TOKEN}}",
+						"literal_ref":  "{{runtime.secrets.STEP_REF}}",
+						"kept":         "{{runtime.env.s3_prefix}}",
+						"literal_date": "{{runtime.secrets.RUNTIME_TEXT}}",
 					},
 				},
 			},
@@ -184,13 +189,16 @@ func TestResolvePipelineSecretsSubstitutesWriteOnlyEnvironmentSecrets(t *testing
 		{Key: "API_TOKEN", Value: "ghp_super_secret"},
 		{Key: "WEBHOOK_SECRET", Value: "signed-secret"},
 		{Key: "STEP_REF", Value: "$steps.fetch-orders.rows"},
+		{Key: "RUNTIME_TEXT", Value: "{{runtime.run.datetime}}"},
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, "Bearer ghp_super_secret", pipeline.Steps[0].Query.OperationInline["headers"].(map[string]any)["Authorization"])
+	require.Equal(t, "Bearer {{runtime.secrets.API_TOKEN}}", pipeline.Steps[0].Query.OperationInline["headers"].(map[string]any)["Authorization"])
+	require.Equal(t, "ghp_super_secret", pipeline.Steps[0].Query.Parameters["runtime.secrets.API_TOKEN"])
 	require.Equal(t, "ghp_super_secret", pipeline.Steps[0].Query.Parameters["token"])
 	require.Equal(t, LiteralString("$steps.fetch-orders.rows"), pipeline.Steps[0].Query.Parameters["literal_ref"])
 	require.Equal(t, "{{runtime.env.s3_prefix}}", pipeline.Steps[0].Query.Parameters["kept"])
+	require.Equal(t, LiteralString("{{runtime.run.datetime}}"), pipeline.Steps[0].Query.Parameters["literal_date"])
 	require.Equal(t, "signed-secret", pipeline.Steps[1].Sink.Config["signature"])
 }
 
