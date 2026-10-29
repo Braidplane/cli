@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	api "github.com/Braidplane/cli/internal/apiclient"
@@ -639,7 +640,7 @@ type applyPipelineCommand struct {
 	apiPipelineFlags
 
 	DryRun      bool     `help:"Preview the Git import report without mutating DB state." name:"dry-run"`
-	Dir         string   `help:"Directory inside the git repository to scan for pipeline specs." name:"dir"`
+	Dir         string   `help:"Repository-relative directory in the project's configured Git repository to scan; not a local filesystem path." name:"dir"`
 	Pipelines   []string `help:"Pipeline slug filter. Repeat to apply multiple pipelines." name:"pipeline"`
 	Environment string   `help:"Optional environment context; Apply imports without deployment." name:"environment" env:"BRAIDPLANE_ENVIRONMENT"`
 }
@@ -659,7 +660,24 @@ func (c *applyPipelineCommand) Run(output *cliOutput, runtime *cliRuntime) error
 		return err
 	}
 
-	return writeCLIJSON(output.stdout, response)
+	if err := writeCLIJSON(output.stdout, response); err != nil {
+		return err
+	}
+	var missing []string
+	for _, requested := range c.Pipelines {
+		if !slices.ContainsFunc(response.Synced, func(p api.PipelineReconcileSyncedPipeline) bool {
+			return p.PipelineSlug == requested
+		}) {
+			missing = append(missing, requested)
+		}
+	}
+	if len(missing) > 0 {
+		return xerror.ValidationFailed().Detailf(
+			"requested pipelines absent from the synced report: %q; no successfully reconciled definition for these targets in directory %q. Check report failures, --pipeline metadata.slug selectors, and --dir: it is relative to the project's configured Git repository, not a local filesystem path. Other reported targets may have been imported; --dry-run only previews",
+			missing, response.PipelineDir,
+		)
+	}
+	return nil
 }
 
 func (c *applyPipelineCommand) applyRequest() api.PipelineReconcileRequest {

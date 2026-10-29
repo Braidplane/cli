@@ -898,7 +898,7 @@ func TestRunWithArgsPipelineApplyPostsRequestAndPrintsReport(t *testing.T) {
 			},
 			"summary": {
 				"scanned": 4,
-				"synced": 1,
+				"synced": 2,
 				"deleted": 1,
 				"skipped": 1,
 				"failed": 1,
@@ -908,6 +908,10 @@ func TestRunWithArgsPipelineApplyPostsRequestAndPrintsReport(t *testing.T) {
 				"pipeline_slug": "acme-users-sync",
 				"source_path": "git-pipelines/acme-users-sync.pipeline.yaml",
 				"spec_hash": "synced-hash"
+			}, {
+				"pipeline_slug": "nightly-export",
+				"source_path": "git-pipelines/nightly-export.pipeline.yaml",
+				"spec_hash": "applied-hash"
 			}],
 			"deleted": [{
 				"pipeline_slug": "legacy-sync",
@@ -977,6 +981,66 @@ func TestRunWithArgsPipelineApplyPostsRequestAndPrintsReport(t *testing.T) {
 	require.Contains(t, stdout.String(), "filtered_out")
 	require.Contains(t, stdout.String(), "nightly-export")
 	require.Contains(t, stdout.String(), "pipeline metadata.slug is required")
+}
+
+func TestRunWithArgsPipelineApplyExplicitTargets(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name      string
+		dir       string
+		selectors []string
+		report    string
+		missing   string
+		dryRun    bool
+	}{
+		{name: "UnmatchedDirectory", dir: "/local/checkout/pipelines", selectors: []string{"new-sync"}, report: `{"summary":{"scanned":0,"synced":0,"failed":0}}`, missing: "new-sync"},
+		{name: "UnmatchedSelector", dir: "pipelines", selectors: []string{"new-sync"}, report: `{"summary":{"scanned":1,"synced":0},"skipped":[{"pipeline_slug":"other-sync","reason":"filtered_out"}]}`, missing: "new-sync"},
+		{name: "PartialMatch", dir: "pipelines", selectors: []string{"existing-sync", "new-sync"}, report: `{"synced":[{"pipeline_slug":"existing-sync","spec_hash":"same-hash"}]}`, missing: "new-sync"},
+		{name: "Unchanged", dir: "pipelines", selectors: []string{"existing-sync"}, report: `{"summary":{"scanned":1,"synced":1},"synced":[{"pipeline_slug":"existing-sync","spec_hash":"same-hash"}]}`},
+		{name: "EmptyUnfilteredNoOp", dir: "pipelines", report: `{"summary":{"scanned":0,"synced":0,"failed":0}}`},
+		{name: "UnmatchedPreview", dir: "pipelines", selectors: []string{"new-sync"}, report: `{"dry_run":true}`, missing: "new-sync", dryRun: true},
+		{name: "MatchedPreview", dir: "pipelines", selectors: []string{"existing-sync"}, report: `{"dry_run":true,"synced":[{"pipeline_slug":"existing-sync","spec_hash":"same-hash"}]}`, dryRun: true},
+		{name: "FailedDefinition", dir: "pipelines", selectors: []string{"new-sync"}, report: `{"failures":[{"pipeline_slug":"new-sync","stage":"contract","message":"invalid contract"}]}`, missing: "new-sync"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var report api.PipelineReconcileResponse
+			require.NoError(t, json.Unmarshal([]byte(tt.report), &report))
+			report.PipelineDir = tt.dir
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, http.MethodPost, r.Method)
+				assert.Equal(t, "/api/organizations/acme/projects/data-pipelines/pipelines:reconcile", r.URL.Path)
+				w.Header().Set("Content-Type", "application/json")
+				assert.NoError(t, json.NewEncoder(w).Encode(report))
+			}))
+			t.Cleanup(server.Close)
+			configPath := filepath.Join(t.TempDir(), "braidplane.toml")
+			require.NoError(t, saveLogin(configPath, cliAuthConfig{ServerURL: server.URL + "/api", Organization: "acme", APIKey: "xto_saved_token"}))
+			args := []string{"braidplane", "pipeline", "apply", "--project", "data-pipelines", "--dir", tt.dir}
+			for _, selector := range tt.selectors {
+				args = append(args, "--pipeline", selector)
+			}
+			if tt.dryRun {
+				args = append(args, "--dry-run")
+			}
+			var stdout, stderr bytes.Buffer
+			err := runWithRuntime(args, &stdout, &stderr, cliRuntime{configPath: configPath})
+			if tt.missing == "" {
+				require.NoError(t, err)
+			} else {
+				require.True(t, xerror.Is(err, xerror.ValidationFailed()))
+				require.Contains(t, err.Error(), `requested pipelines absent from the synced report: ["`+tt.missing+`"]`)
+				require.Contains(t, err.Error(), "--pipeline metadata.slug")
+				require.Contains(t, err.Error(), "--dir: it is relative to the project's configured Git repository")
+				require.Contains(t, err.Error(), "Check report failures")
+			}
+			var printed api.PipelineReconcileResponse
+			require.NoError(t, json.Unmarshal(stdout.Bytes(), &printed))
+			require.Equal(t, report, printed)
+			require.Empty(t, stderr.String())
+		})
+	}
 }
 
 func TestRunWithArgsPipelineApplyImportsWithoutDeploying(t *testing.T) {
@@ -4345,4 +4409,47 @@ func pipelineRunProgressJSON(t *testing.T, raw string) string {
 	encoded, err := json.Marshal(progress)
 	require.NoError(t, err)
 	return string(encoded)
+}
+
+func TestPipelineValidateS3SinkRequiresDeliveryKey(t *testing.T) {
+	t.Parallel()
+	spec := `metadata:
+  slug: export-users
+  name: Export users
+steps:
+  - kind: query
+    slug: fetch-users
+    query:
+      data_source_ref: source
+      operation_type: sql
+      operation_ref: users
+      output_contract:
+        representation: rows
+        fields:
+          - name: id
+            type: integer
+  - kind: sink
+    slug: store-users
+    sink:
+      input: fetch-users
+      data_source_ref: archive
+      operation_type: s3
+      operation_inline:
+        operation: write
+        key: private-object
+        content: private-payload
+      idempotency_class: unsafe
+`
+	specPath := filepath.Join(t.TempDir(), "users.pipeline.yaml")
+	require.NoError(t, os.WriteFile(specPath, []byte(spec), 0o600))
+	var stdout, stderr bytes.Buffer
+	args := []string{"braidplane", "pipeline", "validate", "--file", specPath, "--local"}
+	err := runWithArgs(args, &stdout, &stderr)
+	require.ErrorContains(t, err, "sink.config.key")
+	require.NotContains(t, err.Error(), "private-")
+	require.NotContains(t, stdout.String(), "validation succeeded")
+	spec += "      config:\n        key: exports/users.json\n"
+	require.NoError(t, os.WriteFile(specPath, []byte(spec), 0o600))
+	require.NoError(t, runWithArgs(args, &stdout, &stderr))
+	require.Contains(t, stdout.String(), "pipeline validation succeeded")
 }

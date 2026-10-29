@@ -43,6 +43,34 @@ func (c *cliAPIClient) getProject(ctx context.Context, projectSlug string) (*api
 	return resp.JSON200, nil
 }
 
+func (c *cliAPIClient) getSettlementReviewResetStatus(ctx context.Context, projectSlug string) (*api.SettlementReviewResetStatus, error) {
+	resp, err := c.openapi.GetSettlementReviewResetStatusWithResponse(ctx, c.organization, projectSlug)
+	if err != nil {
+		return nil, xerror.Wrapf("get Settlement Review reset status: %w", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, decodeAPIError(resp.StatusCode(), resp.Body)
+	}
+	if resp.JSON200 == nil {
+		return nil, xerror.Unexpected().Detail("unexpected API response: missing Settlement Review reset status payload")
+	}
+	return resp.JSON200, nil
+}
+
+func (c *cliAPIClient) requestSettlementReviewReset(ctx context.Context, projectSlug string) (*api.SettlementReviewResetStatus, error) {
+	resp, err := c.openapi.RequestSettlementReviewResetWithResponse(ctx, c.organization, projectSlug)
+	if err != nil {
+		return nil, xerror.Wrapf("request Settlement Review reset: %w", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, decodeAPIError(resp.StatusCode(), resp.Body)
+	}
+	if resp.JSON200 == nil {
+		return nil, xerror.Unexpected().Detail("unexpected API response: missing Settlement Review reset status payload")
+	}
+	return resp.JSON200, nil
+}
+
 // createProject creates one organization project and returns the API payload.
 func (c *cliAPIClient) createProject(ctx context.Context, body api.NewProject) (*api.Project, error) {
 	resp, err := c.openapi.CreateProjectWithResponse(ctx, c.organization, body)

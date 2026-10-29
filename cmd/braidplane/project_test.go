@@ -119,6 +119,7 @@ func TestRunWithArgsProjectMutationCommandsUseExpectedRequests(t *testing.T) {
 		statusCode int
 		response   string
 		wantBody   string
+		wantOutput bool
 	}{
 		{
 			name:   "ProjectRepositoryAbandon",
@@ -158,6 +159,24 @@ func TestRunWithArgsProjectMutationCommandsUseExpectedRequests(t *testing.T) {
 			method:     http.MethodDelete,
 			target:     "/api/organizations/acme/projects/data-pipelines?cleanup_remote=true",
 			statusCode: http.StatusNoContent,
+		},
+		{
+			name:       "SettlementReviewResetGet",
+			args:       []string{"braidplane", "project", "settlement-review-reset", "get", "settlement-review"},
+			method:     http.MethodGet,
+			target:     "/api/organizations/acme/projects/settlement-review/settlement-review-reset",
+			statusCode: http.StatusOK,
+			response:   `{"requested_at":null}`,
+			wantOutput: true,
+		},
+		{
+			name:       "SettlementReviewResetRequest",
+			args:       []string{"braidplane", "project", "settlement-review-reset", "request", "settlement-review"},
+			method:     http.MethodPost,
+			target:     "/api/organizations/acme/projects/settlement-review/settlement-review-reset",
+			statusCode: http.StatusOK,
+			response:   `{"requested_at":"2026-10-27T12:00:00Z"}`,
+			wantOutput: true,
 		},
 		{
 			name: "ProjectPipelineBackendSet",
@@ -211,9 +230,12 @@ func TestRunWithArgsProjectMutationCommandsUseExpectedRequests(t *testing.T) {
 			require.Equal(t, "Bearer xto_test_token", gotAuth)
 			if tt.wantBody != "" {
 				require.JSONEq(t, tt.wantBody, string(gotBody))
-				require.NotEmpty(t, stdout)
 			} else {
 				require.Empty(t, string(gotBody))
+			}
+			if tt.wantBody != "" || tt.wantOutput {
+				require.NotEmpty(t, stdout)
+			} else {
 				require.Empty(t, stdout)
 			}
 		})

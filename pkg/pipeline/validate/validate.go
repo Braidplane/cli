@@ -466,6 +466,12 @@ func validateSinkOperationContract(sink *pipelinespec.SinkSpec) error {
 		)
 	}
 
+	if sink.OperationType == pipelinespec.OperationTypeS3 {
+		if err := S3SinkConfig(sink.Config); err != nil {
+			return err
+		}
+	}
+
 	if sink.OperationType == pipelinespec.OperationTypeGoogleWorkspace && hasInline {
 		raw, err := json.Marshal(sink.OperationInline)
 		if err != nil {

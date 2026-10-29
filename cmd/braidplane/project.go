@@ -9,13 +9,57 @@ import (
 )
 
 type projectCommand struct {
-	Repository      projectRepositoryCommand      `cmd:"" help:"Create or inspect a managed project repository."`
-	List            listProjectsCommand           `cmd:"" help:"List organization projects."`
-	Get             getProjectCommand             `cmd:"" help:"Get an organization project."`
-	Create          createProjectCommand          `cmd:"" help:"Create an organization project."`
-	Update          updateProjectCommand          `cmd:"" help:"Update an organization project."`
-	Delete          deleteProjectCommand          `cmd:"" help:"Delete an organization project."`
-	PipelineBackend projectPipelineBackendCommand `cmd:"" name:"pipeline-backend" help:"Configure project pipeline backend settings."`
+	Repository            projectRepositoryCommand      `cmd:"" help:"Create or inspect a managed project repository."`
+	List                  listProjectsCommand           `cmd:"" help:"List organization projects."`
+	Get                   getProjectCommand             `cmd:"" help:"Get an organization project."`
+	Create                createProjectCommand          `cmd:"" help:"Create an organization project."`
+	Update                updateProjectCommand          `cmd:"" help:"Update an organization project."`
+	Delete                deleteProjectCommand          `cmd:"" help:"Delete an organization project."`
+	PipelineBackend       projectPipelineBackendCommand `cmd:"" name:"pipeline-backend" help:"Configure project pipeline backend settings."`
+	SettlementReviewReset settlementReviewResetCommand  `cmd:"" name:"settlement-review-reset" help:"Inspect or request an operator-assisted Settlement Review reset."`
+}
+
+type settlementReviewResetCommand struct {
+	Get     getSettlementReviewResetCommand     `cmd:"" help:"Get Settlement Review reset status."`
+	Request requestSettlementReviewResetCommand `cmd:"" help:"Request an operator-assisted Settlement Review reset."`
+}
+
+type getSettlementReviewResetCommand struct {
+	apiAuthFlags
+
+	ProjectSlug string `arg:"" name:"project-slug" help:"Project slug." required:""`
+}
+
+// Run fetches the Settlement Review reset status and writes it as JSON.
+func (c *getSettlementReviewResetCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	client, err := newAPIClient(c.apiAuthFlags, runtime)
+	if err != nil {
+		return err
+	}
+	status, err := client.getSettlementReviewResetStatus(context.Background(), c.ProjectSlug)
+	if err != nil {
+		return err
+	}
+	return writeCLIJSON(output.stdout, status)
+}
+
+type requestSettlementReviewResetCommand struct {
+	apiAuthFlags
+
+	ProjectSlug string `arg:"" name:"project-slug" help:"Project slug." required:""`
+}
+
+// Run idempotently requests an operator-assisted Settlement Review reset and writes its status as JSON.
+func (c *requestSettlementReviewResetCommand) Run(output *cliOutput, runtime *cliRuntime) error {
+	client, err := newAPIClient(c.apiAuthFlags, runtime)
+	if err != nil {
+		return err
+	}
+	status, err := client.requestSettlementReviewReset(context.Background(), c.ProjectSlug)
+	if err != nil {
+		return err
+	}
+	return writeCLIJSON(output.stdout, status)
 }
 
 type projectPipelineBackendCommand struct {

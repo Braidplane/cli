@@ -236,6 +236,8 @@ pkg/pipeline/validate/native_workspace_test.go
 pkg/pipeline/validate/odcs_contract_ref_test.go
 pkg/pipeline/validate/repository.go
 pkg/pipeline/validate/repository_test.go
+pkg/pipeline/validate/s3_sink.go
+pkg/pipeline/validate/s3_sink_test.go
 pkg/pipeline/validate/union_test.go
 pkg/pipeline/validate/validate.go
 pkg/pipeline/validate/validate_test.go

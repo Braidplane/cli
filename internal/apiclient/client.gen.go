@@ -3351,17 +3351,19 @@ func (e PipelineRunFailureKind) Valid() bool {
 
 // Defines values for PipelineRunFailureReasonCode.
 const (
-	DataSourceConnectionFailed  PipelineRunFailureReasonCode = "data_source_connection_failed"
-	DataSourceCredentialsFailed PipelineRunFailureReasonCode = "data_source_credentials_failed"
-	DataSourcePermissionDenied  PipelineRunFailureReasonCode = "data_source_permission_denied"
-	DataSourceTimeout           PipelineRunFailureReasonCode = "data_source_timeout"
-	ResourceScopeRejected       PipelineRunFailureReasonCode = "resource_scope_rejected"
-	S3ObjectWriteFailed         PipelineRunFailureReasonCode = "s3_object_write_failed"
-	SinkContractMismatch        PipelineRunFailureReasonCode = "sink_contract_mismatch"
-	SourceQueryFailed           PipelineRunFailureReasonCode = "source_query_failed"
-	SourceResultShapeMismatch   PipelineRunFailureReasonCode = "source_result_shape_mismatch"
-	TransformContractMismatch   PipelineRunFailureReasonCode = "transform_contract_mismatch"
-	TransformRuntimeFailed      PipelineRunFailureReasonCode = "transform_runtime_failed"
+	DataSourceConnectionFailed   PipelineRunFailureReasonCode = "data_source_connection_failed"
+	DataSourceCredentialsFailed  PipelineRunFailureReasonCode = "data_source_credentials_failed"
+	DataSourcePermissionDenied   PipelineRunFailureReasonCode = "data_source_permission_denied"
+	DataSourceTimeout            PipelineRunFailureReasonCode = "data_source_timeout"
+	ResourceScopeRejected        PipelineRunFailureReasonCode = "resource_scope_rejected"
+	S3ObjectWriteFailed          PipelineRunFailureReasonCode = "s3_object_write_failed"
+	SinkContractMismatch         PipelineRunFailureReasonCode = "sink_contract_mismatch"
+	SourceQueryFailed            PipelineRunFailureReasonCode = "source_query_failed"
+	SourceQueryInvalid           PipelineRunFailureReasonCode = "source_query_invalid"
+	SourceResultShapeMismatch    PipelineRunFailureReasonCode = "source_result_shape_mismatch"
+	SourceSchemaReferenceInvalid PipelineRunFailureReasonCode = "source_schema_reference_invalid"
+	TransformContractMismatch    PipelineRunFailureReasonCode = "transform_contract_mismatch"
+	TransformRuntimeFailed       PipelineRunFailureReasonCode = "transform_runtime_failed"
 )
 
 // Valid indicates whether the value is a known member of the PipelineRunFailureReasonCode enum.
@@ -3383,7 +3385,11 @@ func (e PipelineRunFailureReasonCode) Valid() bool {
 		return true
 	case SourceQueryFailed:
 		return true
+	case SourceQueryInvalid:
+		return true
 	case SourceResultShapeMismatch:
+		return true
+	case SourceSchemaReferenceInvalid:
 		return true
 	case TransformContractMismatch:
 		return true
@@ -12386,6 +12392,11 @@ type SetProjectPipelineBackendRequest struct {
 
 // SetProjectPipelineBackendRequestMode defines model for SetProjectPipelineBackendRequest.Mode.
 type SetProjectPipelineBackendRequestMode string
+
+// SettlementReviewResetStatus defines model for SettlementReviewResetStatus.
+type SettlementReviewResetStatus struct {
+	RequestedAt *time.Time `json:"requested_at"`
+}
 
 // SlackAlertDestinationConfig defines model for SlackAlertDestinationConfig.
 type SlackAlertDestinationConfig struct {
@@ -21766,6 +21777,12 @@ type ClientInterface interface {
 	// GetProjectRepositorySetupAttempt performs a GET /organizations/{slug}/projects/{project_slug}/repository-setups/{setup_slug} (the `GetProjectRepositorySetupAttempt` operationId) request.
 	GetProjectRepositorySetupAttempt(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, setupSlug Slug, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetSettlementReviewResetStatus performs a GET /organizations/{slug}/projects/{project_slug}/settlement-review-reset (the `GetSettlementReviewResetStatus` operationId) request.
+	GetSettlementReviewResetStatus(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestSettlementReviewReset performs a POST /organizations/{slug}/projects/{project_slug}/settlement-review-reset (the `RequestSettlementReviewReset` operationId) request.
+	RequestSettlementReviewReset(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// StartProviderDataSourceInstallWithBody performs a POST /organizations/{slug}/provider-connectors/{provider}/data-source-installs (the `StartProviderDataSourceInstall` operationId) request,
 	// with any type of body and a specified content type.
 	StartProviderDataSourceInstallWithBody(ctx context.Context, slug SlugParam, provider ProviderKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -24937,6 +24954,32 @@ func (c *Client) CompleteProjectRepositoryGitHubAuthorization(ctx context.Contex
 // GetProjectRepositorySetupAttempt performs a GET /organizations/{slug}/projects/{project_slug}/repository-setups/{setup_slug} (the `GetProjectRepositorySetupAttempt` operationId) request.
 func (c *Client) GetProjectRepositorySetupAttempt(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, setupSlug Slug, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectRepositorySetupAttemptRequest(c.Server, slug, projectSlug, setupSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetSettlementReviewResetStatus performs a GET /organizations/{slug}/projects/{project_slug}/settlement-review-reset (the `GetSettlementReviewResetStatus` operationId) request.
+func (c *Client) GetSettlementReviewResetStatus(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSettlementReviewResetStatusRequest(c.Server, slug, projectSlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestSettlementReviewReset performs a POST /organizations/{slug}/projects/{project_slug}/settlement-review-reset (the `RequestSettlementReviewReset` operationId) request.
+func (c *Client) RequestSettlementReviewReset(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestSettlementReviewResetRequest(c.Server, slug, projectSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -36418,6 +36461,88 @@ func NewGetProjectRepositorySetupAttemptRequest(server string, slug SlugParam, p
 	return req, nil
 }
 
+// NewGetSettlementReviewResetStatusRequest constructs an http.Request for the GetSettlementReviewResetStatus method
+func NewGetSettlementReviewResetStatusRequest(server string, slug SlugParam, projectSlug ProjectSlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/settlement-review-reset", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRequestSettlementReviewResetRequest constructs an http.Request for the RequestSettlementReviewReset method
+func NewRequestSettlementReviewResetRequest(server string, slug SlugParam, projectSlug ProjectSlugParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "project_slug", projectSlug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations/%s/projects/%s/settlement-review-reset", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewStartProviderDataSourceInstallRequest calls the generic StartProviderDataSourceInstall builder with application/json body
 func NewStartProviderDataSourceInstallRequest(server string, slug SlugParam, provider ProviderKey, body StartProviderDataSourceInstallJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -38923,6 +39048,16 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetProjectRepositorySetupAttemptWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, setupSlug Slug, reqEditors ...RequestEditorFn) (*GetProjectRepositorySetupAttemptResponse, error)
+
+	// GetSettlementReviewResetStatusWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/settlement-review-reset (the `GetSettlementReviewResetStatus` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetSettlementReviewResetStatusWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*GetSettlementReviewResetStatusResponse, error)
+
+	// RequestSettlementReviewResetWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/settlement-review-reset (the `RequestSettlementReviewReset` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RequestSettlementReviewResetWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*RequestSettlementReviewResetResponse, error)
 
 	// StartProviderDataSourceInstallWithBodyWithResponse performs a POST /organizations/{slug}/provider-connectors/{provider}/data-source-installs (the `StartProviderDataSourceInstall` operationId) request,
 	// with any type of body and a specified content type.
@@ -49108,6 +49243,130 @@ func (r GetProjectRepositorySetupAttemptResponse) ContentType() string {
 	return ""
 }
 
+type GetSettlementReviewResetStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SettlementReviewResetStatus
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetSettlementReviewResetStatusResponse) GetJSON200() *SettlementReviewResetStatus {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetSettlementReviewResetStatusResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetSettlementReviewResetStatusResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r GetSettlementReviewResetStatusResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r GetSettlementReviewResetStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSettlementReviewResetStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSettlementReviewResetStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSettlementReviewResetStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RequestSettlementReviewResetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SettlementReviewResetStatus
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RequestSettlementReviewResetResponse) GetJSON200() *SettlementReviewResetStatus {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r RequestSettlementReviewResetResponse) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RequestSettlementReviewResetResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r RequestSettlementReviewResetResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r RequestSettlementReviewResetResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RequestSettlementReviewResetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RequestSettlementReviewResetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RequestSettlementReviewResetResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type StartProviderDataSourceInstallResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -52768,6 +53027,28 @@ func (c *ClientWithResponses) GetProjectRepositorySetupAttemptWithResponse(ctx c
 		return nil, err
 	}
 	return ParseGetProjectRepositorySetupAttemptResponse(rsp)
+}
+
+// GetSettlementReviewResetStatusWithResponse performs a GET /organizations/{slug}/projects/{project_slug}/settlement-review-reset (the `GetSettlementReviewResetStatus` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetSettlementReviewResetStatusWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*GetSettlementReviewResetStatusResponse, error) {
+	rsp, err := c.GetSettlementReviewResetStatus(ctx, slug, projectSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSettlementReviewResetStatusResponse(rsp)
+}
+
+// RequestSettlementReviewResetWithResponse performs a POST /organizations/{slug}/projects/{project_slug}/settlement-review-reset (the `RequestSettlementReviewReset` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RequestSettlementReviewResetWithResponse(ctx context.Context, slug SlugParam, projectSlug ProjectSlugParam, reqEditors ...RequestEditorFn) (*RequestSettlementReviewResetResponse, error) {
+	rsp, err := c.RequestSettlementReviewReset(ctx, slug, projectSlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestSettlementReviewResetResponse(rsp)
 }
 
 // StartProviderDataSourceInstallWithBodyWithResponse performs a POST /organizations/{slug}/provider-connectors/{provider}/data-source-installs (the `StartProviderDataSourceInstall` operationId) request,
@@ -60625,6 +60906,100 @@ func ParseGetProjectRepositorySetupAttemptResponse(rsp *http.Response) (*GetProj
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSettlementReviewResetStatusResponse parses an HTTP response from a GetSettlementReviewResetStatusWithResponse call
+func ParseGetSettlementReviewResetStatusResponse(rsp *http.Response) (*GetSettlementReviewResetStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSettlementReviewResetStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SettlementReviewResetStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRequestSettlementReviewResetResponse parses an HTTP response from a RequestSettlementReviewResetWithResponse call
+func ParseRequestSettlementReviewResetResponse(rsp *http.Response) (*RequestSettlementReviewResetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RequestSettlementReviewResetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SettlementReviewResetStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	}
 

@@ -11699,6 +11699,8 @@
           "data_source_connection_failed",
           "data_source_timeout",
           "source_query_failed",
+          "source_query_invalid",
+          "source_schema_reference_invalid",
           "resource_scope_rejected",
           "source_result_shape_mismatch",
           "transform_runtime_failed",
@@ -17423,6 +17425,22 @@
           "tracked_branch",
           "pipeline_dir",
           "mode"
+        ],
+        "type": "object"
+      },
+      "SettlementReviewResetStatus": {
+        "additionalProperties": false,
+        "description": "",
+        "properties": {
+          "requested_at": {
+            "description": "",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "requested_at"
         ],
         "type": "object"
       },
@@ -29735,6 +29753,116 @@
             "description": ""
           },
           "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/organizations/{slug}/projects/{project_slug}/settlement-review-reset": {
+      "get": {
+        "description": "",
+        "operationId": "getSettlementReviewResetStatus",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementReviewResetStatus"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "description": "",
+        "operationId": "requestSettlementReviewReset",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          },
+          {
+            "$ref": "#/components/parameters/ProjectSlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementReviewResetStatus"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
             "content": {
               "application/json": {
                 "schema": {

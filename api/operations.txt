@@ -81,6 +81,7 @@ getPipelineWebhookDelivery
 getProject
 getProjectRepositorySetup
 getProjectRepositorySetupAttempt
+getSettlementReviewResetStatus
 getProofReceipt
 getQuery
 getQueryExecution
@@ -146,6 +147,7 @@ restoreDataSource
 restoreQuery
 restoreRole
 revalidatePipeline
+requestSettlementReviewReset
 revokeDataSourceProviderGrant
 revokeMemberInvitation
 rotateAPIKey

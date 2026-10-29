@@ -745,3 +745,13 @@ func HTTPAcknowledgementRejected() *Error {
 func HTTPAcknowledgementUncertain() *Error {
 	return newStandalone(KindUnavailable, "HTTP_ACKNOWLEDGEMENT_UNCERTAIN", "HTTP acknowledgement uncertain")
 }
+
+// SourceQueryInvalid reports a provider-rejected query without provider details.
+func SourceQueryInvalid() *Error {
+	return newStandalone(KindInvalidInput, "SOURCE_QUERY_INVALID", "The source query is invalid.")
+}
+
+// SourceSchemaReferenceInvalid reports an unresolved query schema reference.
+func SourceSchemaReferenceInvalid() *Error {
+	return newStandalone(KindInvalidInput, "SOURCE_SCHEMA_REFERENCE_INVALID", "The source query references an unavailable schema object.")
+}
